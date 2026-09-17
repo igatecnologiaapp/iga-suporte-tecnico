@@ -67,7 +67,6 @@ function TicketDetail() {
     const stored = await supabase.storage.from("ticket-attachments").upload(path, file);
     if (stored.error) { setBusy(false); toast.error(stored.error.message); return; }
     const meta = await supabase.from("ticket_attachments").insert({ ticket_id: ticketId, storage_path: path, file_name: file.name, mime_type: file.type || null, file_size: file.size, uploaded_by: user.id });
-    if (!meta.error) await supabase.from("ticket_events").insert({ ticket_id: ticketId, actor_id: user.id, event_type: "attachment", note: `Arquivo anexado: ${file.name}` });
     setBusy(false); if (meta.error) { toast.error(meta.error.message); return; } toast.success("Arquivo anexado."); await load();
   }
   async function download(path: string, name: string) { const { data, error } = await supabase.storage.from("ticket-attachments").download(path); if (error) { toast.error(error.message); return; } const url=URL.createObjectURL(data); const a=document.createElement("a"); a.href=url;a.download=name;a.click();URL.revokeObjectURL(url); }
