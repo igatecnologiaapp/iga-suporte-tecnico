@@ -49,12 +49,12 @@ function TicketDetail() {
     setBusy(true);
     const { error } = await supabase.from("tickets").update(fields as never).eq("id", ticketId);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(success); await load();
   }
   async function acknowledge() {
     const own = technicians.find((t) => t.user_id === user.id);
-    if (!own) return toast.error("Seu usuário ainda não está vinculado a um cadastro de técnico.");
+    if (!own) { toast.error("Seu usuário ainda não está vinculado a um cadastro de técnico."); return; }
     await update({ acknowledged_by_id: own.id, assigned_technician_id: ticket.assigned_technician_id ?? own.id, status: ticket.status === "new" ? "triage" : ticket.status }, "Chamado acolhido.");
   }
   async function saveText(e: React.FormEvent<HTMLFormElement>) {
@@ -65,12 +65,12 @@ function TicketDetail() {
     const file = e.target.files?.[0]; if (!file) return;
     setBusy(true); const path = `${ticketId}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     const stored = await supabase.storage.from("ticket-attachments").upload(path, file);
-    if (stored.error) { setBusy(false); return toast.error(stored.error.message); }
+    if (stored.error) { setBusy(false); toast.error(stored.error.message); return; }
     const meta = await supabase.from("ticket_attachments").insert({ ticket_id: ticketId, storage_path: path, file_name: file.name, mime_type: file.type || null, file_size: file.size, uploaded_by: user.id });
     if (!meta.error) await supabase.from("ticket_events").insert({ ticket_id: ticketId, actor_id: user.id, event_type: "attachment", note: `Arquivo anexado: ${file.name}` });
-    setBusy(false); if (meta.error) return toast.error(meta.error.message); toast.success("Arquivo anexado."); await load();
+    setBusy(false); if (meta.error) { toast.error(meta.error.message); return; } toast.success("Arquivo anexado."); await load();
   }
-  async function download(path: string, name: string) { const { data, error } = await supabase.storage.from("ticket-attachments").download(path); if (error) return toast.error(error.message); const url=URL.createObjectURL(data); const a=document.createElement("a"); a.href=url;a.download=name;a.click();URL.revokeObjectURL(url); }
+  async function download(path: string, name: string) { const { data, error } = await supabase.storage.from("ticket-attachments").download(path); if (error) { toast.error(error.message); return; } const url=URL.createObjectURL(data); const a=document.createElement("a"); a.href=url;a.download=name;a.click();URL.revokeObjectURL(url); }
   if (!ticket) return <div className="py-20 text-center text-sm text-muted-foreground">Carregando chamado...</div>;
   return <Page title={`${ticket.number} — ${ticket.subject}`} description={`${ticket.companies?.trade_name} · aberto em ${formatDate(ticket.opened_at)}`} action={<Button variant="outline" asChild><Link to="/tickets"><ArrowLeft/>Voltar</Link></Button>}>
     <div className="flex flex-wrap gap-2"><StatusBadge value={ticket.priority} kind="priority"/><StatusBadge value={ticket.status}/><span className="rounded-md border px-2.5 py-1 text-xs">Canal: Manual</span></div>
