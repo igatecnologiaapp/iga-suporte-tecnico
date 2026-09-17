@@ -15,6 +15,13 @@
       "when": 1789673837909,
       "tag": "0001_secure_ticket_storage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789673965528,
+      "tag": "0002_harden_internal_functions",
+      "breakpoints": true
     }
   ]
 }
