@@ -8,6 +8,13 @@
       "when": 1789673764858,
       "tag": "0000_create_iga_service_core",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789673837909,
+      "tag": "0001_secure_ticket_storage",
+      "breakpoints": true
     }
   ]
 }
