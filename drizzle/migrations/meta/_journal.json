@@ -29,6 +29,13 @@
       "when": 1789674020290,
       "tag": "0003_restrict_role_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789674053725,
+      "tag": "0004_harden_ticket_audit_and_roles",
+      "breakpoints": true
     }
   ]
 }
