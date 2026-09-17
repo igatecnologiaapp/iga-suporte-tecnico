@@ -1,0 +1,2 @@
+DROP POLICY "Users read roles" ON public.user_roles;
+CREATE POLICY "Users read own role or admins read all" ON public.user_roles FOR SELECT TO authenticated USING (user_id = auth.uid() OR public.has_role(auth.uid(), 'admin'));

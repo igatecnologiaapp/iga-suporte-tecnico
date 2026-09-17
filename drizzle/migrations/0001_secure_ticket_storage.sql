@@ -1,0 +1,3 @@
+CREATE POLICY "Authenticated read ticket files" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'ticket-attachments' AND EXISTS (SELECT 1 FROM public.ticket_attachments a WHERE a.storage_path = name));
+CREATE POLICY "Operations upload ticket files" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'ticket-attachments' AND public.can_manage_operations(auth.uid()) AND (storage.foldername(name))[1] IS NOT NULL);
+CREATE POLICY "Managers delete ticket files" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'ticket-attachments' AND (public.has_role(auth.uid(),'admin') OR public.has_role(auth.uid(),'supervisor')));

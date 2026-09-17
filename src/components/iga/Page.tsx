@@ -1,0 +1,3 @@
+import type { ReactNode } from "react";
+export function Page({ title, description, action, children }: { title:string; description:string; action?:ReactNode; children:ReactNode }) { return <div className="space-y-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h1 className="text-2xl font-semibold">{title}</h1><p className="mt-1 text-sm text-muted-foreground">{description}</p></div>{action}</div>{children}</div>; }
+export function Empty({ children }: { children:ReactNode }) { return <div className="rounded-md border border-dashed bg-card px-6 py-14 text-center text-sm text-muted-foreground">{children}</div>; }
