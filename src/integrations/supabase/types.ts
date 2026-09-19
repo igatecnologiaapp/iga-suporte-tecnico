@@ -401,6 +401,7 @@ export type Database = {
         Row: {
           acknowledged_at: string | null
           acknowledged_by_id: string | null
+          acknowledged_by_user_id: string | null
           assigned_technician_id: string | null
           category_id: string | null
           channel: Database["public"]["Enums"]["ticket_channel"]
@@ -415,6 +416,8 @@ export type Database = {
           number: string
           opened_at: string
           priority: Database["public"]["Enums"]["ticket_priority"]
+          reopen_count: number
+          reopened_at: string | null
           requester_phone: string | null
           requester_phone_normalized: string | null
           resolved_at: string | null
@@ -427,6 +430,7 @@ export type Database = {
         Insert: {
           acknowledged_at?: string | null
           acknowledged_by_id?: string | null
+          acknowledged_by_user_id?: string | null
           assigned_technician_id?: string | null
           category_id?: string | null
           channel?: Database["public"]["Enums"]["ticket_channel"]
@@ -441,6 +445,8 @@ export type Database = {
           number?: string
           opened_at?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          reopen_count?: number
+          reopened_at?: string | null
           requester_phone?: string | null
           requester_phone_normalized?: string | null
           resolved_at?: string | null
@@ -453,6 +459,7 @@ export type Database = {
         Update: {
           acknowledged_at?: string | null
           acknowledged_by_id?: string | null
+          acknowledged_by_user_id?: string | null
           assigned_technician_id?: string | null
           category_id?: string | null
           channel?: Database["public"]["Enums"]["ticket_channel"]
@@ -467,6 +474,8 @@ export type Database = {
           number?: string
           opened_at?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          reopen_count?: number
+          reopened_at?: string | null
           requester_phone?: string | null
           requester_phone_normalized?: string | null
           resolved_at?: string | null
@@ -482,6 +491,13 @@ export type Database = {
             columns: ["acknowledged_by_id"]
             isOneToOne: false
             referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_acknowledged_by_user_id_fkey"
+            columns: ["acknowledged_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
