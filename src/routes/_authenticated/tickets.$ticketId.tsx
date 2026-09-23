@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Archive, ArrowLeft, CalendarClock, Download, MessageSquare, Paperclip, Pencil, Save, UserCheck, Users } from "lucide-react";
+import { Archive, ArrowLeft, CalendarClock, Download, MessageSquare, Paperclip, Pencil, Save, Trash2, UserCheck, Users } from "lucide-react";
+
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,6 +15,8 @@ import { SlaBadge } from "@/components/iga/SlaBadge";
 import { canManageCatalogs, canOperate, channelLabels, conversationStatusLabels, formatDate, formatDuration, priorities, statusLabels, ticketTransitions } from "@/lib/iga";
 import { computeSla, type SlaPolicy } from "@/lib/sla";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteTicket, inspectTicket } from "@/lib/tickets-admin.functions";
+
 
 export const Route = createFileRoute("/_authenticated/tickets/$ticketId")({
   head: () => ({ meta: [
@@ -29,7 +32,9 @@ export const Route = createFileRoute("/_authenticated/tickets/$ticketId")({
 
 function TicketDetail() {
   const { ticketId } = Route.useParams(); const { user, role } = Route.useRouteContext();
-  const canManage = canOperate(role); const canTransfer = canManageCatalogs(role);
+  const canManage = canOperate(role); const canTransfer = canManageCatalogs(role); const isAdmin = role === "admin"; const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false); const [deleteReason, setDeleteReason] = useState(""); const [deleteInfo, setDeleteInfo] = useState<{ number: string; company: string; subject: string; related: { label: string; total: number }[] } | null>(null);
+
   const [ticket, setTicket] = useState<any>(null); const [events, setEvents] = useState<any[]>([]); const [attachments, setAttachments] = useState<any[]>([]); const [technicians, setTechnicians] = useState<any[]>([]); const [schedules, setSchedules] = useState<any[]>([]); const [policies, setPolicies] = useState<SlaPolicy[]>([]);
   const [busy, setBusy] = useState(false); const [solution, setSolution] = useState(""); const [internalNotes, setInternalNotes] = useState(""); const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [transferOpen, setTransferOpen] = useState(false); const [scheduleOpen, setScheduleOpen] = useState(false); const [scheduleGoesToStatus, setScheduleGoesToStatus] = useState(false);
@@ -70,6 +75,25 @@ function TicketDetail() {
     const ok = await update({ status: "cancelled", cancel_reason: cancelReason.trim() }, "Chamado cancelado/arquivado.");
     if (ok) { setCancelOpen(false); setCancelReason(""); }
   }
+  async function openDelete() {
+    setBusy(true);
+    try { setDeleteInfo(await inspectTicket({ data: { ticketId } })); setDeleteReason(""); setDeleteOpen(true); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível verificar o chamado."); }
+    finally { setBusy(false); }
+  }
+  async function confirmDelete() {
+    if (!deleteReason.trim()) { toast.error("Informe o motivo da exclusão."); return; }
+    setBusy(true);
+    try {
+      const result = await deleteTicket({ data: { ticketId, reason: deleteReason.trim() } });
+      setDeleteOpen(false);
+      toast.success(`Chamado ${result.number ?? ""} excluído definitivamente.`);
+      await navigate({ to: "/tickets" });
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível excluir o chamado."); }
+    finally { setBusy(false); }
+  }
+
+
 
   async function update(fields: Record<string, unknown>, success: string) {
     setBusy(true); const { error } = await supabase.from("tickets").update(fields as never).eq("id", ticketId); setBusy(false);
@@ -126,7 +150,9 @@ function TicketDetail() {
       <Button size="sm" variant="outline" onClick={() => { setScheduleGoesToStatus(false); setScheduleOpen(true); }} disabled={busy}><CalendarClock />{ticket.scheduled_at ? "Reagendar" : "Agendar"}</Button>
       {canTransfer && <Button size="sm" variant="outline" onClick={() => { setEditCategory(ticket.category_id ?? ""); setEditOpen(true); }} disabled={busy}><Pencil />Editar chamado</Button>}
       {canTransfer && ticket.status !== "cancelled" && <Button size="sm" variant="outline" onClick={() => setCancelOpen(true)} disabled={busy}><Archive />Cancelar / Arquivar</Button>}
+      {isAdmin && <Button size="sm" variant="destructive" onClick={() => void openDelete()} disabled={busy}><Trash2 />Excluir chamado</Button>}
     </div>}
+
 
     {conversations.length > 0 && <div className="rounded-md border bg-card p-5"><h2 className="flex items-center gap-2 font-semibold"><MessageSquare className="size-4" />Conversas vinculadas</h2><div className="mt-4 divide-y">{conversations.map(conversation => <div key={conversation.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div className="min-w-0"><p className="font-medium">{conversation.phone} · {conversationStatusLabels[conversation.status]}</p><p className="truncate text-xs text-muted-foreground">{conversation.last_message_preview || "Sem mensagens"} · {formatDate(conversation.last_message_at)}</p></div><Button size="sm" variant="outline" asChild><Link to="/inbox">Abrir na Caixa de Entrada</Link></Button></div>)}</div></div>}
 
@@ -164,6 +190,14 @@ function TicketDetail() {
       <div><Label htmlFor="cancel-reason">Motivo</Label><Textarea id="cancel-reason" rows={3} value={cancelReason} onChange={e => setCancelReason(e.target.value)} /></div>
       <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setCancelOpen(false)}>Voltar</Button><Button disabled={busy || !cancelReason.trim()} onClick={() => void submitCancel()}>Confirmar</Button></div>
     </DialogContent></Dialog>
+
+    <Dialog open={deleteOpen} onOpenChange={open => { setDeleteOpen(open); if (!open) setDeleteReason(""); }}><DialogContent><DialogHeader><DialogTitle>Excluir definitivamente o chamado {deleteInfo?.number}?</DialogTitle><DialogDescription>Esta operação é definitiva e não pode ser desfeita. Para manter o chamado no histórico, use Cancelar / Arquivar.</DialogDescription></DialogHeader>
+      <dl className="grid gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm"><div><dt className="text-muted-foreground">Número</dt><dd className="font-medium">{deleteInfo?.number}</dd></div><div><dt className="text-muted-foreground">Empresa / Cliente</dt><dd className="font-medium">{deleteInfo?.company}</dd></div><div><dt className="text-muted-foreground">Assunto</dt><dd className="font-medium">{deleteInfo?.subject}</dd></div></dl>
+      {deleteInfo && deleteInfo.related.length > 0 && <p className="text-sm text-muted-foreground">Serão removidos junto: {deleteInfo.related.map(r => `${r.total} ${r.label}`).join(", ")}.</p>}
+      <div><Label htmlFor="delete-reason">Motivo da exclusão</Label><Textarea id="delete-reason" rows={3} value={deleteReason} onChange={e => setDeleteReason(e.target.value)} /></div>
+      <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setDeleteOpen(false)}>Voltar</Button><Button variant="destructive" disabled={busy || !deleteReason.trim()} onClick={() => void confirmDelete()}><Trash2 />Excluir definitivamente</Button></div>
+    </DialogContent></Dialog>
+
 
     <AlertDialog open={pendingStatus !== null} onOpenChange={open => { if (!open) setPendingStatus(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{pendingStatus === "resolved" ? "Resolver chamado?" : "Encerrar chamado?"}</AlertDialogTitle><AlertDialogDescription>{pendingStatus === "resolved" ? "A solução informada será registrada na timeline." : "O chamado será marcado como encerrado."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => void confirmTransition()}>Confirmar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </Page>;
