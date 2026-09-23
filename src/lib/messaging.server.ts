@@ -15,23 +15,37 @@ export type InboundMessage = {
   attachmentName?: string | null;
   attachmentPath?: string | null;
   attachmentMime?: string | null;
+  attachmentSize?: number | null;
+  mediaId?: string | null;
+  originalType?: string | null;
+  processingStatus?: "processed" | "media_pending" | "media_stored" | "media_failed" | "unsupported";
 };
 
-export async function ingestInboundMessage(payload: InboundMessage) {
+export type IngestResult = { conversationId: string; messageId: string; identified: boolean; ticketId: string | null; duplicate: boolean };
+
+export async function ingestInboundMessage(payload: InboundMessage): Promise<IngestResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin: any = supabaseAdmin;
   const channel = payload.channel ?? "whatsapp";
   const rawPhone = payload.phone.trim();
   if (!rawPhone) throw new Error("Informe o telefone do remetente.");
 
+  // Idempotência: mesmo identificador externo nunca gera nova mensagem/conversa.
+  if (payload.externalId) {
+    const { data: existing } = await admin.from("messages").select("id,conversation_id,conversations(contact_id,ticket_id)")
+      .eq("channel", channel).eq("external_id", payload.externalId).maybeSingle();
+    if (existing) return { conversationId: existing.conversation_id, messageId: existing.id, identified: Boolean(existing.conversations?.contact_id), ticketId: existing.conversations?.ticket_id ?? null, duplicate: true };
+  }
+
   const { data: normalized } = await admin.rpc("normalize_phone", { value: rawPhone });
   const phoneNormalized: string | null = normalized ?? null;
 
-  let conversation: any = null;
-  if (phoneNormalized) {
+  const findOpen = async () => {
+    if (!phoneNormalized) return null;
     const { data } = await admin.from("conversations").select("*").eq("channel", channel).eq("phone_normalized", phoneNormalized).neq("status", "finished").maybeSingle();
-    conversation = data ?? null;
-  }
+    return data ?? null;
+  };
+  let conversation: any = await findOpen();
 
   // Identificação do cliente: telefone -> contato -> empresa
   let contactId: string | null = conversation?.contact_id ?? null;
@@ -51,8 +65,11 @@ export async function ingestInboundMessage(payload: InboundMessage) {
       channel, phone: rawPhone, contact_id: contactId, company_id: companyId,
       display_name: payload.displayName ?? null, status: "new",
     }).select("*").single();
-    if (error) throw new Error(error.message);
-    conversation = data;
+    if (error) {
+      // Corrida entre eventos simultâneos do mesmo telefone: reaproveita a conversa aberta.
+      conversation = error.code === "23505" ? await findOpen() : null;
+      if (!conversation) throw new Error(error.message);
+    } else conversation = data;
   } else if ((contactId && !conversation.contact_id) || (payload.displayName && !conversation.display_name)) {
     const { data } = await admin.from("conversations")
       .update({ contact_id: contactId, company_id: companyId, display_name: conversation.display_name ?? payload.displayName ?? null })
@@ -60,7 +77,7 @@ export async function ingestInboundMessage(payload: InboundMessage) {
     conversation = data ?? conversation;
   }
 
-  const { error: messageError } = await admin.from("messages").insert({
+  const { data: message, error: messageError } = await admin.from("messages").insert({
     conversation_id: conversation.id,
     direction: "inbound",
     channel,
@@ -72,9 +89,19 @@ export async function ingestInboundMessage(payload: InboundMessage) {
     attachment_name: payload.attachmentName ?? null,
     attachment_path: payload.attachmentPath ?? null,
     attachment_mime: payload.attachmentMime ?? null,
+    attachment_size: payload.attachmentSize ?? null,
+    media_id: payload.mediaId ?? null,
+    original_type: payload.originalType ?? null,
+    processing_status: payload.processingStatus ?? "processed",
     sent_at: payload.sentAt ?? new Date().toISOString(),
-  });
-  if (messageError) throw new Error(messageError.message);
+  }).select("id").single();
+  if (messageError) {
+    if (messageError.code === "23505" && payload.externalId) {
+      const { data: dup } = await admin.from("messages").select("id,conversation_id").eq("channel", channel).eq("external_id", payload.externalId).single();
+      return { conversationId: dup.conversation_id, messageId: dup.id, identified: Boolean(contactId), ticketId: conversation.ticket_id ?? null, duplicate: true };
+    }
+    throw new Error(messageError.message);
+  }
 
-  return { conversationId: conversation.id as string, identified: Boolean(contactId), ticketId: (conversation.ticket_id as string | null) ?? null };
+  return { conversationId: conversation.id as string, messageId: message.id as string, identified: Boolean(contactId), ticketId: (conversation.ticket_id as string | null) ?? null, duplicate: false };
 }
