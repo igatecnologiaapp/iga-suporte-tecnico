@@ -23,7 +23,7 @@ export type ParsedOther = { kind: "other"; eventType: string };
 export type ParsedEvent = ParsedInbound | ParsedStatus | ParsedOther;
 
 const str = (v: unknown, max = 4096): string | null => (typeof v === "string" && v.length > 0 ? v.slice(0, max) : null);
-const obj = (v: unknown): Record<string, any> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, any>) : {});
+const obj = (v: unknown): any => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
 
 const mediaKinds: Record<string, WaKind> = { image: "image", document: "document", audio: "audio", video: "video", sticker: "image" };
