@@ -57,3 +57,12 @@ export const notificationLabels: Record<string, string> = {
   reopened: "Reabertura", scheduled: "Agendamento", rescheduled: "Reagendamento",
   sla_warning: "SLA próximo do vencimento", sla_breached: "SLA vencido",
 };
+export const conversationStatusLabels: Record<string, string> = {
+  new: "Nova", triage: "Em triagem", linked: "Vinculada a chamado", finished: "Finalizada",
+};
+export const messageTypeLabels: Record<string, string> = {
+  text: "Texto", image: "Imagem", document: "Documento", audio: "Áudio", video: "Vídeo", other: "Outro",
+};
+export const channelLabels: Record<string, string> = {
+  manual: "Manual", whatsapp: "WhatsApp", email: "E-mail", portal: "Portal", other: "Outro",
+};
