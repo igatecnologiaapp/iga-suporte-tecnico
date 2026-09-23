@@ -19,3 +19,14 @@
 
 - [x] Corrigir abertura da tela de detalhes do chamado
 - [x] Validar fluxo completo até nova resolução
+
+# IGA Service — Fase 2
+
+- [x] Fila de atendimento com visualizações e contadores
+- [x] Minha fila com SLA, tempo em aberto e última atividade
+- [x] Transferência de responsabilidade com registro na timeline
+- [x] SLA operacional calculado com indicadores discretos
+- [x] Agendamento e reagendamento com histórico
+- [x] Notificações internas com marcação de leitura
+- [x] Gestão de usuários e perfis de acesso com auditoria
+- [x] Validar Administrador, Técnico e Visualização
