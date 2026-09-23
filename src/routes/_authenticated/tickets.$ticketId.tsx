@@ -32,7 +32,9 @@ export const Route = createFileRoute("/_authenticated/tickets/$ticketId")({
 
 function TicketDetail() {
   const { ticketId } = Route.useParams(); const { user, role } = Route.useRouteContext();
-  const canManage = canOperate(role); const canTransfer = canManageCatalogs(role);
+  const canManage = canOperate(role); const canTransfer = canManageCatalogs(role); const isAdmin = role === "admin"; const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false); const [deleteReason, setDeleteReason] = useState(""); const [deleteInfo, setDeleteInfo] = useState<{ number: string; company: string; subject: string; related: { label: string; total: number }[] } | null>(null);
+
   const [ticket, setTicket] = useState<any>(null); const [events, setEvents] = useState<any[]>([]); const [attachments, setAttachments] = useState<any[]>([]); const [technicians, setTechnicians] = useState<any[]>([]); const [schedules, setSchedules] = useState<any[]>([]); const [policies, setPolicies] = useState<SlaPolicy[]>([]);
   const [busy, setBusy] = useState(false); const [solution, setSolution] = useState(""); const [internalNotes, setInternalNotes] = useState(""); const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [transferOpen, setTransferOpen] = useState(false); const [scheduleOpen, setScheduleOpen] = useState(false); const [scheduleGoesToStatus, setScheduleGoesToStatus] = useState(false);
