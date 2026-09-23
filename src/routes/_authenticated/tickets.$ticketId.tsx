@@ -150,7 +150,9 @@ function TicketDetail() {
       <Button size="sm" variant="outline" onClick={() => { setScheduleGoesToStatus(false); setScheduleOpen(true); }} disabled={busy}><CalendarClock />{ticket.scheduled_at ? "Reagendar" : "Agendar"}</Button>
       {canTransfer && <Button size="sm" variant="outline" onClick={() => { setEditCategory(ticket.category_id ?? ""); setEditOpen(true); }} disabled={busy}><Pencil />Editar chamado</Button>}
       {canTransfer && ticket.status !== "cancelled" && <Button size="sm" variant="outline" onClick={() => setCancelOpen(true)} disabled={busy}><Archive />Cancelar / Arquivar</Button>}
+      {isAdmin && <Button size="sm" variant="destructive" onClick={() => void openDelete()} disabled={busy}><Trash2 />Excluir chamado</Button>}
     </div>}
+
 
     {conversations.length > 0 && <div className="rounded-md border bg-card p-5"><h2 className="flex items-center gap-2 font-semibold"><MessageSquare className="size-4" />Conversas vinculadas</h2><div className="mt-4 divide-y">{conversations.map(conversation => <div key={conversation.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div className="min-w-0"><p className="font-medium">{conversation.phone} · {conversationStatusLabels[conversation.status]}</p><p className="truncate text-xs text-muted-foreground">{conversation.last_message_preview || "Sem mensagens"} · {formatDate(conversation.last_message_at)}</p></div><Button size="sm" variant="outline" asChild><Link to="/inbox">Abrir na Caixa de Entrada</Link></Button></div>)}</div></div>}
 
