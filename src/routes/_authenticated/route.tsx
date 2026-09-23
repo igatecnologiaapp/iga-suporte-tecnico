@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/iga/AppShell";
 import { roleLabels } from "@/lib/iga";
@@ -15,7 +16,8 @@ export const Route = createFileRoute("/_authenticated")({
     ]);
     if (profile && (profile as { status?: string }).status === "inactive") {
       await supabase.auth.signOut();
-      throw redirect({ to: "/auth", search: { blocked: "1" } as never });
+      toast.error("Seu acesso está inativo. Procure um administrador.");
+      throw redirect({ to: "/auth" });
     }
     const role = roles?.[0]?.role ?? "viewer";
     const technicianId = technician?.status === "active" ? technician.id : null;
