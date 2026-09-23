@@ -15,6 +15,8 @@ import { SlaBadge } from "@/components/iga/SlaBadge";
 import { canManageCatalogs, canOperate, channelLabels, conversationStatusLabels, formatDate, formatDuration, priorities, statusLabels, ticketTransitions } from "@/lib/iga";
 import { computeSla, type SlaPolicy } from "@/lib/sla";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteTicket, inspectTicket } from "@/lib/tickets-admin.functions";
+
 
 export const Route = createFileRoute("/_authenticated/tickets/$ticketId")({
   head: () => ({ meta: [
