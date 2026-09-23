@@ -17,6 +17,7 @@ import { Route as AuthenticatedCategoriesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedCompaniesRouteImport } from './routes/_authenticated/companies'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
+import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSlaRouteImport } from './routes/_authenticated/sla'
 import { Route as AuthenticatedTechniciansRouteImport } from './routes/_authenticated/technicians'
@@ -64,6 +65,12 @@ const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedIntegrationsRoute =
+  AuthenticatedIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/companies': typeof AuthenticatedCompaniesRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/inbox': typeof AuthenticatedInboxRoute
+  '/integrations': typeof AuthenticatedIntegrationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/sla': typeof AuthenticatedSlaRoute
   '/technicians': typeof AuthenticatedTechniciansRoute
@@ -128,6 +136,7 @@ export interface FileRoutesByTo {
   '/companies': typeof AuthenticatedCompaniesRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/inbox': typeof AuthenticatedInboxRoute
+  '/integrations': typeof AuthenticatedIntegrationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/sla': typeof AuthenticatedSlaRoute
   '/technicians': typeof AuthenticatedTechniciansRoute
@@ -146,6 +155,7 @@ export interface FileRoutesById {
   '/_authenticated/companies': typeof AuthenticatedCompaniesRoute
   '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
+  '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/sla': typeof AuthenticatedSlaRoute
   '/_authenticated/technicians': typeof AuthenticatedTechniciansRoute
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/contacts'
     | '/inbox'
+    | '/integrations'
     | '/settings'
     | '/sla'
     | '/technicians'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/contacts'
     | '/inbox'
+    | '/integrations'
     | '/settings'
     | '/sla'
     | '/technicians'
@@ -197,6 +209,7 @@ export interface FileRouteTypes {
     | '/_authenticated/companies'
     | '/_authenticated/contacts'
     | '/_authenticated/inbox'
+    | '/_authenticated/integrations'
     | '/_authenticated/settings'
     | '/_authenticated/sla'
     | '/_authenticated/technicians'
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInboxRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/integrations': {
+      id: '/_authenticated/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -329,6 +349,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCompaniesRoute: typeof AuthenticatedCompaniesRoute
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
+  AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSlaRoute: typeof AuthenticatedSlaRoute
   AuthenticatedTechniciansRoute: typeof AuthenticatedTechniciansRoute
@@ -342,6 +363,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCompaniesRoute: AuthenticatedCompaniesRoute,
   AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
+  AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSlaRoute: AuthenticatedSlaRoute,
   AuthenticatedTechniciansRoute: AuthenticatedTechniciansRoute,

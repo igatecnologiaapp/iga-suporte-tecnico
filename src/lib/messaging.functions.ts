@@ -11,7 +11,7 @@ async function assertOperations(context: Ctx) {
 /** Mecanismo de desenvolvimento/teste: simula uma mensagem recebida. */
 export const simulateInboundMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { phone: string; content: string; messageType?: string; displayName?: string | null }) => input)
+  .inputValidator((input: { phone: string; content: string; messageType?: string; displayName?: string | null; externalId?: string | null }) => input)
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
     const { data: isAdmin } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
@@ -23,6 +23,7 @@ export const simulateInboundMessage = createServerFn({ method: "POST" })
       content: data.content,
       messageType: (data.messageType as any) ?? "text",
       displayName: data.displayName ?? null,
+      externalId: data.externalId ? `sim:${data.externalId.slice(0, 200)}` : null,
     });
   });
 

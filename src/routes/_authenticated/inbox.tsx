@@ -173,6 +173,9 @@ function InboxPage() {
           <div className="mt-4 space-y-3">
             {messages.length === 0 ? <p className="py-6 text-sm text-muted-foreground">Nenhuma mensagem nesta conversa.</p> : messages.map(message => <div key={message.id} className={`max-w-[85%] rounded-md border p-3 text-sm ${message.direction === "inbound" ? "bg-muted/60" : "ml-auto bg-primary/10"}`}>
               <p className="whitespace-pre-wrap">{message.content || `[${messageTypeLabels[message.message_type] ?? message.message_type}]`}</p>
+              {message.attachment_path && <button type="button" className="mt-2 text-xs font-medium text-primary underline" onClick={async () => { const { data, error } = await supabase.storage.from("whatsapp-media").createSignedUrl(message.attachment_path, 300); if (error || !data) toast.error("Não foi possível abrir o anexo."); else window.open(data.signedUrl, "_blank", "noopener"); }}>Abrir anexo{message.attachment_name ? `: ${message.attachment_name}` : ""}</button>}
+              {message.processing_status === "media_pending" && <p className="mt-1 text-xs text-muted-foreground">Mídia em processamento…</p>}
+              {message.processing_status === "media_failed" && <p className="mt-1 text-xs text-destructive">Falha ao obter a mídia — reprocessável em Integrações.</p>}
               <p className="mt-1 text-xs text-muted-foreground">{message.direction === "inbound" ? "Recebida" : "Enviada"} · {messageTypeLabels[message.message_type] ?? message.message_type} · {formatDate(message.sent_at)}</p>
             </div>)}
           </div>
