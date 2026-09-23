@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Archive, ArrowLeft, CalendarClock, Download, MessageSquare, Paperclip, Pencil, Save, UserCheck, Users } from "lucide-react";
+import { Archive, ArrowLeft, CalendarClock, Download, MessageSquare, Paperclip, Pencil, Save, Trash2, UserCheck, Users } from "lucide-react";
+
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
