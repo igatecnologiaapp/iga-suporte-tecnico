@@ -287,11 +287,42 @@ export type Database = {
           },
         ]
       }
+      integration_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          external_id: string | null
+          id: string
+          provider: string
+          result: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          external_id?: string | null
+          id?: string
+          provider?: string
+          result: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          external_id?: string | null
+          id?: string
+          provider?: string
+          result?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachment_mime: string | null
           attachment_name: string | null
           attachment_path: string | null
+          attachment_size: number | null
           channel: Database["public"]["Enums"]["ticket_channel"]
           content: string | null
           conversation_id: string
@@ -299,8 +330,11 @@ export type Database = {
           direction: Database["public"]["Enums"]["message_direction"]
           external_id: string | null
           id: string
+          media_id: string | null
           message_type: Database["public"]["Enums"]["message_kind"]
+          original_type: string | null
           phone: string | null
+          processing_status: string
           sent_at: string
           status: Database["public"]["Enums"]["message_state"]
         }
@@ -308,6 +342,7 @@ export type Database = {
           attachment_mime?: string | null
           attachment_name?: string | null
           attachment_path?: string | null
+          attachment_size?: number | null
           channel?: Database["public"]["Enums"]["ticket_channel"]
           content?: string | null
           conversation_id: string
@@ -315,8 +350,11 @@ export type Database = {
           direction: Database["public"]["Enums"]["message_direction"]
           external_id?: string | null
           id?: string
+          media_id?: string | null
           message_type?: Database["public"]["Enums"]["message_kind"]
+          original_type?: string | null
           phone?: string | null
+          processing_status?: string
           sent_at?: string
           status?: Database["public"]["Enums"]["message_state"]
         }
@@ -324,6 +362,7 @@ export type Database = {
           attachment_mime?: string | null
           attachment_name?: string | null
           attachment_path?: string | null
+          attachment_size?: number | null
           channel?: Database["public"]["Enums"]["ticket_channel"]
           content?: string | null
           conversation_id?: string
@@ -331,8 +370,11 @@ export type Database = {
           direction?: Database["public"]["Enums"]["message_direction"]
           external_id?: string | null
           id?: string
+          media_id?: string | null
           message_type?: Database["public"]["Enums"]["message_kind"]
+          original_type?: string | null
           phone?: string | null
+          processing_status?: string
           sent_at?: string
           status?: Database["public"]["Enums"]["message_state"]
         }
