@@ -92,6 +92,17 @@ export const updateAdminUser = createServerFn({ method: "POST" })
     const currentRole = await admin.from("user_roles").select("role").eq("user_id", data.userId).maybeSingle();
     const currentTech = await admin.from("technicians").select("id,name").eq("user_id", data.userId).maybeSingle();
 
+    const losesAdmin = currentRole.data?.role === "admin" && ((data.status !== undefined && data.status !== "active") || (data.role !== undefined && data.role !== "admin"));
+    if (losesAdmin) {
+      const { data: admins } = await admin.from("user_roles").select("user_id").eq("role", "admin");
+      const others = (admins ?? []).map((r: any) => r.user_id).filter((id: string) => id !== data.userId);
+      const { data: activeOthers } = others.length
+        ? await admin.from("profiles").select("id").in("id", others).eq("status", "active")
+        : { data: [] };
+      if (!activeOthers || activeOthers.length === 0) throw new Error("É necessário manter pelo menos um Administrador ativo no sistema.");
+    }
+
+
     if (data.fullName !== undefined || data.phone !== undefined || data.status !== undefined) {
       const patch: Record<string, unknown> = {};
       if (data.fullName !== undefined) patch["full_name"] = data.fullName.trim();
