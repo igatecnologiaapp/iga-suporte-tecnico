@@ -124,10 +124,13 @@ export const deleteRecord = createServerFn({ method: "POST" })
     const refs = await references(admin, data.entity, data.id);
     if (refs.length > 0) {
       await logAudit(admin, ctx.userId, data.entity, data.id, "record_delete_blocked", data.reason, current, { references: refs });
-      throw new Error(`Registro com histórico (${refs.map(r => `${r.total} ${r.label}`).join(", ")}). Use Arquivar para preservar a auditoria.`);
+      return {
+        deleted: false,
+        message: `Registro com histórico (${refs.map(r => `${r.total} ${r.label}`).join(", ")}). Use Arquivar para preservar a auditoria.`,
+      };
     }
     const { error } = await admin.from(table).delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     await logAudit(admin, ctx.userId, data.entity, data.id, "record_deleted", data.reason, current, null);
-    return { ok: true };
+    return { deleted: true, message: "Registro excluído." };
   });

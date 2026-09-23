@@ -70,9 +70,13 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     if (!action) return;
     setSaving(true);
     try {
-      if (action.kind === "archive") { await archiveRecord({ data: { entity: kind, id: action.row.id, reason } }); toast.success("Registro arquivado."); }
-      else { await deleteRecord({ data: { entity: kind, id: action.row.id, reason } }); toast.success("Registro excluído."); }
-      setAction(null); await load();
+      if (action.kind === "archive") { await archiveRecord({ data: { entity: kind, id: action.row.id, reason } }); toast.success("Registro arquivado."); setAction(null); }
+      else {
+        const result = await deleteRecord({ data: { entity: kind, id: action.row.id, reason } });
+        if (result.deleted) { toast.success(result.message); setAction(null); }
+        else { toast.error(result.message); setAction(prev => prev ? { ...prev, kind: "archive", canDelete: false } : prev); }
+      }
+      await load();
     } catch (error) { toast.error(errorMessage(error)); }
     finally { setSaving(false); }
   }
