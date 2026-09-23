@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Building2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Contact, Inbox, LogOut, Menu, Moon, Settings, ShieldCheck, Sun, Tags, Users, Wrench, X } from "lucide-react";
+import { Building2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Contact, Inbox, LogOut, Menu, Moon, PlugZap, Settings, ShieldCheck, Sun, Tags, Users, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,7 +11,7 @@ const groups = [
   { label: "OPERAÇÃO", items: [["Caixa de Entrada", "/inbox", Inbox], ["Chamados", "/tickets", ClipboardList]] },
   { label: "CADASTROS", items: [["Empresas / Clientes", "/companies", Building2], ["Contatos", "/contacts", Contact], ["Técnicos", "/technicians", Wrench], ["Categorias de Chamados", "/categories", Tags]] },
   { label: "GESTÃO", items: [["SLA", "/sla", ShieldCheck]] },
-  { label: "ADMINISTRAÇÃO", items: [["Usuários", "/users", Users], ["Configurações", "/settings", Settings]] },
+  { label: "ADMINISTRAÇÃO", items: [["Usuários", "/users", Users], ["Integrações", "/integrations", PlugZap], ["Configurações", "/settings", Settings]] },
 ] as const;
 
 const OPEN_KEY = "iga-menu-groups";
