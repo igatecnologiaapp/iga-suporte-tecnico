@@ -19,27 +19,36 @@ export type Database = {
           action: string
           actor_id: string | null
           created_at: string
+          entity: string | null
+          entity_id: string | null
           id: string
           new_value: Json | null
           old_value: Json | null
+          reason: string | null
           target_user_id: string | null
         }
         Insert: {
           action: string
           actor_id?: string | null
           created_at?: string
+          entity?: string | null
+          entity_id?: string | null
           id?: string
           new_value?: Json | null
           old_value?: Json | null
+          reason?: string | null
           target_user_id?: string | null
         }
         Update: {
           action?: string
           actor_id?: string | null
           created_at?: string
+          entity?: string | null
+          entity_id?: string | null
           id?: string
           new_value?: Json | null
           old_value?: Json | null
+          reason?: string | null
           target_user_id?: string | null
         }
         Relationships: [
@@ -201,6 +210,138 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          channel: Database["public"]["Enums"]["ticket_channel"]
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          last_message_at: string
+          last_message_preview: string | null
+          phone: string
+          phone_normalized: string | null
+          status: Database["public"]["Enums"]["conversation_status"]
+          ticket_id: string | null
+          unread_count: number
+          updated_at: string
+        }
+        Insert: {
+          channel?: Database["public"]["Enums"]["ticket_channel"]
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_message_at?: string
+          last_message_preview?: string | null
+          phone: string
+          phone_normalized?: string | null
+          status?: Database["public"]["Enums"]["conversation_status"]
+          ticket_id?: string | null
+          unread_count?: number
+          updated_at?: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["ticket_channel"]
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_message_at?: string
+          last_message_preview?: string | null
+          phone?: string
+          phone_normalized?: string | null
+          status?: Database["public"]["Enums"]["conversation_status"]
+          ticket_id?: string | null
+          unread_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          attachment_mime: string | null
+          attachment_name: string | null
+          attachment_path: string | null
+          channel: Database["public"]["Enums"]["ticket_channel"]
+          content: string | null
+          conversation_id: string
+          created_at: string
+          direction: Database["public"]["Enums"]["message_direction"]
+          external_id: string | null
+          id: string
+          message_type: Database["public"]["Enums"]["message_kind"]
+          phone: string | null
+          sent_at: string
+          status: Database["public"]["Enums"]["message_state"]
+        }
+        Insert: {
+          attachment_mime?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
+          channel?: Database["public"]["Enums"]["ticket_channel"]
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          direction: Database["public"]["Enums"]["message_direction"]
+          external_id?: string | null
+          id?: string
+          message_type?: Database["public"]["Enums"]["message_kind"]
+          phone?: string | null
+          sent_at?: string
+          status?: Database["public"]["Enums"]["message_state"]
+        }
+        Update: {
+          attachment_mime?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
+          channel?: Database["public"]["Enums"]["ticket_channel"]
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          direction?: Database["public"]["Enums"]["message_direction"]
+          external_id?: string | null
+          id?: string
+          message_type?: Database["public"]["Enums"]["message_kind"]
+          phone?: string | null
+          sent_at?: string
+          status?: Database["public"]["Enums"]["message_state"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -554,6 +695,7 @@ export type Database = {
           acknowledged_by_id: string | null
           acknowledged_by_user_id: string | null
           assigned_technician_id: string | null
+          cancel_reason: string | null
           category_id: string | null
           channel: Database["public"]["Enums"]["ticket_channel"]
           closed_at: string | null
@@ -587,6 +729,7 @@ export type Database = {
           acknowledged_by_id?: string | null
           acknowledged_by_user_id?: string | null
           assigned_technician_id?: string | null
+          cancel_reason?: string | null
           category_id?: string | null
           channel?: Database["public"]["Enums"]["ticket_channel"]
           closed_at?: string | null
@@ -620,6 +763,7 @@ export type Database = {
           acknowledged_by_id?: string | null
           acknowledged_by_user_id?: string | null
           assigned_technician_id?: string | null
+          cancel_reason?: string | null
           category_id?: string | null
           channel?: Database["public"]["Enums"]["ticket_channel"]
           closed_at?: string | null
@@ -753,6 +897,16 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "supervisor" | "technician" | "viewer"
+      conversation_status: "new" | "triage" | "linked" | "finished"
+      message_direction: "inbound" | "outbound"
+      message_kind: "text" | "image" | "document" | "audio" | "video" | "other"
+      message_state:
+        | "pending"
+        | "sent"
+        | "delivered"
+        | "read"
+        | "received"
+        | "failed"
       record_status: "active" | "inactive"
       ticket_channel: "manual" | "whatsapp" | "email" | "portal" | "other"
       ticket_priority: "low" | "normal" | "high" | "urgent"
@@ -896,6 +1050,17 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "supervisor", "technician", "viewer"],
+      conversation_status: ["new", "triage", "linked", "finished"],
+      message_direction: ["inbound", "outbound"],
+      message_kind: ["text", "image", "document", "audio", "video", "other"],
+      message_state: [
+        "pending",
+        "sent",
+        "delivered",
+        "read",
+        "received",
+        "failed",
+      ],
       record_status: ["active", "inactive"],
       ticket_channel: ["manual", "whatsapp", "email", "portal", "other"],
       ticket_priority: ["low", "normal", "high", "urgent"],
