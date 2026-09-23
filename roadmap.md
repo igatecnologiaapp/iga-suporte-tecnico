@@ -9,8 +9,13 @@
 
 # IGA Service — Fase 1.1
 
-- [ ] Adicionar edição aos cadastros existentes
-- [ ] Corrigir categoria/subcategoria e filtros de chamados
-- [ ] Consolidar transições, acolhimento e timeline
-- [ ] Alinhar permissões visuais e SLA
-- [ ] Validar fluxo autenticado e segurança
+- [x] Adicionar edição aos cadastros existentes
+- [x] Corrigir categoria/subcategoria e filtros de chamados
+- [x] Consolidar transições, acolhimento e timeline
+- [x] Alinhar permissões visuais e SLA
+- [x] Validar fluxo autenticado e segurança
+
+# IGA Service — Fase 1.2
+
+- [x] Corrigir abertura da tela de detalhes do chamado
+- [x] Validar fluxo completo até nova resolução
