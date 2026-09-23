@@ -11,7 +11,7 @@ async function assertAdmin(context: AdminContext) {
 }
 
 async function logAudit(admin: any, actorId: string, targetUserId: string | null, action: string, oldValue: unknown, newValue: unknown) {
-  await admin.from("admin_audit_logs").insert({ actor_id: actorId, target_user_id: targetUserId, action, old_value: oldValue ?? null, new_value: newValue ?? null });
+  await admin.from("admin_audit_logs").insert({ actor_id: actorId, target_user_id: targetUserId, action, old_value: oldValue ?? null, new_value: newValue ?? null } as never);
 }
 
 export const listAdminUsers = createServerFn({ method: "POST" })
@@ -67,14 +67,14 @@ export const createAdminUser = createServerFn({ method: "POST" })
       actionLink = link.data?.properties?.action_link ?? null;
     }
 
-    await admin.from("profiles").update({ full_name: data.fullName.trim(), phone: data.phone?.trim() || null, status: data.status }).eq("id", userId);
-    await admin.from("user_roles").upsert({ user_id: userId, role: data.role }, { onConflict: "user_id" });
+    await admin.from("profiles").update({ full_name: data.fullName.trim(), phone: data.phone?.trim() || null, status: data.status } as never).eq("id", userId);
+    await admin.from("user_roles").upsert({ user_id: userId, role: data.role } as never, { onConflict: "user_id" });
 
     let technicianId = data.technicianId ?? null;
     if (data.role === "technician") {
-      if (technicianId) await admin.from("technicians").update({ user_id: userId }).eq("id", technicianId);
+      if (technicianId) await admin.from("technicians").update({ user_id: userId } as never).eq("id", technicianId);
       else if (data.createTechnician) {
-        const tech = await admin.from("technicians").insert({ user_id: userId, name: data.fullName.trim(), email, phone: data.phone?.trim() || null, status: "active" }).select("id").single();
+        const tech = await admin.from("technicians").insert({ user_id: userId, name: data.fullName.trim(), email, phone: data.phone?.trim() || null, status: "active" } as never).select("id").single();
         if (tech.error) throw new Error(tech.error.message);
         technicianId = tech.data.id;
       }
@@ -97,7 +97,7 @@ export const updateAdminUser = createServerFn({ method: "POST" })
       if (data.fullName !== undefined) patch["full_name"] = data.fullName.trim();
       if (data.phone !== undefined) patch["phone"] = data.phone?.trim() || null;
       if (data.status !== undefined) patch["status"] = data.status;
-      const { error } = await admin.from("profiles").update(patch).eq("id", data.userId);
+      const { error } = await admin.from("profiles").update(patch as never).eq("id", data.userId);
       if (error) throw new Error(error.message);
       if (data.status !== undefined && data.status !== current.data?.status)
         await logAudit(admin, context.userId, data.userId, data.status === "active" ? "user_activated" : "user_deactivated", { status: current.data?.status }, { status: data.status });
@@ -106,15 +106,15 @@ export const updateAdminUser = createServerFn({ method: "POST" })
 
     if (data.role !== undefined && data.role !== currentRole.data?.role) {
       if (data.userId === context.userId) throw new Error("Não é possível alterar o próprio perfil de acesso.");
-      const { error } = await admin.from("user_roles").upsert({ user_id: data.userId, role: data.role }, { onConflict: "user_id" });
+      const { error } = await admin.from("user_roles").upsert({ user_id: data.userId, role: data.role } as never, { onConflict: "user_id" });
       if (error) throw new Error(error.message);
       await logAudit(admin, context.userId, data.userId, "role_changed", { role: currentRole.data?.role ?? null }, { role: data.role });
     }
 
     if (data.technicianId !== undefined && (data.technicianId ?? null) !== (currentTech.data?.id ?? null)) {
-      if (currentTech.data?.id) { await admin.from("technicians").update({ user_id: null }).eq("id", currentTech.data.id); }
+      if (currentTech.data?.id) { await admin.from("technicians").update({ user_id: null } as never).eq("id", currentTech.data.id); }
       if (data.technicianId) {
-        const { error } = await admin.from("technicians").update({ user_id: data.userId }).eq("id", data.technicianId);
+        const { error } = await admin.from("technicians").update({ user_id: data.userId } as never).eq("id", data.technicianId);
         if (error) throw new Error(error.message);
       }
       await logAudit(admin, context.userId, data.userId, data.technicianId ? "technician_linked" : "technician_unlinked", { technician_id: currentTech.data?.id ?? null }, { technician_id: data.technicianId ?? null });
