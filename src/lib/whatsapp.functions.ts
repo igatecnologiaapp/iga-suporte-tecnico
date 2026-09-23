@@ -26,7 +26,7 @@ export const getWhatsAppStatus = createServerFn({ method: "POST" })
       db.from("integration_events").select("created_at,event_type,external_id,result,error_message").eq("provider", "whatsapp").order("created_at", { ascending: false }).limit(20),
       db.from("integration_events").select("created_at,event_type,error_message").eq("provider", "whatsapp").eq("result", "error").order("created_at", { ascending: false }).limit(1).maybeSingle(),
       db.from("integration_events").select("created_at,result").eq("provider", "whatsapp").eq("event_type", "webhook:verify").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      db.from("messages").select("sent_at,created_at").eq("channel", "whatsapp").not("external_id", "is", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      db.from("messages").select("sent_at,created_at").eq("channel", "whatsapp").not("external_id", "is", null).not("external_id", "like", "sim:%").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
     let test: { ok: boolean; displayPhone?: string; verifiedName?: string; error?: string } | null = null;
     if (data?.test && configured) {

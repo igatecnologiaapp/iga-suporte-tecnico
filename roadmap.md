@@ -53,3 +53,8 @@
 - [x] Limpeza de vínculos sem registros órfãos (timeline, anexos, agendamentos, notificações, conversas desvinculadas)
 - [x] Cancelar/Arquivar preservado
 - [x] Menu lateral em categorias recolhíveis com estado preservado e destaque da rota atual
+
+## Fase 3B — WhatsApp Business (recebimento)
+- [x] Webhook oficial (verificação + assinatura) reutilizando a camada de mensagens
+- [x] Idempotência, mídias privadas, log técnico, tela Administração › Integrações
+- [ ] Validação com WhatsApp real — aguardando credenciais da Meta
