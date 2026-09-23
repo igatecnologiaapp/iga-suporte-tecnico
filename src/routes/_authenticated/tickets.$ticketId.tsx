@@ -75,6 +75,25 @@ function TicketDetail() {
     const ok = await update({ status: "cancelled", cancel_reason: cancelReason.trim() }, "Chamado cancelado/arquivado.");
     if (ok) { setCancelOpen(false); setCancelReason(""); }
   }
+  async function openDelete() {
+    setBusy(true);
+    try { setDeleteInfo(await inspectTicket({ data: { ticketId } })); setDeleteReason(""); setDeleteOpen(true); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível verificar o chamado."); }
+    finally { setBusy(false); }
+  }
+  async function confirmDelete() {
+    if (!deleteReason.trim()) { toast.error("Informe o motivo da exclusão."); return; }
+    setBusy(true);
+    try {
+      const result = await deleteTicket({ data: { ticketId, reason: deleteReason.trim() } });
+      setDeleteOpen(false);
+      toast.success(`Chamado ${result.number ?? ""} excluído definitivamente.`);
+      await navigate({ to: "/tickets" });
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível excluir o chamado."); }
+    finally { setBusy(false); }
+  }
+
+
 
   async function update(fields: Record<string, unknown>, success: string) {
     setBusy(true); const { error } = await supabase.from("tickets").update(fields as never).eq("id", ticketId); setBusy(false);
