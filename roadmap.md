@@ -30,3 +30,20 @@
 - [x] Notificações internas com marcação de leitura
 - [x] Gestão de usuários e perfis de acesso com auditoria
 - [x] Validar Administrador, Técnico e Visualização
+
+# IGA Service — Fase 3A
+
+- [x] Caixa de Entrada com conversas, situações e mensagens não lidas
+- [x] Estrutura própria de conversas e mensagens (canal preparado para WhatsApp)
+- [x] Identificação do cliente por telefone (contato → empresa) e vínculo manual
+- [x] Criar chamado da conversa (canal WhatsApp) e vincular a chamado existente
+- [x] Simulação de mensagem recebida para desenvolvimento/teste
+- [x] Camada de serviço única pronta para receber webhook no futuro
+
+# IGA Service — Complemento: alteração, arquivamento e exclusão
+
+- [x] Edição de chamado com registro na timeline
+- [x] Cancelar/arquivar chamado exigindo motivo
+- [x] Arquivar, restaurar e excluir cadastros conforme histórico
+- [x] Auditoria administrativa por entidade, com motivo e valores
+- [x] Proteção do último Administrador ativo

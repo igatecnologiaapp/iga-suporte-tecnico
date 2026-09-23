@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Building2, ChevronLeft, ChevronRight, ClipboardList, Contact, LogOut, Menu, Moon, Settings, ShieldCheck, Sun, Tags, UserCog, Users, Wrench, X } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, ClipboardList, Contact, Inbox, LogOut, Menu, Moon, Settings, ShieldCheck, Sun, Tags, Users, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/iga/NotificationsBell";
 const groups = [
-  { label: "OPERAÇÃO", items: [["Chamados","/tickets",ClipboardList]] },
+  { label: "OPERAÇÃO", items: [["Chamados","/tickets",ClipboardList],["Caixa de Entrada","/inbox",Inbox]] },
   { label: "CADASTROS", items: [["Empresas / Clientes","/companies",Building2],["Contatos","/contacts",Contact],["Técnicos","/technicians",Wrench],["Categorias de Chamados","/categories",Tags]] },
   { label: "GESTÃO", items: [["SLA","/sla",ShieldCheck]] },
   { label: "ADMINISTRAÇÃO", items: [["Usuários","/users",Users],["Configurações","/settings",Settings]] },

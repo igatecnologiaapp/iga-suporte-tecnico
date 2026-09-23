@@ -57,6 +57,20 @@
       "when": 1790181704835,
       "tag": "0007_technician_user_link_optional",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790183956033,
+      "tag": "0008_phase_3a_conversations_and_record_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790184659168,
+      "tag": "0009_harden_phase_3a_functions",
+      "breakpoints": true
     }
   ]
 }
