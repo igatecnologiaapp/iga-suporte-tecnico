@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, CalendarClock, Download, Paperclip, Save, UserCheck, Users } from "lucide-react";
+import { Archive, ArrowLeft, CalendarClock, Download, MessageSquare, Paperclip, Pencil, Save, UserCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Page } from "@/components/iga/Page";
 import { StatusBadge } from "@/components/iga/StatusBadge";
 import { SlaBadge } from "@/components/iga/SlaBadge";
-import { canManageCatalogs, canOperate, formatDate, formatDuration, priorities, statusLabels, ticketTransitions } from "@/lib/iga";
+import { canManageCatalogs, canOperate, channelLabels, conversationStatusLabels, formatDate, formatDuration, priorities, statusLabels, ticketTransitions } from "@/lib/iga";
 import { computeSla, type SlaPolicy } from "@/lib/sla";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -33,21 +33,43 @@ function TicketDetail() {
   const [ticket, setTicket] = useState<any>(null); const [events, setEvents] = useState<any[]>([]); const [attachments, setAttachments] = useState<any[]>([]); const [technicians, setTechnicians] = useState<any[]>([]); const [schedules, setSchedules] = useState<any[]>([]); const [policies, setPolicies] = useState<SlaPolicy[]>([]);
   const [busy, setBusy] = useState(false); const [solution, setSolution] = useState(""); const [internalNotes, setInternalNotes] = useState(""); const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [transferOpen, setTransferOpen] = useState(false); const [scheduleOpen, setScheduleOpen] = useState(false); const [scheduleGoesToStatus, setScheduleGoesToStatus] = useState(false);
+  const [conversations, setConversations] = useState<any[]>([]); const [categories, setCategories] = useState<any[]>([]);
+  const [editOpen, setEditOpen] = useState(false); const [editCategory, setEditCategory] = useState(""); const [cancelOpen, setCancelOpen] = useState(false); const [cancelReason, setCancelReason] = useState("");
 
   async function load() {
-    const [{ data: row, error }, { data: timeline }, { data: files }, { data: techs }, { data: sched }, { data: sla }] = await Promise.all([
+    const [{ data: row, error }, { data: timeline }, { data: files }, { data: techs }, { data: sched }, { data: sla }, { data: convos }, { data: cats }] = await Promise.all([
       supabase.from("tickets").select("*,companies(trade_name),contacts(name,email,phone),technicians!tickets_assigned_technician_id_fkey(name),profiles!tickets_acknowledged_by_user_id_fkey(full_name)").eq("id", ticketId).single(),
       supabase.from("ticket_events").select("*,profiles(full_name)").eq("ticket_id", ticketId).order("created_at", { ascending: false }),
       supabase.from("ticket_attachments").select("*").eq("ticket_id", ticketId).order("created_at", { ascending: false }),
       supabase.from("technicians").select("id,name,user_id").eq("status", "active").order("name"),
       supabase.from("ticket_schedules").select("*,technicians(name),profiles(full_name)").eq("ticket_id", ticketId).order("created_at", { ascending: false }),
       supabase.from("sla_policies").select("*"),
+      supabase.from("conversations").select("id,phone,status,last_message_at,last_message_preview,unread_count").eq("ticket_id", ticketId).order("last_message_at", { ascending: false }),
+      supabase.from("ticket_categories").select("id,name,parent_id").eq("status", "active").order("name"),
     ]);
     if (error) toast.error(error.message);
-    setTicket(row); setSolution(row?.solution ?? ""); setInternalNotes(row?.internal_notes ?? "");
+    setTicket(row); setSolution(row?.solution ?? ""); setInternalNotes(row?.internal_notes ?? ""); setEditCategory(row?.category_id ?? "");
     setEvents(timeline ?? []); setAttachments(files ?? []); setTechnicians(techs ?? []); setSchedules(sched ?? []); setPolicies((sla ?? []) as SlaPolicy[]);
+    setConversations(convos ?? []); setCategories(cats ?? []);
   }
   useEffect(() => { void load(); }, [ticketId]);
+
+  async function submitEdit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const f = new FormData(event.currentTarget);
+    const ok = await update({
+      subject: String(f.get("subject") || "").trim(),
+      description: String(f.get("description") || "").trim(),
+      category_id: String(f.get("category_id") || "") || null,
+      subcategory_id: String(f.get("subcategory_id") || "") || null,
+      requester_phone: String(f.get("requester_phone") || "").trim() || null,
+    }, "Chamado atualizado.");
+    if (ok) setEditOpen(false);
+  }
+  async function submitCancel() {
+    if (!cancelReason.trim()) { toast.error("Informe o motivo do cancelamento/arquivamento."); return; }
+    const ok = await update({ status: "cancelled", cancel_reason: cancelReason.trim() }, "Chamado cancelado/arquivado.");
+    if (ok) { setCancelOpen(false); setCancelReason(""); }
+  }
 
   async function update(fields: Record<string, unknown>, success: string) {
     setBusy(true); const { error } = await supabase.from("tickets").update(fields as never).eq("id", ticketId); setBusy(false);
@@ -102,11 +124,17 @@ function TicketDetail() {
       {!ticket.acknowledged_at && <Button size="sm" onClick={acknowledge} disabled={busy}><UserCheck />Acolher</Button>}
       {canTransfer && <Button size="sm" variant="outline" onClick={() => setTransferOpen(true)} disabled={busy || !ticket.assigned_technician_id}><Users />Transferir</Button>}
       <Button size="sm" variant="outline" onClick={() => { setScheduleGoesToStatus(false); setScheduleOpen(true); }} disabled={busy}><CalendarClock />{ticket.scheduled_at ? "Reagendar" : "Agendar"}</Button>
+      {canTransfer && <Button size="sm" variant="outline" onClick={() => { setEditCategory(ticket.category_id ?? ""); setEditOpen(true); }} disabled={busy}><Pencil />Editar chamado</Button>}
+      {canTransfer && ticket.status !== "cancelled" && <Button size="sm" variant="outline" onClick={() => setCancelOpen(true)} disabled={busy}><Archive />Cancelar / Arquivar</Button>}
     </div>}
+
+    {conversations.length > 0 && <div className="rounded-md border bg-card p-5"><h2 className="flex items-center gap-2 font-semibold"><MessageSquare className="size-4" />Conversas vinculadas</h2><div className="mt-4 divide-y">{conversations.map(conversation => <div key={conversation.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div className="min-w-0"><p className="font-medium">{conversation.phone} · {conversationStatusLabels[conversation.status]}</p><p className="truncate text-xs text-muted-foreground">{conversation.last_message_preview || "Sem mensagens"} · {formatDate(conversation.last_message_at)}</p></div><Button size="sm" variant="outline" asChild><Link to="/inbox">Abrir na Caixa de Entrada</Link></Button></div>)}</div></div>}
+
+    {ticket.cancel_reason && <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm"><b>Motivo do cancelamento/arquivamento:</b> {ticket.cancel_reason}</div>}
 
     <div className="grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
       <section className="space-y-5">
-        <div className="rounded-md border bg-card p-5"><h2 className="font-semibold">Solicitação</h2><p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{ticket.description}</p><dl className="mt-5 grid gap-4 border-t pt-4 text-sm sm:grid-cols-2"><div><dt className="text-muted-foreground">Canal</dt><dd className="font-medium">Manual</dd></div><div><dt className="text-muted-foreground">Telefone</dt><dd className="font-medium">{ticket.requester_phone || "—"}</dd></div><div><dt className="text-muted-foreground">Acolhido por</dt><dd className="font-medium">{ticket.profiles?.full_name || "—"}</dd></div><div><dt className="text-muted-foreground">Acolhimento</dt><dd className="font-medium">{formatDate(ticket.acknowledged_at)}</dd></div><div><dt className="text-muted-foreground">1ª resposta</dt><dd className="font-medium">{formatDate(ticket.first_response_at)}</dd></div><div><dt className="text-muted-foreground">Última reabertura</dt><dd className="font-medium">{formatDate(ticket.reopened_at)}</dd></div></dl></div>
+        <div className="rounded-md border bg-card p-5"><h2 className="font-semibold">Solicitação</h2><p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{ticket.description}</p><dl className="mt-5 grid gap-4 border-t pt-4 text-sm sm:grid-cols-2"><div><dt className="text-muted-foreground">Canal</dt><dd className="font-medium">{channelLabels[ticket.channel] ?? ticket.channel}</dd></div><div><dt className="text-muted-foreground">Telefone</dt><dd className="font-medium">{ticket.requester_phone || "—"}</dd></div><div><dt className="text-muted-foreground">Acolhido por</dt><dd className="font-medium">{ticket.profiles?.full_name || "—"}</dd></div><div><dt className="text-muted-foreground">Acolhimento</dt><dd className="font-medium">{formatDate(ticket.acknowledged_at)}</dd></div><div><dt className="text-muted-foreground">1ª resposta</dt><dd className="font-medium">{formatDate(ticket.first_response_at)}</dd></div><div><dt className="text-muted-foreground">Última reabertura</dt><dd className="font-medium">{formatDate(ticket.reopened_at)}</dd></div></dl></div>
 
         {canManage && <div className="rounded-md border bg-card p-5"><h2 className="mb-4 font-semibold">Condução do atendimento</h2><div className="grid gap-4 sm:grid-cols-3"><div><Label htmlFor="assigned-technician">Responsável</Label><select id="assigned-technician" className="form-control" value={ticket.assigned_technician_id ?? ""} onChange={e => update({ assigned_technician_id: e.target.value || null }, "Técnico atualizado.")}><option value="">Não atribuído</option>{technicians.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div><div><Label htmlFor="ticket-priority">Prioridade</Label><select id="ticket-priority" className="form-control" value={ticket.priority} onChange={e => update({ priority: e.target.value }, "Prioridade atualizada.")}>{priorities.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div><div><Label htmlFor="next-status">Próximo status</Label><select id="next-status" className="form-control" value="" onChange={e => { if (e.target.value) void transition(e.target.value); }} disabled={allowed.length === 0}><option value="">Selecione</option>{allowed.map(value => <option key={value} value={value}>{statusLabels[value]}</option>)}</select></div></div><form onSubmit={saveText} className="mt-5 grid gap-4"><div><Label htmlFor="ticket-solution">Solução apresentada</Label><Textarea id="ticket-solution" value={solution} onChange={e => setSolution(e.target.value)} rows={4} /></div><div><Label htmlFor="ticket-notes">Observações internas</Label><Textarea id="ticket-notes" value={internalNotes} onChange={e => setInternalNotes(e.target.value)} rows={3} /></div><Button className="justify-self-end" disabled={busy}><Save />Salvar atendimento</Button></form></div>}
 
@@ -122,6 +150,21 @@ function TicketDetail() {
 
     <Dialog open={scheduleOpen} onOpenChange={open => { setScheduleOpen(open); if (!open) setScheduleGoesToStatus(false); }}><DialogContent><DialogHeader><DialogTitle>{ticket.scheduled_at ? "Reagendar atendimento" : "Agendar atendimento"}</DialogTitle><DialogDescription>O agendamento aparece no chamado e fica registrado na timeline; os anteriores são preservados.</DialogDescription></DialogHeader><form onSubmit={submitSchedule} className="grid gap-4 sm:grid-cols-2"><div><Label htmlFor="schedule-date">Data</Label><Input id="schedule-date" name="date" type="date" required /></div><div><Label htmlFor="schedule-time">Hora</Label><Input id="schedule-time" name="time" type="time" required /></div><div className="sm:col-span-2"><Label htmlFor="schedule-technician">Técnico responsável</Label><select id="schedule-technician" name="technician_id" className="form-control" defaultValue={ticket.assigned_technician_id ?? ""}><option value="">Manter atual</option>{technicians.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div><div className="sm:col-span-2"><Label htmlFor="schedule-note">Observação</Label><Textarea id="schedule-note" name="note" rows={3} /></div><div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => setScheduleOpen(false)}>Cancelar</Button><Button disabled={busy}>Salvar agendamento</Button></div></form></DialogContent></Dialog>
 
+    <Dialog open={editOpen} onOpenChange={setEditOpen}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Editar chamado</DialogTitle><DialogDescription>Cada alteração fica registrada na timeline com valor anterior, novo valor, usuário e data/hora.</DialogDescription></DialogHeader>
+      <form onSubmit={submitEdit} className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2"><Label htmlFor="edit-subject">Assunto</Label><Input id="edit-subject" name="subject" required defaultValue={ticket.subject} /></div>
+        <div><Label htmlFor="edit-category">Categoria</Label><select id="edit-category" name="category_id" className="form-control" value={editCategory} onChange={e => setEditCategory(e.target.value)}><option value="">Selecione</option>{categories.filter(c => !c.parent_id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+        <div><Label htmlFor="edit-subcategory">Subcategoria</Label><select id="edit-subcategory" name="subcategory_id" className="form-control" defaultValue={ticket.subcategory_id ?? ""} disabled={!editCategory}><option value="">Selecione</option>{categories.filter(c => c.parent_id === editCategory).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+        <div><Label htmlFor="edit-phone">Telefone do solicitante</Label><Input id="edit-phone" name="requester_phone" defaultValue={ticket.requester_phone ?? ""} /></div>
+        <div className="sm:col-span-2"><Label htmlFor="edit-description">Descrição</Label><Textarea id="edit-description" name="description" rows={5} required defaultValue={ticket.description} /></div>
+        <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button><Button disabled={busy}>Salvar alterações</Button></div>
+      </form></DialogContent></Dialog>
+
+    <Dialog open={cancelOpen} onOpenChange={open => { setCancelOpen(open); if (!open) setCancelReason(""); }}><DialogContent><DialogHeader><DialogTitle>Cancelar / arquivar chamado {ticket.number}?</DialogTitle><DialogDescription>O chamado sai da operação, mas timeline, mensagens, anexos, soluções, SLA e responsáveis são preservados. Informe o motivo.</DialogDescription></DialogHeader>
+      <div><Label htmlFor="cancel-reason">Motivo</Label><Textarea id="cancel-reason" rows={3} value={cancelReason} onChange={e => setCancelReason(e.target.value)} /></div>
+      <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setCancelOpen(false)}>Voltar</Button><Button disabled={busy || !cancelReason.trim()} onClick={() => void submitCancel()}>Confirmar</Button></div>
+    </DialogContent></Dialog>
+
     <AlertDialog open={pendingStatus !== null} onOpenChange={open => { if (!open) setPendingStatus(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{pendingStatus === "resolved" ? "Resolver chamado?" : "Encerrar chamado?"}</AlertDialogTitle><AlertDialogDescription>{pendingStatus === "resolved" ? "A solução informada será registrada na timeline." : "O chamado será marcado como encerrado."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => void confirmTransition()}>Confirmar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </Page>;
 }
@@ -130,5 +173,5 @@ function Summary({ label, children }: { label: string; children: React.ReactNode
   return <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p><div className="mt-1 text-sm font-medium">{children}</div></div>;
 }
 function eventLabel(type: string) {
-  return ({ created: "Criação", acknowledged: "Acolhimento", assignment_changed: "Atribuição", transferred: "Transferência", scheduled: "Agendamento", rescheduled: "Reagendamento", priority_changed: "Prioridade", status_changed: "Status", internal_note: "Nota interna", solution: "Solução", resolved: "Resolução", closed: "Encerramento", reopened: "Reabertura", attachment: "Anexo" } as Record<string, string>)[type] || type;
+  return ({ created: "Criação", acknowledged: "Acolhimento", assignment_changed: "Atribuição", transferred: "Transferência", scheduled: "Agendamento", rescheduled: "Reagendamento", priority_changed: "Prioridade", status_changed: "Status", internal_note: "Nota interna", solution: "Solução", resolved: "Resolução", closed: "Encerramento", reopened: "Reabertura", attachment: "Anexo", field_changed: "Alteração de dados", cancelled: "Cancelamento/arquivamento" } as Record<string, string>)[type] || type;
 }
