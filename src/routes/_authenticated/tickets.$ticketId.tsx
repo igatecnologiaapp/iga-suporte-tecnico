@@ -191,6 +191,14 @@ function TicketDetail() {
       <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setCancelOpen(false)}>Voltar</Button><Button disabled={busy || !cancelReason.trim()} onClick={() => void submitCancel()}>Confirmar</Button></div>
     </DialogContent></Dialog>
 
+    <Dialog open={deleteOpen} onOpenChange={open => { setDeleteOpen(open); if (!open) setDeleteReason(""); }}><DialogContent><DialogHeader><DialogTitle>Excluir definitivamente o chamado {deleteInfo?.number}?</DialogTitle><DialogDescription>Esta operação é definitiva e não pode ser desfeita. Para manter o chamado no histórico, use Cancelar / Arquivar.</DialogDescription></DialogHeader>
+      <dl className="grid gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm"><div><dt className="text-muted-foreground">Número</dt><dd className="font-medium">{deleteInfo?.number}</dd></div><div><dt className="text-muted-foreground">Empresa / Cliente</dt><dd className="font-medium">{deleteInfo?.company}</dd></div><div><dt className="text-muted-foreground">Assunto</dt><dd className="font-medium">{deleteInfo?.subject}</dd></div></dl>
+      {deleteInfo && deleteInfo.related.length > 0 && <p className="text-sm text-muted-foreground">Serão removidos junto: {deleteInfo.related.map(r => `${r.total} ${r.label}`).join(", ")}.</p>}
+      <div><Label htmlFor="delete-reason">Motivo da exclusão</Label><Textarea id="delete-reason" rows={3} value={deleteReason} onChange={e => setDeleteReason(e.target.value)} /></div>
+      <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setDeleteOpen(false)}>Voltar</Button><Button variant="destructive" disabled={busy || !deleteReason.trim()} onClick={() => void confirmDelete()}><Trash2 />Excluir definitivamente</Button></div>
+    </DialogContent></Dialog>
+
+
     <AlertDialog open={pendingStatus !== null} onOpenChange={open => { if (!open) setPendingStatus(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{pendingStatus === "resolved" ? "Resolver chamado?" : "Encerrar chamado?"}</AlertDialogTitle><AlertDialogDescription>{pendingStatus === "resolved" ? "A solução informada será registrada na timeline." : "O chamado será marcado como encerrado."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => void confirmTransition()}>Confirmar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </Page>;
 }
