@@ -885,6 +885,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_ticket: {
+        Args: { _actor_id: string; _reason: string; _ticket_id: string }
+        Returns: Json
+      }
       can_manage_operations: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {

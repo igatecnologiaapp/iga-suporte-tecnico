@@ -71,6 +71,13 @@
       "when": 1790184659168,
       "tag": "0009_harden_phase_3a_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790188492190,
+      "tag": "0010_admin_delete_ticket",
+      "breakpoints": true
     }
   ]
 }
