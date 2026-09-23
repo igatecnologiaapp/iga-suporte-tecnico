@@ -47,3 +47,9 @@
 - [x] Arquivar, restaurar e excluir cadastros conforme histórico
 - [x] Auditoria administrativa por entidade, com motivo e valores
 - [x] Proteção do último Administrador ativo
+
+## Complemento — Exclusão de chamados e menu lateral
+- [x] Exclusão definitiva de chamado pelo Administrador (motivo obrigatório, confirmação, auditoria mínima)
+- [x] Limpeza de vínculos sem registros órfãos (timeline, anexos, agendamentos, notificações, conversas desvinculadas)
+- [x] Cancelar/Arquivar preservado
+- [x] Menu lateral em categorias recolhíveis com estado preservado e destaque da rota atual
