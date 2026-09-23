@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         const mode = url.searchParams.get("hub.mode");
         const token = url.searchParams.get("hub.verify_token");
         const challenge = url.searchParams.get("hub.challenge") ?? "";
-        if (!expected) { await logIntegrationEvent("webhook:verify", "error", null, "WHATSAPP_VERIFY_TOKEN não configurado."); return new Response("Not configured", { status: 503 }); }
+        if (!expected) { await logIntegrationEvent("webhook:verify", "error", null, "WHATSAPP_VERIFY_TOKEN não configurado."); return new Response("Not configured", { status: 403 }); }
         if (mode === "subscribe" && token === expected && /^[\w-]{1,200}$/.test(challenge)) {
           await logIntegrationEvent("webhook:verify", "processed");
           return new Response(challenge, { status: 200, headers: { "content-type": "text/plain" } });
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         const { logIntegrationEvent, processEvents, downloadMedia } = await import("@/lib/whatsapp.server");
         const { parseWebhookPayload, verifyMetaSignature } = await import("@/lib/whatsapp-parser");
         const secret = process.env["WHATSAPP_APP_SECRET"];
-        if (!secret) { await logIntegrationEvent("webhook:event", "error", null, "WHATSAPP_APP_SECRET não configurado."); return new Response("Not configured", { status: 503 }); }
+        if (!secret) { await logIntegrationEvent("webhook:event", "error", null, "WHATSAPP_APP_SECRET não configurado."); return new Response("Not configured", { status: 403 }); }
         const raw = await request.text();
         if (raw.length > 1_000_000) return new Response("Payload too large", { status: 413 });
         if (!(await verifyMetaSignature(raw, request.headers.get("x-hub-signature-256"), secret))) {
