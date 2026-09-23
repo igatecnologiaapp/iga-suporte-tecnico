@@ -43,6 +43,13 @@
       "when": 1789788101465,
       "tag": "0005_consolidate_phase_1_1_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790181505091,
+      "tag": "0006_phase_2_operations",
+      "breakpoints": true
     }
   ]
 }
