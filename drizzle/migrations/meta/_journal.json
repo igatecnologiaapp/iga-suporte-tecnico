@@ -64,6 +64,13 @@
       "when": 1790183956033,
       "tag": "0008_phase_3a_conversations_and_record_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790184659168,
+      "tag": "0009_harden_phase_3a_functions",
+      "breakpoints": true
     }
   ]
 }
