@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox, Link2, MessageSquarePlus, Search, Send, TicketPlus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Empty, Page } from "@/components/iga/Page";
 import { supabase } from "@/integrations/supabase/client";
 import { canManageCatalogs, canOperate, conversationStatusLabels, errorMessage, formatDate, messageTypeLabels, priorities } from "@/lib/iga";
-import { createTicketFromConversation, identifyConversationContact, linkConversationToTicket, markConversationRead, setConversationStatus, simulateInboundMessage } from "@/lib/messaging.functions";
+import { createTicketFromConversation, identifyConversationContact, linkConversationToTicket, markConversationRead, sendConversationReply, setConversationStatus, simulateInboundMessage } from "@/lib/messaging.functions";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => ({ meta: [
@@ -222,6 +222,17 @@ function InboxPage() {
               <p className="mt-1 text-xs text-muted-foreground">{message.direction === "inbound" ? "Recebida" : "Enviada"} · {messageTypeLabels[message.message_type] ?? message.message_type} · {formatDate(message.sent_at)}</p>
             </div>)}
           </div>
+          {canOperateInbox && current.channel === "whatsapp" && (() => {
+            const lastIn = [...messages].reverse().find(m => m.direction === "inbound");
+            const simulated = String(lastIn?.external_id ?? "").startsWith("sim:");
+            const inWindow = lastIn && Date.now() - new Date(lastIn.sent_at).getTime() <= 24 * 60 * 60 * 1000;
+            if (!inWindow || simulated) return <p className="mt-4 rounded-md border border-dashed p-3 text-xs text-muted-foreground">{simulated ? "Conversa simulada: resposta real indisponível." : "Fora da janela de 24 horas do WhatsApp. Para retomar o contato é necessário um modelo (template) aprovado — ainda não disponível no sistema."}</p>;
+            return <form className="mt-4 grid gap-2 border-t pt-4" onSubmit={e => { e.preventDefault(); void sendReply(); }}>
+              <Label htmlFor="conversation-reply">Responder pelo WhatsApp</Label>
+              <Textarea id="conversation-reply" rows={3} maxLength={4096} value={reply} disabled={sending} onChange={e => setReply(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendReply(); } }} placeholder="Digite a resposta ao cliente..." />
+              <div className="flex justify-end"><Button type="submit" disabled={sending || !reply.trim()}><Send />{sending ? "Enviando..." : "Enviar"}</Button></div>
+            </form>;
+          })()}
         </>}
       </div>
     </div>
