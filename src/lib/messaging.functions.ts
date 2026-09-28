@@ -192,3 +192,31 @@ export const sendConversationReply = createServerFn({ method: "POST" })
     if (insError) throw new Error("Mensagem enviada, mas houve falha ao registrá-la no histórico.");
     return { ok: true as const, message: inserted };
   });
+
+/** Inicia (ou reabre a existente) conversa WhatsApp com um contato cadastrado. Não cria chamado. */
+export const startConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { contactId: string; phone: string }) => ({ contactId: String(input?.contactId ?? ""), phone: String(input?.phone ?? "").trim() }))
+  .handler(async ({ data, context }) => {
+    const ctx = context as Ctx;
+    await assertOperations(ctx);
+    const { data: contact, error } = await ctx.supabase.from("contacts").select("id,name,company_id,phone,whatsapp,status").eq("id", data.contactId).single();
+    if (error || !contact || contact.status !== "active") throw new Error("Contato não encontrado ou inativo.");
+    if (![contact.whatsapp, contact.phone].filter(Boolean).includes(data.phone)) throw new Error("Telefone não pertence ao contato selecionado.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db: any = supabaseAdmin;
+    const { data: normalized } = await db.rpc("normalize_phone", { value: data.phone });
+    if (!normalized) throw new Error("Telefone inválido.");
+    const findOpen = async () => (await db.from("conversations").select("id").eq("channel", "whatsapp").eq("phone_normalized", normalized).neq("status", "finished").maybeSingle()).data;
+    const existing = await findOpen();
+    if (existing) return { conversationId: existing.id as string, existing: true };
+    const { data: created, error: insError } = await db.from("conversations").insert({
+      channel: "whatsapp", phone: data.phone, contact_id: contact.id, company_id: contact.company_id, display_name: contact.name, status: "triage",
+    }).select("id").single();
+    if (insError) {
+      const again = insError.code === "23505" ? await findOpen() : null;
+      if (again) return { conversationId: again.id as string, existing: true };
+      throw new Error(insError.message);
+    }
+    return { conversationId: created.id as string, existing: false };
+  });
