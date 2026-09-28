@@ -103,7 +103,9 @@ function InboxPage() {
     if (!conversationId || !content || sendingRef.current) return;
     sendingRef.current = true; setSending(true);
     try {
-      const sent = await sendConversationReply({ data: { conversationId, content } });
+      const result = await sendConversationReply({ data: { conversationId, content } });
+      if (!result.ok) { toast.error(result.error); return; }
+      const sent = result.message;
       setMessages(prev => prev.some(m => m.id === sent.id) ? prev : [...prev, sent]);
       setReply("");
       toast.success("Mensagem enviada.");
