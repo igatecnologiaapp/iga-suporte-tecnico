@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Inbox, Link2, MessageSquarePlus, Search, Send, TicketPlus, UserPlus } from "lucide-react";
+import { Inbox, Link2, MessageSquarePlus, Plus, RefreshCw, Search, Send, TicketPlus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Empty, Page } from "@/components/iga/Page";
 import { supabase } from "@/integrations/supabase/client";
 import { canManageCatalogs, canOperate, conversationStatusLabels, errorMessage, formatDate, messageTypeLabels, priorities } from "@/lib/iga";
-import { createTicketFromConversation, identifyConversationContact, linkConversationToTicket, markConversationRead, sendConversationReply, setConversationStatus, simulateInboundMessage } from "@/lib/messaging.functions";
+import { retryMessageMedia } from "@/lib/whatsapp.functions";
+import { createTicketFromConversation, startConversation, identifyConversationContact, linkConversationToTicket, markConversationRead, sendConversationReply, setConversationStatus, simulateInboundMessage } from "@/lib/messaging.functions";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => ({ meta: [
@@ -45,11 +46,15 @@ function InboxPage() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [simulateOpen, setSimulateOpen] = useState(false);
   const [category, setCategory] = useState("");
+  const [newOpen, setNewOpen] = useState(false);
+  const [newCompany, setNewCompany] = useState("");
+  const [newContact, setNewContact] = useState("");
+  const [newPhone, setNewPhone] = useState("");
 
   async function loadConversations() {
     const [{ data, error }, { data: contactRows }, { data: companyRows }, { data: categoryRows }, { data: ticketRows }] = await Promise.all([
       supabase.from("conversations").select("*,contacts(name),companies(trade_name),tickets(number,status)").order("last_message_at", { ascending: false }),
-      supabase.from("contacts").select("id,name,phone,company_id,companies(trade_name)").eq("status", "active").order("name"),
+      supabase.from("contacts").select("id,name,phone,whatsapp,company_id,companies(trade_name)").eq("status", "active").order("name"),
       supabase.from("companies").select("id,trade_name").eq("status", "active").order("trade_name"),
       supabase.from("ticket_categories").select("id,name,parent_id").eq("status", "active").order("name"),
       supabase.from("tickets").select("id,number,subject,status").not("status", "in", "(closed,cancelled,duplicate)").order("opened_at", { ascending: false }),
@@ -174,7 +179,7 @@ function InboxPage() {
 
   const unreadTotal = conversations.reduce((total, row) => total + (row.unread_count ?? 0), 0);
 
-  return <Page title="Caixa de Entrada" description="Conversas recebidas, identificação do cliente e vínculo com chamados." action={canSimulate ? <Button variant="outline" onClick={() => setSimulateOpen(true)}><MessageSquarePlus />Simular mensagem</Button> : undefined}>
+  return <Page title="Caixa de Entrada" description="Conversas recebidas, identificação do cliente e vínculo com chamados." action={canOperateInbox || canSimulate ? <div className="flex gap-2">{canOperateInbox && <Button onClick={() => { setNewCompany(""); setNewContact(""); setNewPhone(""); setNewOpen(true); }}><Plus />Nova conversa</Button>}{canSimulate && <Button variant="outline" onClick={() => setSimulateOpen(true)}><MessageSquarePlus />Simular mensagem</Button>}</div> : undefined}>
     <div className="flex flex-wrap items-center gap-2">
       {statusFilters.map(([value, label]) => <Button key={value} size="sm" variant={filter === value ? "default" : "outline"} onClick={() => setFilter(value)}>{label}</Button>)}
       <span className="ml-auto text-xs text-muted-foreground">{unreadTotal} mensagem(ns) não lida(s)</span>
@@ -218,9 +223,9 @@ function InboxPage() {
           <div className="mt-4 space-y-3">
             {messages.length === 0 ? <p className="py-6 text-sm text-muted-foreground">Nenhuma mensagem nesta conversa.</p> : messages.map(message => <div key={message.id} className={`max-w-[85%] rounded-md border p-3 text-sm ${message.direction === "inbound" ? "bg-muted/60" : "ml-auto bg-primary/10"}`}>
               <p className="whitespace-pre-wrap">{message.content || `[${messageTypeLabels[message.message_type] ?? message.message_type}]`}</p>
-              {message.attachment_path && <button type="button" className="mt-2 text-xs font-medium text-primary underline" onClick={async () => { const { data, error } = await supabase.storage.from("whatsapp-media").createSignedUrl(message.attachment_path, 300); if (error || !data) toast.error("Não foi possível abrir o anexo."); else window.open(data.signedUrl, "_blank", "noopener"); }}>Abrir anexo{message.attachment_name ? `: ${message.attachment_name}` : ""}</button>}
+              {message.attachment_path && <MediaView path={message.attachment_path} mime={message.attachment_mime} type={message.message_type} name={message.attachment_name} />}
               {message.processing_status === "media_pending" && <p className="mt-1 text-xs text-muted-foreground">Mídia em processamento…</p>}
-              {message.processing_status === "media_failed" && <p className="mt-1 text-xs text-destructive">Falha ao obter a mídia — reprocessável em Integrações.</p>}
+              {["media_failed", "media_pending"].includes(message.processing_status) && message.media_id && <div className="mt-1 flex flex-wrap items-center gap-2">{message.processing_status === "media_failed" && <p className="text-xs text-destructive">Falha ao obter a mídia.</p>}{canOperateInbox && <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void run(async () => { const r = await retryMessageMedia({ data: { messageId: message.id } }); if (r.ok) toast.success("Mídia obtida."); else toast.error("Não foi possível obter a mídia. Tente novamente mais tarde."); await loadMessages(message.conversation_id); })}><RefreshCw />Reprocessar mídia</Button>}</div>}
               <p className="mt-1 text-xs text-muted-foreground">{message.direction === "inbound" ? "Recebida" : "Enviada"} · {messageTypeLabels[message.message_type] ?? message.message_type} · {formatDate(message.sent_at)}</p>
             </div>)}
           </div>
@@ -228,7 +233,7 @@ function InboxPage() {
             const lastIn = [...messages].reverse().find(m => m.direction === "inbound");
             const simulated = String(lastIn?.external_id ?? "").startsWith("sim:");
             const inWindow = lastIn && Date.now() - new Date(lastIn.sent_at).getTime() <= 24 * 60 * 60 * 1000;
-            if (!inWindow || simulated) return <p className="mt-4 rounded-md border border-dashed p-3 text-xs text-muted-foreground">{simulated ? "Conversa simulada: resposta real indisponível." : "Fora da janela de 24 horas do WhatsApp. Para retomar o contato é necessário um modelo (template) aprovado — ainda não disponível no sistema."}</p>;
+            if (!inWindow || simulated) return <p className="mt-4 rounded-md border border-dashed p-3 text-xs text-muted-foreground">{simulated ? "Conversa simulada: resposta real indisponível." : lastIn ? "Fora da janela de 24 horas do WhatsApp. Para retomar o contato é necessário um modelo (template) aprovado — ainda não disponível no sistema." : "Nenhuma mensagem recebida deste cliente nas últimas 24 horas. O primeiro contato iniciado pela empresa exige um modelo (template) aprovado — seleção de modelos será disponibilizada em etapa futura."}</p>;
             return <form className="mt-4 grid gap-2 border-t pt-4" onSubmit={e => { e.preventDefault(); void sendReply(); }}>
               <Label htmlFor="conversation-reply">Responder pelo WhatsApp</Label>
               <Textarea id="conversation-reply" rows={3} maxLength={4096} value={reply} disabled={sending} onChange={e => setReply(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendReply(); } }} placeholder="Digite a resposta ao cliente..." />
@@ -238,6 +243,14 @@ function InboxPage() {
         </>}
       </div>
     </div>
+
+    <Dialog open={newOpen} onOpenChange={setNewOpen}><DialogContent><DialogHeader><DialogTitle>Nova conversa</DialogTitle><DialogDescription>Inicie contato pelo WhatsApp com um contato cadastrado. Nenhum chamado é criado automaticamente.</DialogDescription></DialogHeader>
+      <form className="grid gap-4" onSubmit={e => { e.preventDefault(); if (!newContact || !newPhone) return; void run(async () => { const r = await startConversation({ data: { contactId: newContact, phone: newPhone } }); setNewOpen(false); toast.success(r.existing ? "Já existe conversa aberta com este telefone — ela foi selecionada." : "Conversa criada."); await loadConversations(); await select(r.conversationId); }); }}>
+        <div><Label htmlFor="new-conv-company">Empresa / Cliente</Label><select id="new-conv-company" className="form-control" value={newCompany} onChange={e => { setNewCompany(e.target.value); setNewContact(""); setNewPhone(""); }}><option value="">Selecione</option>{companies.map(c => <option key={c.id} value={c.id}>{c.trade_name}</option>)}</select></div>
+        <div><Label htmlFor="new-conv-contact">Contato</Label><select id="new-conv-contact" className="form-control" value={newContact} disabled={!newCompany} onChange={e => { setNewContact(e.target.value); const c = contacts.find(x => x.id === e.target.value); setNewPhone(c?.whatsapp || c?.phone || ""); }}><option value="">Selecione</option>{contacts.filter(c => c.company_id === newCompany).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+        <div><Label htmlFor="new-conv-phone">Telefone WhatsApp</Label><select id="new-conv-phone" className="form-control" value={newPhone} disabled={!newContact} onChange={e => setNewPhone(e.target.value)}><option value="">Selecione</option>{(() => { const c = contacts.find(x => x.id === newContact); return [...new Set([c?.whatsapp, c?.phone].filter(Boolean))].map(p => <option key={p} value={p}>{p}{p === c?.whatsapp ? " (WhatsApp)" : ""}</option>); })()}</select>{newContact && !contacts.find(x => x.id === newContact)?.whatsapp && !contacts.find(x => x.id === newContact)?.phone && <p className="mt-1 text-xs text-destructive">Contato sem telefone cadastrado.</p>}</div>
+        <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setNewOpen(false)}>Cancelar</Button><Button disabled={busy || !newContact || !newPhone}>Iniciar conversa</Button></div>
+      </form></DialogContent></Dialog>
 
     {current && <>
       <Dialog open={identifyOpen} onOpenChange={setIdentifyOpen}><DialogContent><DialogHeader><DialogTitle>Identificar contato</DialogTitle><DialogDescription>Vincule a conversa a um contato existente ou cadastre um novo contato para {current.phone}. Empresas não são criadas automaticamente.</DialogDescription></DialogHeader>
@@ -275,4 +288,23 @@ function InboxPage() {
         <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setSimulateOpen(false)}>Cancelar</Button><Button disabled={busy}>Receber mensagem</Button></div>
       </form></DialogContent></Dialog>}
   </Page>;
+}
+
+function MediaView({ path, mime, type, name }: { path: string; mime: string | null; type: string; name: string | null }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    supabase.storage.from("whatsapp-media").createSignedUrl(path, 3600).then(({ data, error }) => { if (!alive) return; if (error || !data) setFailed(true); else setUrl(data.signedUrl); });
+    return () => { alive = false; };
+  }, [path]);
+  if (failed) return <p className="mt-2 text-xs text-destructive">Não foi possível carregar a mídia.</p>;
+  if (!url) return <p className="mt-2 text-xs text-muted-foreground">Carregando mídia…</p>;
+  const kind = (mime ?? "").split("/")[0] || type;
+  return <div className="mt-2 grid gap-1">
+    {kind === "image" && <a href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={name ?? "Imagem recebida"} className="max-h-64 rounded border object-contain" loading="lazy" /></a>}
+    {kind === "video" && <video src={url} controls preload="metadata" className="max-h-64 w-full rounded border" />}
+    {kind === "audio" && <audio src={url} controls preload="metadata" className="w-full" />}
+    <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-primary underline">Abrir{kind === "image" || kind === "video" || kind === "audio" ? " em nova aba" : " anexo"}{name ? `: ${name}` : ""}</a>
+  </div>;
 }
