@@ -127,3 +127,68 @@ export const identifyConversationContact = createServerFn({ method: "POST" })
     if (updateError) throw new Error(updateError.message);
     return { contactId, companyId };
   });
+
+const WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Resposta livre pelo WhatsApp Cloud API, somente dentro da janela de 24h. */
+export const sendConversationReply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { conversationId: string; content: string }) => {
+    const content = String(input?.content ?? "").trim();
+    if (!content) throw new Error("Digite a mensagem antes de enviar.");
+    if (content.length > 4096) throw new Error("A mensagem excede 4096 caracteres.");
+    return { conversationId: String(input.conversationId), content };
+  })
+  .handler(async ({ data, context }) => {
+    const ctx = context as Ctx;
+    await assertOperations(ctx);
+    const { data: conversation, error } = await ctx.supabase.from("conversations").select("id,channel,phone").eq("id", data.conversationId).single();
+    if (error || !conversation) throw new Error("Conversa não encontrada.");
+    if (conversation.channel !== "whatsapp") throw new Error("Esta conversa não é do WhatsApp.");
+
+    const { data: lastIn } = await ctx.supabase.from("messages").select("sent_at,external_id").eq("conversation_id", data.conversationId).eq("direction", "inbound").order("sent_at", { ascending: false }).limit(1).maybeSingle();
+    if (!lastIn || Date.now() - new Date(lastIn.sent_at).getTime() > WINDOW_MS) {
+      throw new Error("Fora da janela de 24 horas do WhatsApp: é necessário usar um modelo (template) aprovado. Envio livre bloqueado.");
+    }
+    if (String(lastIn.external_id ?? "").startsWith("sim:")) throw new Error("Conversa simulada: envio real não permitido.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db: any = supabaseAdmin;
+    // Proteção contra envio duplicado (mesmo texto em poucos segundos).
+    const { data: recent } = await db.from("messages").select("id").eq("conversation_id", data.conversationId).eq("direction", "outbound").eq("content", data.content).gte("created_at", new Date(Date.now() - 15000).toISOString()).limit(1);
+    if (recent?.length) throw new Error("Esta mensagem acabou de ser enviada. Envio duplicado bloqueado.");
+
+    const token = process.env["WHATSAPP_ACCESS_TOKEN"];
+    const phoneId = process.env["WHATSAPP_PHONE_NUMBER_ID"];
+    const { logIntegrationEvent, GRAPH_BASE, graphVersion } = await import("./whatsapp.server");
+    if (!token || !phoneId) throw new Error("Integração WhatsApp não configurada.");
+    const to = String(conversation.phone).replace(/\D/g, "");
+
+    let res: Response;
+    try {
+      res = await fetch(`${GRAPH_BASE}/${graphVersion()}/${encodeURIComponent(phoneId)}/messages`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ messaging_product: "whatsapp", recipient_type: "individual", to, type: "text", text: { preview_url: false, body: data.content } }),
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch {
+      await logIntegrationEvent("send:text", "error", null, "Falha de rede ao contatar a API.");
+      throw new Error("Não foi possível contatar o WhatsApp. A mensagem não foi enviada.");
+    }
+    const body: any = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = `HTTP ${res.status}${body?.error?.code ? ` código ${body.error.code}` : ""}: ${String(body?.error?.message ?? "erro").slice(0, 200)}`;
+      await logIntegrationEvent("send:text", "error", null, msg);
+      if (body?.error?.code === 131047) throw new Error("Fora da janela de 24 horas: é necessário usar um modelo aprovado.");
+      throw new Error(`O WhatsApp recusou o envio (${msg}). A mensagem não foi registrada.`);
+    }
+    const externalId: string | null = body?.messages?.[0]?.id ?? null;
+    const { data: inserted, error: insError } = await db.from("messages").insert({
+      conversation_id: data.conversationId, direction: "outbound", channel: "whatsapp", phone: conversation.phone,
+      content: data.content, message_type: "text", status: "sent", external_id: externalId, sent_at: new Date().toISOString(),
+    }).select("*").single();
+    await logIntegrationEvent("send:text", insError ? "error" : "processed", externalId, insError?.message ?? null);
+    if (insError) throw new Error("Mensagem enviada, mas houve falha ao registrá-la no histórico.");
+    return inserted;
+  });
