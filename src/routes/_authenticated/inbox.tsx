@@ -62,11 +62,54 @@ function InboxPage() {
   async function loadMessages(conversationId: string) {
     const { data, error } = await supabase.from("messages").select("*").eq("conversation_id", conversationId).order("sent_at");
     if (error) { toast.error(error.message); return; }
+    if (selectedRef.current !== conversationId) return;
     setMessages(data ?? []);
   }
   async function select(conversationId: string) {
-    setSelected(conversationId); await loadMessages(conversationId);
+    setSelected(conversationId); selectedRef.current = conversationId; setReply(""); await loadMessages(conversationId);
     if (canOperateInbox) { try { await markConversationRead({ data: { conversationId } }); await loadConversations(); } catch { /* leitura opcional */ } }
+  }
+
+  // Atualização automática leve: apenas conversas e mensagens da conversa aberta, sem recarregar a página.
+  const selectedRef = useRef<string | null>(null);
+  const pollingRef = useRef(false);
+  useEffect(() => {
+    async function poll() {
+      if (pollingRef.current || document.visibilityState !== "visible") return;
+      pollingRef.current = true;
+      try {
+        const { data } = await supabase.from("conversations").select("*,contacts(name),companies(trade_name),tickets(number,status)").order("last_message_at", { ascending: false });
+        if (data) setConversations(data);
+        const open = selectedRef.current;
+        if (open) {
+          await loadMessages(open);
+          const row = data?.find(r => r.id === open);
+          if (row && row.unread_count > 0 && canOperateInbox) { try { await markConversationRead({ data: { conversationId: open } }); } catch { /* opcional */ } }
+        }
+      } finally { pollingRef.current = false; }
+    }
+    const id = window.setInterval(() => void poll(), 60000);
+    const onVisible = () => { if (document.visibilityState === "visible") void poll(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { window.clearInterval(id); document.removeEventListener("visibilitychange", onVisible); };
+  }, []);
+
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
+  async function sendReply() {
+    const conversationId = selectedRef.current;
+    const content = reply.trim();
+    if (!conversationId || !content || sendingRef.current) return;
+    sendingRef.current = true; setSending(true);
+    try {
+      const sent = await sendConversationReply({ data: { conversationId, content } });
+      setMessages(prev => prev.some(m => m.id === sent.id) ? prev : [...prev, sent]);
+      setReply("");
+      toast.success("Mensagem enviada.");
+      void loadConversations();
+    } catch (error) { toast.error(errorMessage(error)); }
+    finally { sendingRef.current = false; setSending(false); }
   }
 
   const filtered = useMemo(() => conversations.filter(row => {
