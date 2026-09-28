@@ -215,7 +215,7 @@ function InboxPage() {
             </div>
             {canOperateInbox && <div className="flex flex-wrap gap-2">
               {!current.contact_id && <Button size="sm" variant="outline" onClick={() => setIdentifyOpen(true)}><UserPlus />Identificar contato</Button>}
-              {!current.ticket_id && <Button size="sm" onClick={() => { setCategory(""); setTicketOpen(true); }} disabled={!current.contact_id}><TicketPlus />Criar chamado</Button>}
+              {!current.ticket_id && <Button size="sm" variant="outline" title="Opcional: abra um chamado somente se a conversa exigir acompanhamento formal" onClick={() => { setCategory(""); setTicketOpen(true); }} disabled={!current.contact_id}><TicketPlus />Criar chamado</Button>}
               {!current.ticket_id && <Button size="sm" variant="outline" onClick={() => setLinkOpen(true)}><Link2 />Vincular a chamado</Button>}
               {current.status !== "finished" && <Button size="sm" variant="ghost" disabled={busy} onClick={() => void run(async () => { await setConversationStatus({ data: { conversationId: current.id, status: "finished" } }); toast.success("Conversa finalizada."); })}>Finalizar</Button>}
             </div>}
