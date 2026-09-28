@@ -174,14 +174,14 @@ export const sendConversationReply = createServerFn({ method: "POST" })
       });
     } catch {
       await logIntegrationEvent("send:text", "error", null, "Falha de rede ao contatar a API.");
-      throw new Error("Não foi possível contatar o WhatsApp. A mensagem não foi enviada.");
+      return { ok: false as const, error: "Não foi possível contatar o WhatsApp. A mensagem não foi enviada." };
     }
     const body: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       const msg = `HTTP ${res.status}${body?.error?.code ? ` código ${body.error.code}` : ""}: ${String(body?.error?.message ?? "erro").slice(0, 200)}`;
       await logIntegrationEvent("send:text", "error", null, msg);
-      if (body?.error?.code === 131047) throw new Error("Fora da janela de 24 horas: é necessário usar um modelo aprovado.");
-      throw new Error(`O WhatsApp recusou o envio (${msg}). A mensagem não foi registrada.`);
+      if (body?.error?.code === 131047) return { ok: false as const, error: "Fora da janela de 24 horas: é necessário usar um modelo aprovado." };
+      return { ok: false as const, error: `O WhatsApp recusou o envio (${msg}). A mensagem não foi registrada.` };
     }
     const externalId: string | null = body?.messages?.[0]?.id ?? null;
     const { data: inserted, error: insError } = await db.from("messages").insert({
@@ -190,5 +190,5 @@ export const sendConversationReply = createServerFn({ method: "POST" })
     }).select("*").single();
     await logIntegrationEvent("send:text", insError ? "error" : "processed", externalId, insError?.message ?? null);
     if (insError) throw new Error("Mensagem enviada, mas houve falha ao registrá-la no histórico.");
-    return inserted;
+    return { ok: true as const, message: inserted };
   });
