@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox, Link2, MessageSquarePlus, Search, Send, TicketPlus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Empty, Page } from "@/components/iga/Page";
 import { supabase } from "@/integrations/supabase/client";
 import { canManageCatalogs, canOperate, conversationStatusLabels, errorMessage, formatDate, messageTypeLabels, priorities } from "@/lib/iga";
-import { createTicketFromConversation, identifyConversationContact, linkConversationToTicket, markConversationRead, setConversationStatus, simulateInboundMessage } from "@/lib/messaging.functions";
+import { createTicketFromConversation, identifyConversationContact, linkConversationToTicket, markConversationRead, sendConversationReply, setConversationStatus, simulateInboundMessage } from "@/lib/messaging.functions";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => ({ meta: [
@@ -62,11 +62,54 @@ function InboxPage() {
   async function loadMessages(conversationId: string) {
     const { data, error } = await supabase.from("messages").select("*").eq("conversation_id", conversationId).order("sent_at");
     if (error) { toast.error(error.message); return; }
+    if (selectedRef.current !== conversationId) return;
     setMessages(data ?? []);
   }
   async function select(conversationId: string) {
-    setSelected(conversationId); await loadMessages(conversationId);
+    setSelected(conversationId); selectedRef.current = conversationId; setReply(""); await loadMessages(conversationId);
     if (canOperateInbox) { try { await markConversationRead({ data: { conversationId } }); await loadConversations(); } catch { /* leitura opcional */ } }
+  }
+
+  // Atualização automática leve: apenas conversas e mensagens da conversa aberta, sem recarregar a página.
+  const selectedRef = useRef<string | null>(null);
+  const pollingRef = useRef(false);
+  useEffect(() => {
+    async function poll() {
+      if (pollingRef.current || document.visibilityState !== "visible") return;
+      pollingRef.current = true;
+      try {
+        const { data } = await supabase.from("conversations").select("*,contacts(name),companies(trade_name),tickets(number,status)").order("last_message_at", { ascending: false });
+        if (data) setConversations(data);
+        const open = selectedRef.current;
+        if (open) {
+          await loadMessages(open);
+          const row = data?.find(r => r.id === open);
+          if (row && row.unread_count > 0 && canOperateInbox) { try { await markConversationRead({ data: { conversationId: open } }); } catch { /* opcional */ } }
+        }
+      } finally { pollingRef.current = false; }
+    }
+    const id = window.setInterval(() => void poll(), 60000);
+    const onVisible = () => { if (document.visibilityState === "visible") void poll(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { window.clearInterval(id); document.removeEventListener("visibilitychange", onVisible); };
+  }, []);
+
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
+  async function sendReply() {
+    const conversationId = selectedRef.current;
+    const content = reply.trim();
+    if (!conversationId || !content || sendingRef.current) return;
+    sendingRef.current = true; setSending(true);
+    try {
+      const sent = await sendConversationReply({ data: { conversationId, content } });
+      setMessages(prev => prev.some(m => m.id === sent.id) ? prev : [...prev, sent]);
+      setReply("");
+      toast.success("Mensagem enviada.");
+      void loadConversations();
+    } catch (error) { toast.error(errorMessage(error)); }
+    finally { sendingRef.current = false; setSending(false); }
   }
 
   const filtered = useMemo(() => conversations.filter(row => {
@@ -179,6 +222,17 @@ function InboxPage() {
               <p className="mt-1 text-xs text-muted-foreground">{message.direction === "inbound" ? "Recebida" : "Enviada"} · {messageTypeLabels[message.message_type] ?? message.message_type} · {formatDate(message.sent_at)}</p>
             </div>)}
           </div>
+          {canOperateInbox && current.channel === "whatsapp" && (() => {
+            const lastIn = [...messages].reverse().find(m => m.direction === "inbound");
+            const simulated = String(lastIn?.external_id ?? "").startsWith("sim:");
+            const inWindow = lastIn && Date.now() - new Date(lastIn.sent_at).getTime() <= 24 * 60 * 60 * 1000;
+            if (!inWindow || simulated) return <p className="mt-4 rounded-md border border-dashed p-3 text-xs text-muted-foreground">{simulated ? "Conversa simulada: resposta real indisponível." : "Fora da janela de 24 horas do WhatsApp. Para retomar o contato é necessário um modelo (template) aprovado — ainda não disponível no sistema."}</p>;
+            return <form className="mt-4 grid gap-2 border-t pt-4" onSubmit={e => { e.preventDefault(); void sendReply(); }}>
+              <Label htmlFor="conversation-reply">Responder pelo WhatsApp</Label>
+              <Textarea id="conversation-reply" rows={3} maxLength={4096} value={reply} disabled={sending} onChange={e => setReply(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendReply(); } }} placeholder="Digite a resposta ao cliente..." />
+              <div className="flex justify-end"><Button type="submit" disabled={sending || !reply.trim()}><Send />{sending ? "Enviando..." : "Enviar"}</Button></div>
+            </form>;
+          })()}
         </>}
       </div>
     </div>
