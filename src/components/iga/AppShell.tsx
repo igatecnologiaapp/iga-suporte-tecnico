@@ -6,21 +6,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/iga/NotificationsBell";
+import { moduleForPath } from "@/lib/modules";
 
 const groups = [
   { label: "OPERAÇÃO", items: [["Caixa de Entrada", "/inbox", Inbox], ["Chamados", "/tickets", ClipboardList]] },
-  { label: "CADASTROS", items: [["Empresas / Clientes", "/companies", Building2], ["Contatos", "/contacts", Contact], ["Técnicos", "/technicians", Wrench], ["Categorias de Chamados", "/categories", Tags]] },
+  { label: "CADASTROS", items: [["Empresas / Clientes", "/companies", Building2], ["Contatos", "/contacts", Contact], ["Categorias de Chamados", "/categories", Tags]] },
   { label: "GESTÃO", items: [["SLA", "/sla", ShieldCheck]] },
-  { label: "ADMINISTRAÇÃO", items: [["Usuários", "/users", Users], ["Integrações", "/integrations", PlugZap], ["Configurações", "/settings", Settings]] },
+  { label: "ADMINISTRAÇÃO", items: [["Usuários", "/users", Users], ["Técnicos", "/technicians", Wrench], ["Integrações", "/integrations", PlugZap], ["Configurações", "/settings", Settings]] },
 ] as const;
 
 const OPEN_KEY = "iga-menu-groups";
 
-export function AppShell({ children, userName, role, roleCode }: { children: ReactNode; userName: string; role: string; roleCode: string }) {
+export function AppShell({ children, userName, role, modules }: { children: ReactNode; userName: string; role: string; modules: string[] }) {
   const [collapsed, setCollapsed] = useState(false); const [mobile, setMobile] = useState(false); const [dark, setDark] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const path = useRouterState({ select: s => s.location.pathname }); const navigate = useNavigate();
-  const visibleGroups = groups.filter(g => g.label !== "ADMINISTRAÇÃO" || roleCode === "admin");
+  const visibleGroups = groups
+    .map(g => ({ ...g, items: (g.items as readonly (readonly [string, string, typeof Inbox])[]).filter(([, to]) => { const m = moduleForPath(to); return !m || modules.includes(m); }) }))
+    .filter(g => g.items.length > 0);
 
   useEffect(() => {
     const saved = localStorage.getItem("iga-theme"); const d = saved === "dark"; setDark(d); document.documentElement.classList.toggle("dark", d);

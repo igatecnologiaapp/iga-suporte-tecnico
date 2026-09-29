@@ -85,6 +85,13 @@
       "when": 1790203792366,
       "tag": "0011_phase_3b_whatsapp_inbound",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790644465550,
+      "tag": "0012_primary_admin_and_module_permissions",
+      "breakpoints": true
     }
   ]
 }

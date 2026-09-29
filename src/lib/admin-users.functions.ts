@@ -3,11 +3,32 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type AdminContext = { supabase: any; userId: string };
 
+const VALID_MODULES = ["inbox","tickets","companies","contacts","categories","sla","technicians","users","integrations","settings"];
+
 async function assertAdmin(context: AdminContext) {
-  const { data, error } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (error || !data) throw new Error("Apenas administradores podem gerenciar usuários.");
+  const [{ data, error }, { data: hasUsers }] = await Promise.all([
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    context.supabase.rpc("has_module", { _user_id: context.userId, _module: "users" }),
+  ]);
+  if (error || !data || !hasUsers) throw new Error("Apenas administradores podem gerenciar usuários.");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
+}
+
+// Ponto único de autorização para ações administrativas sensíveis.
+// Hoje: exclusivas do Administrador Principal. Futuro: delegar por ação sem reconstruir o RBAC.
+async function assertPrimary(admin: any, actorId: string, _action: "create_user" | "change_role" | "change_modules") {
+  const { data } = await admin.rpc("is_primary_admin", { _user_id: actorId });
+  if (!data) throw new Error("Somente o Administrador Principal pode realizar esta ação.");
+}
+
+async function primaryId(admin: any): Promise<string | null> {
+  const { data } = await admin.from("primary_admin").select("user_id").maybeSingle();
+  return data?.user_id ?? null;
+}
+
+function cleanModules(modules: string[] | undefined) {
+  return Array.from(new Set((modules ?? []).filter(m => VALID_MODULES.includes(m)))).sort();
 }
 
 async function logAudit(admin: any, actorId: string, targetUserId: string | null, action: string, oldValue: unknown, newValue: unknown) {
@@ -18,11 +39,13 @@ export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await assertAdmin(context as AdminContext);
-    const [{ data: profiles }, { data: roles }, { data: technicians }, authUsers] = await Promise.all([
+    const [{ data: profiles }, { data: roles }, { data: technicians }, authUsers, { data: mods }, primary] = await Promise.all([
       admin.from("profiles").select("id,full_name,phone,status,created_at").order("full_name"),
       admin.from("user_roles").select("user_id,role"),
       admin.from("technicians").select("id,name,user_id,status"),
       admin.auth.admin.listUsers({ page: 1, perPage: 200 }),
+      admin.from("user_modules").select("user_id,module"),
+      primaryId(admin),
     ]);
     const byId = new Map((authUsers.data?.users ?? []).map((u: any) => [u.id, u]));
     return (profiles ?? []).map((p: any) => {
@@ -33,6 +56,8 @@ export const listAdminUsers = createServerFn({ method: "POST" })
         email: authUser?.email ?? null, last_sign_in_at: authUser?.last_sign_in_at ?? null,
         role: (roles ?? []).find((r: any) => r.user_id === p.id)?.role ?? "viewer",
         technician_id: technician?.id ?? null, technician_name: technician?.name ?? null,
+        is_primary: p.id === primary,
+        modules: (mods ?? []).filter((m: any) => m.user_id === p.id).map((m: any) => m.module).sort(),
       };
     });
   });
@@ -47,9 +72,12 @@ export const listTechnicianOptions = createServerFn({ method: "POST" })
 
 export const createAdminUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { fullName: string; email: string; phone?: string; role: string; status: string; technicianId?: string | null; createTechnician?: boolean }) => input)
+  .inputValidator((input: { fullName: string; email: string; phone?: string; role: string; status: string; technicianId?: string | null; createTechnician?: boolean; modules?: string[] }) => input)
   .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as AdminContext);
+    await assertPrimary(admin, context.userId, "create_user");
+    const modules = cleanModules(data.modules);
+    if (modules.length === 0) throw new Error("Selecione ao menos um módulo permitido.");
     const email = data.email.trim().toLowerCase();
     if (!email || !data.fullName.trim()) throw new Error("Informe nome e e-mail.");
 
@@ -79,15 +107,25 @@ export const createAdminUser = createServerFn({ method: "POST" })
         technicianId = tech.data.id;
       }
     }
-    await logAudit(admin, context.userId, userId, "user_created", null, { email, role: data.role, status: data.status, technician_id: technicianId });
+    const { error: modError } = await admin.from("user_modules").insert(modules.map(m => ({ user_id: userId, module: m })) as never);
+    if (modError) throw new Error(modError.message);
+    await logAudit(admin, context.userId, userId, "user_created", null, { email, role: data.role, status: data.status, technician_id: technicianId, modules });
     return { userId, emailSent, actionLink };
   });
 
 export const updateAdminUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { userId: string; fullName?: string; phone?: string | null; role?: string; status?: string; technicianId?: string | null }) => input)
+  .inputValidator((input: { userId: string; fullName?: string; phone?: string | null; role?: string; status?: string; technicianId?: string | null; modules?: string[] }) => input)
   .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as AdminContext);
+    const primary = await primaryId(admin);
+    const actorIsPrimary = primary === context.userId;
+    if (data.userId === primary) {
+      if (!actorIsPrimary) throw new Error("O Administrador Principal só pode ser alterado por ele mesmo.");
+      if (data.status !== undefined && data.status !== "active") throw new Error("O Administrador Principal não pode ser desativado.");
+      if (data.role !== undefined && data.role !== "admin") throw new Error("O papel do Administrador Principal não pode ser reduzido.");
+      data.modules = undefined; // acesso integral fixo
+    }
     const current = await admin.from("profiles").select("full_name,phone,status").eq("id", data.userId).single();
     const currentRole = await admin.from("user_roles").select("role").eq("user_id", data.userId).maybeSingle();
     const currentTech = await admin.from("technicians").select("id,name").eq("user_id", data.userId).maybeSingle();
@@ -116,6 +154,7 @@ export const updateAdminUser = createServerFn({ method: "POST" })
     }
 
     if (data.role !== undefined && data.role !== currentRole.data?.role) {
+      await assertPrimary(admin, context.userId, "change_role");
       if (data.userId === context.userId) throw new Error("Não é possível alterar o próprio perfil de acesso.");
       const { error } = await admin.from("user_roles").upsert({ user_id: data.userId, role: data.role } as never, { onConflict: "user_id" });
       if (error) throw new Error(error.message);
@@ -129,6 +168,18 @@ export const updateAdminUser = createServerFn({ method: "POST" })
         if (error) throw new Error(error.message);
       }
       await logAudit(admin, context.userId, data.userId, data.technicianId ? "technician_linked" : "technician_unlinked", { technician_id: currentTech.data?.id ?? null }, { technician_id: data.technicianId ?? null });
+    }
+    if (data.modules !== undefined) {
+      const next = cleanModules(data.modules);
+      const { data: cur } = await admin.from("user_modules").select("module").eq("user_id", data.userId);
+      const prev = (cur ?? []).map((m: any) => m.module).sort();
+      if (JSON.stringify(prev) !== JSON.stringify(next)) {
+        await assertPrimary(admin, context.userId, "change_modules");
+        const toAdd = next.filter(m => !prev.includes(m)); const toRemove = prev.filter((m: string) => !next.includes(m));
+        if (toRemove.length) { const { error } = await admin.from("user_modules").delete().eq("user_id", data.userId).in("module", toRemove); if (error) throw new Error(error.message); }
+        if (toAdd.length) { const { error } = await admin.from("user_modules").insert(toAdd.map(m => ({ user_id: data.userId, module: m })) as never); if (error) throw new Error(error.message); }
+        await logAudit(admin, context.userId, data.userId, "modules_changed", { modules: prev }, { modules: next });
+      }
     }
     return { ok: true };
   });
