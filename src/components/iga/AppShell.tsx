@@ -22,7 +22,7 @@ export function AppShell({ children, userName, role, modules }: { children: Reac
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const path = useRouterState({ select: s => s.location.pathname }); const navigate = useNavigate();
   const visibleGroups = groups
-    .map(g => ({ ...g, items: g.items.filter(([, to]) => { const m = moduleForPath(to); return !m || modules.includes(m); }) }))
+    .map(g => ({ ...g, items: (g.items as readonly (readonly [string, string, typeof Inbox])[]).filter(([, to]) => { const m = moduleForPath(to); return !m || modules.includes(m); }) }))
     .filter(g => g.items.length > 0);
 
   useEffect(() => {
