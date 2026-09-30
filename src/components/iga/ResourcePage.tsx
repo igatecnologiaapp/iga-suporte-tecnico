@@ -32,10 +32,23 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
   const [saving, setSaving] = useState(false);
   const [action, setAction] = useState<{ kind: "archive" | "delete"; row: any; references: { label: string; total: number }[]; canDelete: boolean; activeTickets: number } | null>(null);
   const [reason, setReason] = useState("");
+  const [allCats, setAllCats] = useState<any[]>([]);
+  const [links, setLinks] = useState<any[]>([]);
+  const [selCats, setSelCats] = useState<string[]>([]);
+  const [defCat, setDefCat] = useState("");
+  const [catFilter, setCatFilter] = useState("");
+  const canLinkCats = role === "admin" || role === "supervisor";
 
   async function load() {
     const { data, error } = await supabase.from(c.table).select("*").order(c.name);
     if (error) toast.error(error.message); else setRows(data ?? []);
+    if (kind === "companies") {
+      const [{ data: cs }, { data: ls }] = await Promise.all([
+        supabase.from("ticket_categories").select("id,name,status").is("parent_id", null).order("name"),
+        supabase.from("company_ticket_categories").select("company_id,category_id,is_default"),
+      ]);
+      setAllCats(cs ?? []); setLinks(ls ?? []);
+    }
     if (kind === "contacts") setRelated((await supabase.from("companies").select("id,trade_name").eq("status", "active").order("trade_name")).data ?? []);
     if (kind === "technicians") setRelated((await supabase.from("profiles").select("id,full_name").order("full_name")).data ?? []);
     if (kind === "categories") setRelated((await supabase.from("ticket_categories").select("id,name").is("parent_id", null).eq("status", "active").order("name")).data ?? []);
@@ -43,7 +56,34 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
   useEffect(() => { void load(); }, [kind]);
   const filtered = useMemo(() => rows
     .filter(row => showArchived || row.status !== "inactive")
-    .filter(row => JSON.stringify(row).toLowerCase().includes(q.toLowerCase())), [rows, q, showArchived]);
+    .filter(row => !catFilter || links.some(l => l.company_id === row.id && l.category_id === catFilter))
+    .filter(row => JSON.stringify(row).toLowerCase().includes(q.toLowerCase())), [rows, q, showArchived, catFilter, links]);
+  function companyCats(id: string) {
+    return links.filter(l => l.company_id === id).map(l => ({ ...l, name: allCats.find(c => c.id === l.category_id)?.name ?? "—" }))
+      .sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
+  }
+  function openEditor(row: any) {
+    setEditing(row);
+    const own = row ? links.filter(l => l.company_id === row.id) : [];
+    setSelCats(own.map(l => l.category_id)); setDefCat(own.find(l => l.is_default)?.category_id ?? "");
+    setOpen(true);
+  }
+  async function syncCompanyCats(companyId: string) {
+    const del = supabase.from("company_ticket_categories").delete().eq("company_id", companyId);
+    const r1 = selCats.length ? await del.not("category_id", "in", `(${selCats.join(",")})`) : await del;
+    if (r1.error) return r1.error;
+    const r2 = await supabase.from("company_ticket_categories").update({ is_default: false }).eq("company_id", companyId).eq("is_default", true);
+    if (r2.error) return r2.error;
+    if (selCats.length) {
+      const r3 = await supabase.from("company_ticket_categories").upsert(selCats.map(id => ({ company_id: companyId, category_id: id, created_by: userId })), { onConflict: "company_id,category_id", ignoreDuplicates: true });
+      if (r3.error) return r3.error;
+    }
+    if (defCat && selCats.includes(defCat)) {
+      const r4 = await supabase.from("company_ticket_categories").update({ is_default: true }).eq("company_id", companyId).eq("category_id", defCat);
+      if (r4.error) return r4.error;
+    }
+    return null;
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true);
@@ -53,9 +93,15 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     if (kind === "technicians") payload = { user_id: fd.get("user_id"), name: fd.get("name"), phone: fd.get("phone") || null, email: fd.get("email"), specialty: fd.get("specialty") || null, status: fd.get("status") };
     if (kind === "categories") payload = { name: fd.get("name"), parent_id: fd.get("parent_id") || null, status: fd.get("status") };
     if (!editing && (kind === "companies" || kind === "contacts")) payload.created_by = userId;
-    const query = editing ? supabase.from(c.table).update(payload as never).eq("id", editing.id) : supabase.from(c.table).insert(payload as never);
-    const { error } = await query; setSaving(false);
-    if (error) { toast.error(errorMessage(error)); return; }
+    const query = editing ? supabase.from(c.table).update(payload as never).eq("id", editing.id).select("id") : supabase.from(c.table).insert(payload as never).select("id");
+    const { data: saved, error } = await query;
+    if (error) { setSaving(false); toast.error(errorMessage(error)); return; }
+    if (kind === "companies" && canLinkCats) {
+      const id = editing?.id ?? (saved as any)?.[0]?.id;
+      const linkError = id ? await syncCompanyCats(id) : null;
+      if (linkError) { setSaving(false); toast.error("Empresa salva, mas as categorias não foram atualizadas: " + errorMessage(linkError)); await load(); return; }
+    }
+    setSaving(false);
     toast.success(editing ? "Cadastro atualizado." : "Cadastro salvo com sucesso."); setOpen(false); setEditing(null); await load();
   }
   function close(next: boolean) { setOpen(next); if (!next) setEditing(null); }
@@ -85,10 +131,20 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     catch (error) { toast.error(errorMessage(error)); }
   }
 
-  return <Page title={c.title} description={c.desc} action={canManage ? <Button onClick={() => { setEditing(null); setOpen(true); }}><Plus />Novo cadastro</Button> : undefined}>
+  return <Page title={c.title} description={c.desc} action={canManage ? <Button onClick={() => openEditor(null)}><Plus />Novo cadastro</Button> : undefined}>
     <Dialog open={open} onOpenChange={close}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{editing ? "Editar cadastro" : "Novo cadastro"}</DialogTitle><DialogDescription>Preencha os dados obrigatórios.</DialogDescription></DialogHeader>
       <form key={editing?.id ?? "new"} onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        {kind === "companies" && <><Field n="legal_name" l="Razão Social" value={editing?.legal_name}/><Field n="trade_name" l="Nome Fantasia" value={editing?.trade_name}/><Field n="tax_id" l="CNPJ/CPF" value={editing?.tax_id}/><Field n="phone" l="Telefone" req={false} value={editing?.phone}/><Field n="whatsapp" l="WhatsApp" req={false} value={editing?.whatsapp}/><Field n="email" l="E-mail" type="email" req={false} value={editing?.email}/><Field n="postal_code" l="CEP" req={false} value={editing?.postal_code}/><Field n="address" l="Endereço" req={false} value={editing?.address}/><Field n="address_number" l="Número" req={false} value={editing?.address_number}/><Field n="complement" l="Complemento" req={false} value={editing?.complement}/><Field n="district" l="Bairro" req={false} value={editing?.district}/><Field n="city" l="Cidade" req={false} value={editing?.city}/><Field n="state" l="UF" req={false} value={editing?.state}/><div className="sm:col-span-2"><Label htmlFor="notes">Observações</Label><Textarea id="notes" name="notes" defaultValue={editing?.notes ?? ""}/></div></>}
+        {kind === "companies" && <><Field n="legal_name" l="Razão Social" value={editing?.legal_name}/><Field n="trade_name" l="Nome Fantasia" value={editing?.trade_name}/><Field n="tax_id" l="CNPJ/CPF" value={editing?.tax_id}/><Field n="phone" l="Telefone" req={false} value={editing?.phone}/><Field n="whatsapp" l="WhatsApp" req={false} value={editing?.whatsapp}/><Field n="email" l="E-mail" type="email" req={false} value={editing?.email}/><Field n="postal_code" l="CEP" req={false} value={editing?.postal_code}/><Field n="address" l="Endereço" req={false} value={editing?.address}/><Field n="address_number" l="Número" req={false} value={editing?.address_number}/><Field n="complement" l="Complemento" req={false} value={editing?.complement}/><Field n="district" l="Bairro" req={false} value={editing?.district}/><Field n="city" l="Cidade" req={false} value={editing?.city}/><Field n="state" l="UF" req={false} value={editing?.state}/><div className="sm:col-span-2"><Label htmlFor="notes">Observações</Label><Textarea id="notes" name="notes" defaultValue={editing?.notes ?? ""}/></div>
+          <fieldset className="rounded-md border p-3 sm:col-span-2"><legend className="px-1 text-sm font-medium">Categorias de Chamados</legend>
+            {!canLinkCats ? <CatChips cats={editing ? companyCats(editing.id) : []}/> : <>
+              <p className="mb-2 text-xs text-muted-foreground">Opcional. Sem categorias, a abertura de chamado mostra todas as categorias ativas.</p>
+              <div className="grid gap-2 sm:grid-cols-2">{allCats.filter(cat => cat.status === "active" || selCats.includes(cat.id)).map(cat => { const on = selCats.includes(cat.id); return <div key={cat.id} className="flex items-center justify-between gap-2 rounded border px-2 py-1.5 text-sm">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={on} onChange={e => { const next = e.target.checked ? [...selCats, cat.id] : selCats.filter(x => x !== cat.id); setSelCats(next); if (!e.target.checked && defCat === cat.id) setDefCat(""); }}/>{cat.name}{cat.status !== "active" && <span className="text-xs text-muted-foreground">(inativa)</span>}</label>
+                <label className={"flex items-center gap-1 text-xs " + (on ? "" : "opacity-40")}><input type="radio" name="default_category" disabled={!on} checked={defCat === cat.id} onChange={() => setDefCat(cat.id)}/>Padrão</label>
+              </div>; })}</div>
+              {defCat && <button type="button" className="mt-2 text-xs text-primary hover:underline" onClick={() => setDefCat("")}>Remover categoria padrão</button>}
+            </>}
+          </fieldset></>}
         {kind === "contacts" && <><SelectField n="company_id" l="Empresa / Cliente" rows={related} value={editing?.company_id}/><Field n="name" l="Nome" value={editing?.name}/><Field n="job_title" l="Cargo / Função" req={false} value={editing?.job_title}/><Field n="phone" l="Telefone" req={false} value={editing?.phone}/><Field n="whatsapp" l="WhatsApp" req={false} value={editing?.whatsapp}/><Field n="email" l="E-mail" type="email" req={false} value={editing?.email}/><label className="flex items-center gap-2 text-sm"><input type="checkbox" name="is_primary" defaultChecked={editing?.is_primary ?? false}/>Contato principal</label></>}
         {kind === "technicians" && <><SelectField n="user_id" l="Usuário vinculado" rows={related} value={editing?.user_id}/><Field n="name" l="Nome" value={editing?.name}/><Field n="phone" l="Telefone" req={false} value={editing?.phone}/><Field n="email" l="E-mail" type="email" value={editing?.email}/><Field n="specialty" l="Especialidade" req={false} value={editing?.specialty}/></>}
         {kind === "categories" && <><Field n="name" l="Nome" value={editing?.name}/><SelectField n="parent_id" l="Categoria superior (opcional)" rows={related.filter((row) => row.id !== editing?.id)} optional value={editing?.parent_id}/></>}
@@ -99,10 +155,11 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative max-w-md flex-1"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="pl-9" placeholder="Pesquisar..." value={q} onChange={(e) => setQ(e.target.value)}/></div>
       <label className="flex items-center gap-2 text-sm text-muted-foreground"><input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)}/>Mostrar arquivados/inativos</label>
+      {kind === "companies" && <select aria-label="Filtrar por categoria" className="form-control max-w-xs" value={catFilter} onChange={e => setCatFilter(e.target.value)}><option value="">Categoria: todas</option>{allCats.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select>}
     </div>
 
-    {filtered.length === 0 ? <Empty>Nenhum cadastro encontrado.</Empty> : <div className="overflow-hidden rounded-md border bg-card"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/60 text-left"><tr><th className="px-4 py-3">Nome</th><th className="px-4 py-3">Detalhe</th><th className="px-4 py-3">Status</th>{canManage && <th className="w-40 px-4 py-3"><span className="sr-only">Ações</span></th>}</tr></thead><tbody>{filtered.map((row) => <tr key={row.id} className="border-t"><td className="px-4 py-3 font-medium">{row[c.name]}</td><td className="px-4 py-3 text-muted-foreground">{row.legal_name || row.email || (row.parent_id ? "Subcategoria" : "Categoria") || "—"}</td><td className="px-4 py-3"><StatusBadge value={row.status} kind="record"/></td>{canManage && <td className="px-4 py-3"><div className="flex items-center gap-1">
-      <Button size="icon" variant="ghost" onClick={() => { setEditing(row); setOpen(true); }} aria-label={`Editar ${row[c.name]}`}><Pencil/></Button>
+    {filtered.length === 0 ? <Empty>Nenhum cadastro encontrado.</Empty> : <div className="overflow-hidden rounded-md border bg-card"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/60 text-left"><tr><th className="px-4 py-3">Nome</th><th className="px-4 py-3">Detalhe</th><th className="px-4 py-3">Status</th>{canManage && <th className="w-40 px-4 py-3"><span className="sr-only">Ações</span></th>}</tr></thead><tbody>{filtered.map((row) => <tr key={row.id} className="border-t"><td className="px-4 py-3 font-medium">{row[c.name]}</td><td className="px-4 py-3 text-muted-foreground">{row.legal_name || row.email || (row.parent_id ? "Subcategoria" : "Categoria") || "—"}{kind === "companies" && <div className="mt-1"><CatChips cats={companyCats(row.id)}/></div>}</td><td className="px-4 py-3"><StatusBadge value={row.status} kind="record"/></td>{canManage && <td className="px-4 py-3"><div className="flex items-center gap-1">
+      <Button size="icon" variant="ghost" onClick={() => openEditor(row)} aria-label={`Editar ${row[c.name]}`}><Pencil/></Button>
       {row.status === "inactive"
         ? <Button size="icon" variant="ghost" onClick={() => void restore(row)} aria-label={`Restaurar ${row[c.name]}`}><ArchiveRestore/></Button>
         : <Button size="icon" variant="ghost" onClick={() => void startAction("archive", row)} aria-label={`Arquivar ${row[c.name]}`}><Archive/></Button>}
@@ -128,3 +185,8 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
 }
 function Field({ n, l, type = "text", req = true, value }: { n: string; l: string; type?: string; req?: boolean; value?: unknown }) { return <div><Label htmlFor={n}>{l}</Label><Input id={n} name={n} type={type} required={req} defaultValue={value == null ? "" : String(value)}/></div>; }
 function SelectField({ n, l, rows, optional = false, value }: { n: string; l: string; rows: any[]; optional?: boolean; value?: unknown }) { return <div><Label htmlFor={n}>{l}</Label><select id={n} name={n} required={!optional} className="form-control" defaultValue={value == null ? "" : String(value)}><option value="">Selecione</option>{rows.map((row) => <option key={row.id} value={row.id}>{row.trade_name || row.full_name || row.name}</option>)}</select></div>; }
+
+function CatChips({ cats }: { cats: { category_id: string; name: string; is_default: boolean }[] }) {
+  if (!cats.length) return <span className="text-xs text-muted-foreground">Nenhuma categoria de chamado associada</span>;
+  return <div className="flex flex-wrap gap-1">{cats.map(c => <span key={c.category_id} className={"rounded-full border px-2 py-0.5 text-xs " + (c.is_default ? "border-primary bg-primary/10 text-primary" : "")}>{c.name}{c.is_default ? " — Padrão" : ""}</span>)}</div>;
+}
