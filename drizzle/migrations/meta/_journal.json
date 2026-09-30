@@ -92,6 +92,13 @@
       "when": 1790644465550,
       "tag": "0012_primary_admin_and_module_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790729352323,
+      "tag": "0013_company_ticket_categories",
+      "breakpoints": true
     }
   ]
 }
