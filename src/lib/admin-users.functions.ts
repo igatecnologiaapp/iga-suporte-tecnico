@@ -124,7 +124,7 @@ export const updateAdminUser = createServerFn({ method: "POST" })
       if (!actorIsPrimary) throw new Error("O Administrador Principal só pode ser alterado por ele mesmo.");
       if (data.status !== undefined && data.status !== "active") throw new Error("O Administrador Principal não pode ser desativado.");
       if (data.role !== undefined && data.role !== "admin") throw new Error("O papel do Administrador Principal não pode ser reduzido.");
-      data.modules = undefined; // acesso integral fixo
+      delete (data as { modules?: string[] }).modules; // acesso integral fixo
     }
     const current = await admin.from("profiles").select("full_name,phone,status").eq("id", data.userId).single();
     const currentRole = await admin.from("user_roles").select("role").eq("user_id", data.userId).maybeSingle();
