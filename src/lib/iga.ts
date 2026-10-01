@@ -66,3 +66,15 @@ export const messageTypeLabels: Record<string, string> = {
 export const channelLabels: Record<string, string> = {
   manual: "Manual", whatsapp: "WhatsApp", email: "E-mail", portal: "Portal", other: "Outro",
 };
+export type CompanyCategoryLink = { company_id: string; category_id: string; is_default: boolean };
+/** Categorias principais permitidas para a empresa: as associadas (ativas) ou, sem associação, todas as ativas. */
+export function companyCategoryOptions<T extends { id: string; parent_id: string | null }>(cats: T[], links: CompanyCategoryLink[], companyId?: string | null) {
+  const top = cats.filter(c => !c.parent_id);
+  const own = links.filter(l => l.company_id === companyId);
+  if (!companyId || own.length === 0) return { options: top, defaultId: "" };
+  const ids = new Set(own.map(l => l.category_id));
+  const options = top.filter(c => ids.has(c.id));
+  if (options.length === 0) return { options: top, defaultId: "" };
+  const def = own.find(l => l.is_default)?.category_id ?? "";
+  return { options, defaultId: options.some(o => o.id === def) ? def : "" };
+}

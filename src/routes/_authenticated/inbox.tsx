@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { companyCategoryOptions, type CompanyCategoryLink } from "@/lib/iga";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox, Link2, MessageSquarePlus, Plus, RefreshCw, Search, Send, TicketPlus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -46,19 +47,22 @@ function InboxPage() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [simulateOpen, setSimulateOpen] = useState(false);
   const [category, setCategory] = useState("");
+  const [catLinks, setCatLinks] = useState<CompanyCategoryLink[]>([]);
   const [newOpen, setNewOpen] = useState(false);
   const [newCompany, setNewCompany] = useState("");
   const [newContact, setNewContact] = useState("");
   const [newPhone, setNewPhone] = useState("");
 
   async function loadConversations() {
-    const [{ data, error }, { data: contactRows }, { data: companyRows }, { data: categoryRows }, { data: ticketRows }] = await Promise.all([
+    const [{ data, error }, { data: contactRows }, { data: companyRows }, { data: categoryRows }, { data: ticketRows }, { data: linkRows }] = await Promise.all([
       supabase.from("conversations").select("*,contacts(name),companies(trade_name),tickets(number,status)").order("last_message_at", { ascending: false }),
       supabase.from("contacts").select("id,name,phone,whatsapp,company_id,companies(trade_name)").eq("status", "active").order("name"),
       supabase.from("companies").select("id,trade_name").eq("status", "active").order("trade_name"),
       supabase.from("ticket_categories").select("id,name,parent_id").eq("status", "active").order("name"),
       supabase.from("tickets").select("id,number,subject,status").not("status", "in", "(closed,cancelled,duplicate)").order("opened_at", { ascending: false }),
+      supabase.from("company_ticket_categories").select("company_id,category_id,is_default"),
     ]);
+    setCatLinks((linkRows ?? []) as CompanyCategoryLink[]);
     if (error) { toast.error(error.message); return; }
     setConversations(data ?? []); setContacts(contactRows ?? []); setCompanies(companyRows ?? []); setCategories(categoryRows ?? []); setOpenTickets(ticketRows ?? []);
   }
@@ -215,7 +219,7 @@ function InboxPage() {
             </div>
             {canOperateInbox && <div className="flex flex-wrap gap-2">
               {!current.contact_id && <Button size="sm" variant="outline" onClick={() => setIdentifyOpen(true)}><UserPlus />Identificar contato</Button>}
-              {!current.ticket_id && <Button size="sm" variant="outline" title="Opcional: abra um chamado somente se a conversa exigir acompanhamento formal" onClick={() => { setCategory(""); setTicketOpen(true); }} disabled={!current.contact_id}><TicketPlus />Criar chamado</Button>}
+              {!current.ticket_id && <Button size="sm" variant="outline" title="Opcional: abra um chamado somente se a conversa exigir acompanhamento formal" onClick={() => { setCategory(companyCategoryOptions(categories, catLinks, current.company_id).defaultId); setTicketOpen(true); }} disabled={!current.contact_id}><TicketPlus />Criar chamado</Button>}
               {!current.ticket_id && <Button size="sm" variant="outline" onClick={() => setLinkOpen(true)}><Link2 />Vincular a chamado</Button>}
               {current.status !== "finished" && <Button size="sm" variant="ghost" disabled={busy} onClick={() => void run(async () => { await setConversationStatus({ data: { conversationId: current.id, status: "finished" } }); toast.success("Conversa finalizada."); })}>Finalizar</Button>}
             </div>}
@@ -264,7 +268,7 @@ function InboxPage() {
         <form onSubmit={submitTicket} className="grid gap-4 sm:grid-cols-2">
           <div><Label htmlFor="conversation-ticket-company">Empresa</Label><Input id="conversation-ticket-company" value={current.companies?.trade_name ?? ""} disabled /></div>
           <div><Label htmlFor="conversation-ticket-contact">Contato</Label><Input id="conversation-ticket-contact" value={current.contacts?.name ?? ""} disabled /></div>
-          <div><Label htmlFor="conversation-ticket-category">Categoria</Label><select id="conversation-ticket-category" name="category_id" className="form-control" value={category} onChange={e => setCategory(e.target.value)}><option value="">Selecione</option>{categories.filter(c => !c.parent_id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+          <div><Label htmlFor="conversation-ticket-category">Categoria</Label><select id="conversation-ticket-category" name="category_id" className="form-control" value={category} onChange={e => setCategory(e.target.value)}><option value="">Selecione</option>{companyCategoryOptions(categories, catLinks, current?.company_id).options.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           <div><Label htmlFor="conversation-ticket-subcategory">Subcategoria</Label><select id="conversation-ticket-subcategory" name="subcategory_id" className="form-control" disabled={!category}><option value="">Selecione</option>{categories.filter(c => c.parent_id === category).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           <div className="sm:col-span-2"><Label htmlFor="conversation-ticket-subject">Assunto</Label><Input id="conversation-ticket-subject" name="subject" required defaultValue={(current.last_message_preview ?? "").slice(0, 80)} /></div>
           <div className="sm:col-span-2"><Label htmlFor="conversation-ticket-description">Descrição</Label><Textarea id="conversation-ticket-description" name="description" rows={5} required defaultValue={messages.filter(m => m.direction === "inbound").map(m => `${formatDate(m.sent_at)}: ${m.content ?? `[${m.message_type}]`}`).join("\n")} /></div>
