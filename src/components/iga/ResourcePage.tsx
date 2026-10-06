@@ -59,7 +59,7 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     .filter(row => !catFilter || links.some(l => l.company_id === row.id && l.category_id === catFilter))
     .filter(row => JSON.stringify(row).toLowerCase().includes(q.toLowerCase())), [rows, q, showArchived, catFilter, links]);
   function companyCats(id: string) {
-    return links.filter(l => l.company_id === id).map(l => ({ ...l, name: allCats.find(c => c.id === l.category_id)?.name ?? "—" }))
+    return links.filter(l => l.company_id === id).map(l => { const cat = allCats.find(c => c.id === l.category_id); return { ...l, name: (cat?.name ?? "—") + (cat?.status === "inactive" ? " (inativa)" : "") }; })
       .sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
   }
   function openEditor(row: any) {
