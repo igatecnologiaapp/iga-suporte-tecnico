@@ -68,8 +68,8 @@ export const channelLabels: Record<string, string> = {
 };
 export type CompanyCategoryLink = { company_id: string; category_id: string; is_default: boolean };
 /** Categorias principais permitidas para a empresa: as associadas (ativas) ou, sem associação, todas as ativas. */
-export function companyCategoryOptions<T extends { id: string; parent_id: string | null }>(cats: T[], links: CompanyCategoryLink[], companyId?: string | null) {
-  const top = cats.filter(c => !c.parent_id);
+export function companyCategoryOptions<T extends { id: string; parent_id: string | null; status?: string }>(cats: T[], links: CompanyCategoryLink[], companyId?: string | null) {
+  const top = cats.filter(c => !c.parent_id && (!c.status || c.status === "active"));
   const own = links.filter(l => l.company_id === companyId);
   if (!companyId || own.length === 0) return { options: top, defaultId: "" };
   const ids = new Set(own.map(l => l.category_id));
