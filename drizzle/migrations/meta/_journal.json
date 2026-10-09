@@ -99,6 +99,13 @@
       "when": 1790729352323,
       "tag": "0013_company_ticket_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791522269427,
+      "tag": "0014_storage_module_gates",
+      "breakpoints": true
     }
   ]
 }
