@@ -62,8 +62,11 @@ export const retryMessageMedia = createServerFn({ method: "POST" })
   .inputValidator((input: { messageId: string }) => ({ messageId: String(input?.messageId ?? "") }))
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
-    const { data: allowed } = await ctx.supabase.rpc("can_manage_operations", { _user_id: ctx.userId });
-    if (!allowed) throw new Error("Seu perfil não permite reprocessar mídias.");
+    const [{ data: allowed }, { data: inbox }] = await Promise.all([
+      ctx.supabase.rpc("can_manage_operations", { _user_id: ctx.userId }),
+      ctx.supabase.rpc("has_module", { _user_id: ctx.userId, _module: "inbox" }),
+    ]);
+    if (!allowed || !inbox) throw new Error("Seu perfil não permite reprocessar mídias.");
     const { data: m, error } = await ctx.supabase.from("messages").select("id,conversation_id,media_id,attachment_name,processing_status").eq("id", data.messageId).single();
     if (error || !m) throw new Error("Mensagem não encontrada.");
     if (!m.media_id || !["media_pending", "media_failed"].includes(m.processing_status)) throw new Error("Esta mensagem não possui mídia pendente.");
