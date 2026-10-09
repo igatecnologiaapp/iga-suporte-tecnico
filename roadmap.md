@@ -58,3 +58,23 @@
 - [x] Webhook oficial (verificação + assinatura) reutilizando a camada de mensagens
 - [x] Idempotência, mídias privadas, log técnico, tela Administração › Integrações
 - [ ] Validação com WhatsApp real — aguardando credenciais da Meta
+
+## Pendências anteriores (prioridade)
+- [ ] Correções de segurança — aguardando autorização item a item (A1, B1, B2, B3, B4/B5, C1–C9)
+- [ ] Teste real de mídia (imagem/áudio/vídeo) e "Reprocessar mídia" — aguardando mensagens reais
+- [ ] Finalizar conversa de teste da Elisangela — aguardando autorização
+- [ ] Publicação — aguardando autorização
+
+# IGA Service — Etapa 4A (Cadastro de Clientes) — aguardando autorização
+- [ ] Campo Domínio opcional (normalizado, sem https://) na ficha e coluna na lista com pesquisa/ordenação
+- [ ] Subcategorias permitidas por Empresa (dentro das categorias associadas; sem configuração = todas ativas)
+- [ ] Remover categoria da Empresa trata suas subcategorias; inativas fora de novos chamados; histórico preservado
+- [ ] Mesma regra em Chamados e Caixa de Entrada, validada também no servidor
+
+# IGA Service — Etapa 4B (Alertas) — após validar 4A
+- [ ] Som de nova mensagem recebida (sem repetir, sem enviadas, liga/desliga por usuário)
+- [ ] Alertas de chamados sem resposta (Atenção/Urgente/Crítico configuráveis, reaproveitando SLA)
+- [ ] Contador, destaque na lista, aviso no cabeçalho; notificação do navegador só com permissão
+
+# IGA Service — Etapa 4C (Envio de imagens) — após validar 4B e autorização
+- [ ] Envio de imagem com prévia, legenda, validação, confirmação real da Meta, sem duplicidade
