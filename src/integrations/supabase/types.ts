@@ -1049,7 +1049,16 @@ export type Database = {
       }
       is_primary_admin: { Args: { _user_id: string }; Returns: boolean }
       my_modules: { Args: never; Returns: Json }
+      my_profile: { Args: never; Returns: Json }
       normalize_phone: { Args: { value: string }; Returns: string }
+      technician_contacts: {
+        Args: never
+        Returns: {
+          email: string
+          id: string
+          phone: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "supervisor" | "technician" | "viewer"
