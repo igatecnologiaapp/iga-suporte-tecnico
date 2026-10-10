@@ -40,8 +40,17 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
   const canLinkCats = role === "admin" || role === "supervisor";
 
   async function load() {
-    const { data, error } = await supabase.from(c.table).select("*").order(c.name);
-    if (error) toast.error(error.message); else setRows(data ?? []);
+    if (kind === "technicians") {
+      const [{ data, error }, { data: contacts }] = await Promise.all([
+        supabase.from("technicians").select("id,name,user_id,specialty,status,created_at,updated_at").order("name"),
+        supabase.rpc("technician_contacts"),
+      ]);
+      const byId = new Map((contacts ?? []).map((x: any) => [x.id, x]));
+      if (error) toast.error(error.message); else setRows((data ?? []).map((r: any) => ({ ...r, phone: byId.get(r.id)?.phone ?? null, email: byId.get(r.id)?.email ?? null })));
+    } else {
+      const { data, error } = await supabase.from(c.table).select("*").order(c.name);
+      if (error) toast.error(error.message); else setRows(data ?? []);
+    }
     if (kind === "companies") {
       const [{ data: cs }, { data: ls }] = await Promise.all([
         supabase.from("ticket_categories").select("id,name,status").is("parent_id", null).order("name"),
