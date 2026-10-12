@@ -60,7 +60,8 @@
 - [ ] Validação com WhatsApp real — aguardando credenciais da Meta
 
 ## Pendências anteriores (prioridade)
-- [ ] Correções de segurança — aguardando autorização item a item (A1, B1, B2, B3, B4/B5, C1–C9)
+- [x] Correções de segurança A1, B1, B2, B3
+- [ ] Correções de segurança B4/B5, C1–C9 — aguardando autorização
 - [ ] Teste real de mídia (imagem/áudio/vídeo) e "Reprocessar mídia" — aguardando mensagens reais
 - [ ] Finalizar conversa de teste da Elisangela — aguardando autorização
 - [ ] Publicação — aguardando autorização
@@ -78,3 +79,5 @@
 
 # IGA Service — Etapa 4C (Envio de imagens) — após validar 4B e autorização
 - [ ] Envio de imagem com prévia, legenda, validação, confirmação real da Meta, sem duplicidade
+- [ ] Complemento: botão de clipe no campo de resposta; selecionar/visualizar/trocar/cancelar imagem; legenda opcional (imagem sozinha permitida); imagem+legenda numa única mensagem; JPEG/PNG até 5 MB; situação do envio; falha registrada com nova tentativa sem duplicar
+- [ ] Complemento: imagem guardada em área privada, exibida na conversa com data/hora/atendente/situação, ligada à conversa e ao chamado vinculado; acesso só com módulo Caixa de Entrada (preservar A1/B1)
