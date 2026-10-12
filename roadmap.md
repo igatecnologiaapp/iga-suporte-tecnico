@@ -81,3 +81,9 @@
 - [ ] Envio de imagem com prévia, legenda, validação, confirmação real da Meta, sem duplicidade
 - [ ] Complemento: botão de clipe no campo de resposta; selecionar/visualizar/trocar/cancelar imagem; legenda opcional (imagem sozinha permitida); imagem+legenda numa única mensagem; JPEG/PNG até 5 MB; situação do envio; falha registrada com nova tentativa sem duplicar
 - [ ] Complemento: imagem guardada em área privada, exibida na conversa com data/hora/atendente/situação, ligada à conversa e ao chamado vinculado; acesso só com módulo Caixa de Entrada (preservar A1/B1)
+
+# IGA Service — WhatsApp: Modelos de mensagem (templates) — aguardando autorização
+- [ ] Botão "Enviar modelo de mensagem" fora da janela de 24h e em nova conversa (dentro da janela mantém "Responder pelo WhatsApp")
+- [ ] Listar só modelos aprovados da conta Meta conectada; prévia e preenchimento das variáveis obrigatórias
+- [ ] Envio pela API oficial, registro no histórico após confirmação da Meta; resposta do cliente reabre o campo livre
+- [ ] Mensagens claras sem modelos aprovados ou em erro; preservar permissões, segurança, histórico e vínculo com chamados
