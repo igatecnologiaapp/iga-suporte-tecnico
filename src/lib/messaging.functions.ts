@@ -186,7 +186,7 @@ export const sendConversationReply = createServerFn({ method: "POST" })
     const externalId: string | null = body?.messages?.[0]?.id ?? null;
     const { data: inserted, error: insError } = await db.from("messages").insert({
       conversation_id: data.conversationId, direction: "outbound", channel: "whatsapp", phone: conversation.phone,
-      content: data.content, message_type: "text", status: "sent", external_id: externalId, sent_at: new Date().toISOString(),
+      content: data.content, message_type: "text", status: "sent", external_id: externalId, sent_at: new Date().toISOString(), sent_by: ctx.userId,
     }).select("*").single();
     await logIntegrationEvent("send:text", insError ? "error" : "processed", externalId, insError?.message ?? null);
     if (insError) throw new Error("Mensagem enviada, mas houve falha ao registrá-la no histórico.");

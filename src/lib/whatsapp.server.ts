@@ -26,7 +26,10 @@ export async function processEvents(events: ParsedEvent[]) {
       if (event.kind === "other") { await logIntegrationEvent(event.eventType, "ignored"); continue; }
       if (event.kind === "status") {
         // Preparado para a etapa de envio: hoje não há mensagens enviadas a atualizar.
-        const { data } = await (await admin()).from("messages").update({ status: mapStatus(event.status) }).eq("channel", "whatsapp").eq("external_id", event.externalId).eq("direction", "outbound").select("id");
+        // Não regride a situação (ex.: "sent" atrasado não sobrescreve "read").
+        const next = mapStatus(event.status);
+        const prior: Record<string, string[]> = { sent: ["pending"], delivered: ["pending", "sent"], read: ["pending", "sent", "delivered"], failed: ["pending", "sent"] };
+        const { data } = await (await admin()).from("messages").update({ status: next }).eq("channel", "whatsapp").eq("external_id", event.externalId).eq("direction", "outbound").in("status", prior[next] ?? []).select("id");
         await logIntegrationEvent(`status:${event.status}`, data?.length ? "processed" : "ignored", event.externalId);
         continue;
       }

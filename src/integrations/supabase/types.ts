@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -385,7 +385,10 @@ export type Database = {
           phone: string | null
           processing_status: string
           sent_at: string
+          sent_by: string | null
           status: Database["public"]["Enums"]["message_state"]
+          template_language: string | null
+          template_name: string | null
         }
         Insert: {
           attachment_mime?: string | null
@@ -405,7 +408,10 @@ export type Database = {
           phone?: string | null
           processing_status?: string
           sent_at?: string
+          sent_by?: string | null
           status?: Database["public"]["Enums"]["message_state"]
+          template_language?: string | null
+          template_name?: string | null
         }
         Update: {
           attachment_mime?: string | null
@@ -425,7 +431,10 @@ export type Database = {
           phone?: string | null
           processing_status?: string
           sent_at?: string
+          sent_by?: string | null
           status?: Database["public"]["Enums"]["message_state"]
+          template_language?: string | null
+          template_name?: string | null
         }
         Relationships: [
           {
