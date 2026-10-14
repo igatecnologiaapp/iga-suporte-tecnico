@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { companyCategoryOptions, type CompanyCategoryLink } from "@/lib/iga";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Inbox, Link2, MessageSquarePlus, Plus, RefreshCw, Search, Send, TicketPlus, UserPlus } from "lucide-react";
+import { FileText, Inbox, Link2, MessageSquarePlus, Plus, RefreshCw, Search, Send, TicketPlus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import { Empty, Page } from "@/components/iga/Page";
 import { supabase } from "@/integrations/supabase/client";
 import { canManageCatalogs, canOperate, conversationStatusLabels, errorMessage, formatDate, messageTypeLabels, priorities } from "@/lib/iga";
 import { retryMessageMedia } from "@/lib/whatsapp.functions";
+import { listApprovedTemplates, sendTemplateMessage } from "@/lib/whatsapp-templates.functions";
 import { createTicketFromConversation, startConversation, identifyConversationContact, linkConversationToTicket, markConversationRead, sendConversationReply, setConversationStatus, simulateInboundMessage } from "@/lib/messaging.functions";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
@@ -103,6 +104,7 @@ function InboxPage() {
     return () => { window.clearInterval(id); document.removeEventListener("visibilitychange", onVisible); };
   }, []);
 
+  const [templateOpen, setTemplateOpen] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
@@ -230,14 +232,19 @@ function InboxPage() {
               {message.attachment_path && <MediaView path={message.attachment_path} mime={message.attachment_mime} type={message.message_type} name={message.attachment_name} />}
               {message.processing_status === "media_pending" && <p className="mt-1 text-xs text-muted-foreground">Mídia em processamento…</p>}
               {["media_failed", "media_pending"].includes(message.processing_status) && message.media_id && <div className="mt-1 flex flex-wrap items-center gap-2">{message.processing_status === "media_failed" && <p className="text-xs text-destructive">Falha ao obter a mídia.</p>}{canOperateInbox && <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void run(async () => { const r = await retryMessageMedia({ data: { messageId: message.id } }); if (r.ok) toast.success("Mídia obtida."); else toast.error("Não foi possível obter a mídia. Tente novamente mais tarde."); await loadMessages(message.conversation_id); })}><RefreshCw />Reprocessar mídia</Button>}</div>}
-              <p className="mt-1 text-xs text-muted-foreground">{message.direction === "inbound" ? "Recebida" : "Enviada"} · {messageTypeLabels[message.message_type] ?? message.message_type} · {formatDate(message.sent_at)}</p>
+              {message.template_name && <p className="mt-1 text-xs font-medium">Modelo: {message.template_name} ({message.template_language})</p>}
+              <p className="mt-1 text-xs text-muted-foreground">{message.direction === "inbound" ? "Recebida" : (outboundStatusLabels[message.status] ?? "Enviada")} · {message.template_name ? "Modelo" : (messageTypeLabels[message.message_type] ?? message.message_type)} · {formatDate(message.sent_at)}</p>
             </div>)}
           </div>
           {canOperateInbox && current.channel === "whatsapp" && (() => {
             const lastIn = [...messages].reverse().find(m => m.direction === "inbound");
             const simulated = String(lastIn?.external_id ?? "").startsWith("sim:");
             const inWindow = lastIn && Date.now() - new Date(lastIn.sent_at).getTime() <= 24 * 60 * 60 * 1000;
-            if (!inWindow || simulated) return <p className="mt-4 rounded-md border border-dashed p-3 text-xs text-muted-foreground">{simulated ? "Conversa simulada: resposta real indisponível." : lastIn ? "Fora da janela de 24 horas do WhatsApp. Para retomar o contato é necessário um modelo (template) aprovado — ainda não disponível no sistema." : "Nenhuma mensagem recebida deste cliente nas últimas 24 horas. O primeiro contato iniciado pela empresa exige um modelo (template) aprovado — seleção de modelos será disponibilizada em etapa futura."}</p>;
+            if (simulated) return <p className="mt-4 rounded-md border border-dashed p-3 text-xs text-muted-foreground">Conversa simulada: resposta real indisponível.</p>;
+            if (!inWindow) return <div className="mt-4 grid gap-2 rounded-md border border-dashed p-3">
+              <p className="text-xs text-muted-foreground">{lastIn ? "Fora da janela de 24 horas do WhatsApp. Mensagem livre bloqueada: para retomar o contato, envie um modelo aprovado pela Meta." : "Nenhuma mensagem recebida deste cliente nas últimas 24 horas. O contato iniciado pela empresa exige um modelo aprovado pela Meta."}</p>
+              <div><Button type="button" size="sm" variant="outline" onClick={() => setTemplateOpen(true)}><FileText />Enviar modelo de mensagem</Button></div>
+            </div>;
             return <form className="mt-4 grid gap-2 border-t pt-4" onSubmit={e => { e.preventDefault(); void sendReply(); }}>
               <Label htmlFor="conversation-reply">Responder pelo WhatsApp</Label>
               <Textarea id="conversation-reply" rows={3} maxLength={4096} value={reply} disabled={sending} onChange={e => setReply(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendReply(); } }} placeholder="Digite a resposta ao cliente..." />
@@ -255,6 +262,8 @@ function InboxPage() {
         <div><Label htmlFor="new-conv-phone">Telefone WhatsApp</Label><select id="new-conv-phone" className="form-control" value={newPhone} disabled={!newContact} onChange={e => setNewPhone(e.target.value)}><option value="">Selecione</option>{(() => { const c = contacts.find(x => x.id === newContact); return [...new Set([c?.whatsapp, c?.phone].filter(Boolean))].map(p => <option key={p} value={p}>{p}{p === c?.whatsapp ? " (WhatsApp)" : ""}</option>); })()}</select>{newContact && !contacts.find(x => x.id === newContact)?.whatsapp && !contacts.find(x => x.id === newContact)?.phone && <p className="mt-1 text-xs text-destructive">Contato sem telefone cadastrado.</p>}</div>
         <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setNewOpen(false)}>Cancelar</Button><Button disabled={busy || !newContact || !newPhone}>Iniciar conversa</Button></div>
       </form></DialogContent></Dialog>
+
+    {current && templateOpen && <TemplateDialog conversation={current} onClose={() => setTemplateOpen(false)} onSent={sent => { setMessages(prev => prev.some(m => m.id === sent.id) ? prev : [...prev, sent]); void loadConversations(); }} />}
 
     {current && <>
       <Dialog open={identifyOpen} onOpenChange={setIdentifyOpen}><DialogContent><DialogHeader><DialogTitle>Identificar contato</DialogTitle><DialogDescription>Vincule a conversa a um contato existente ou cadastre um novo contato para {current.phone}. Empresas não são criadas automaticamente.</DialogDescription></DialogHeader>
@@ -311,4 +320,54 @@ function MediaView({ path, mime, type, name }: { path: string; mime: string | nu
     {kind === "audio" && <audio src={url} controls preload="metadata" className="w-full" />}
     <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-primary underline">Abrir{kind === "image" || kind === "video" || kind === "audio" ? " em nova aba" : " anexo"}{name ? `: ${name}` : ""}</a>
   </div>;
+}
+
+const outboundStatusLabels: Record<string, string> = { pending: "Processando", sent: "Aceita pela Meta", delivered: "Entregue", read: "Lida", failed: "Falha no envio" };
+
+type Tpl = { name: string; language: string; category: string; header: string | null; body: string; footer: string | null; variables: { key: string; example: string | null }[] };
+
+function TemplateDialog({ conversation, onClose, onSent }: { conversation: any; onClose: () => void; onSent: (m: any) => void }) {
+  const [state, setState] = useState<{ loading: boolean; error?: string; templates: Tpl[]; skipped: number }>({ loading: true, templates: [], skipped: 0 });
+  const [key, setKey] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
+  useEffect(() => { void (async () => {
+    try { const r = await listApprovedTemplates(); setState(r.ok ? { loading: false, templates: r.templates, skipped: r.skipped } : { loading: false, error: r.error, templates: [], skipped: 0 }); }
+    catch (e) { setState({ loading: false, error: errorMessage(e), templates: [], skipped: 0 }); }
+  })(); }, []);
+  const tpl = state.templates.find(t => `${t.name}|${t.language}` === key);
+  const fill = (s: string) => s.replace(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g, (_, k) => values[k]?.trim() || `{{${k}}}`);
+  const preview = tpl ? [tpl.header, fill(tpl.body), tpl.footer].filter(Boolean).join("\n\n") : "";
+  const missing = tpl ? tpl.variables.filter(v => !values[v.key]?.trim()) : [];
+  async function send() {
+    if (!tpl || missing.length || sendingRef.current) return;
+    sendingRef.current = true; setSending(true);
+    try {
+      const r = await sendTemplateMessage({ data: { conversationId: conversation.id, name: tpl.name, language: tpl.language, values } });
+      if (!r.ok) { toast.error(r.error); setConfirming(false); return; }
+      onSent(r.message); toast.success("Modelo aceito pela Meta. A entrega será confirmada pelo WhatsApp."); onClose();
+    } catch (e) { toast.error(errorMessage(e)); setConfirming(false); }
+    finally { sendingRef.current = false; setSending(false); }
+  }
+  const recipient = `${conversation.contacts?.name || conversation.display_name || "Contato não identificado"} · ${conversation.phone}`;
+  return <Dialog open onOpenChange={o => { if (!o && !sending) onClose(); }}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>Enviar modelo de mensagem</DialogTitle><DialogDescription>Somente modelos aprovados pela Meta. O envio de um modelo não libera mensagens livres: a janela de 24 horas só abre quando o cliente responder.</DialogDescription></DialogHeader>
+    <div className="grid gap-4">
+      <p className="text-sm"><span className="text-muted-foreground">Destinatário: </span><span className="font-medium">{recipient}</span></p>
+      {state.loading ? <p className="text-sm text-muted-foreground">Consultando modelos aprovados…</p>
+        : state.error ? <p className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">{state.error}</p>
+        : state.templates.length === 0 ? <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">Nenhum modelo de texto aprovado disponível na conta WhatsApp Business.{state.skipped ? ` ${state.skipped} modelo(s) aprovado(s) com imagem, documento ou botões ainda não são suportados.` : ""} Crie e aguarde a aprovação de um modelo no Gerenciador do WhatsApp da Meta.</p>
+        : <>
+          <div><Label htmlFor="tpl-select">Modelo</Label><select id="tpl-select" className="form-control" value={key} disabled={confirming || sending} onChange={e => { setKey(e.target.value); setValues({}); }}><option value="">Selecione</option>{state.templates.map(t => <option key={`${t.name}|${t.language}`} value={`${t.name}|${t.language}`}>{t.name} · {t.language} · {t.category}</option>)}</select></div>
+          {tpl?.variables.map(v => <div key={v.key}><Label htmlFor={`tpl-var-${v.key}`}>{`Variável {{${v.key}}}`} *</Label><Input id={`tpl-var-${v.key}`} maxLength={1024} value={values[v.key] ?? ""} disabled={confirming || sending} placeholder={v.example ? `Ex.: ${v.example}` : ""} onChange={e => setValues(p => ({ ...p, [v.key]: e.target.value }))} /></div>)}
+          {tpl && <div><p className="mb-1 text-xs font-medium text-muted-foreground">Prévia</p><p className="whitespace-pre-wrap rounded-md border bg-primary/10 p-3 text-sm">{preview}</p></div>}
+          {tpl && missing.length > 0 && <p className="text-xs text-muted-foreground">Preencha todas as variáveis obrigatórias para continuar.</p>}
+        </>}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" disabled={sending} onClick={() => confirming ? setConfirming(false) : onClose()}>{confirming ? "Voltar" : "Cancelar"}</Button>
+        {!confirming ? <Button type="button" disabled={!tpl || missing.length > 0} onClick={() => setConfirming(true)}>Revisar envio</Button>
+          : <Button type="button" disabled={sending} onClick={() => void send()}><Send />{sending ? "Enviando..." : `Confirmar envio para ${conversation.phone}`}</Button>}
+      </div>
+    </div></DialogContent></Dialog>;
 }
