@@ -12,7 +12,7 @@ const VAR_RE = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g;
 
 function varsOf(text: string) {
   const seen: string[] = [];
-  for (const m of text.matchAll(VAR_RE)) if (!seen.includes(m[1])) seen.push(m[1]);
+  for (const m of text.matchAll(VAR_RE)) { const k = m[1] ?? ""; if (k && !seen.includes(k)) seen.push(k); }
   return seen;
 }
 
