@@ -87,3 +87,9 @@
 - [ ] Listar só modelos aprovados da conta Meta conectada; prévia e preenchimento das variáveis obrigatórias
 - [ ] Envio pela API oficial, registro no histórico após confirmação da Meta; resposta do cliente reabre o campo livre
 - [ ] Mensagens claras sem modelos aprovados ou em erro; preservar permissões, segurança, histórico e vínculo com chamados
+
+# IGA Service — Modelos (templates) WhatsApp
+- [x] Consulta de modelos aprovados (servidor, módulo Caixa de Entrada), envio de modelos de texto com variáveis, prévia e confirmação
+- [x] Histórico com nome/idioma do modelo, atendente e situação (aceita/entregue/lida/falha)
+- [ ] Envio real de teste — aguardando autorização
+- [ ] Modelos com imagem/documento/botões — junto da Etapa 4C
