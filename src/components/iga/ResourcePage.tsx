@@ -201,6 +201,11 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     </DialogContent></Dialog>
   </Page>;
 }
+function normalizeDomain(raw: string): string | null {
+  const v = raw.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+  if (!v) return null;
+  return /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(v) ? v : null;
+}
 function Field({ n, l, type = "text", req = true, value }: { n: string; l: string; type?: string; req?: boolean; value?: unknown }) { return <div><Label htmlFor={n}>{l}</Label><Input id={n} name={n} type={type} required={req} defaultValue={value == null ? "" : String(value)}/></div>; }
 function SelectField({ n, l, rows, optional = false, value }: { n: string; l: string; rows: any[]; optional?: boolean; value?: unknown }) { return <div><Label htmlFor={n}>{l}</Label><select id={n} name={n} required={!optional} className="form-control" defaultValue={value == null ? "" : String(value)}><option value="">Selecione</option>{rows.map((row) => <option key={row.id} value={row.id}>{row.trade_name || row.full_name || row.name}</option>)}</select></div>; }
 
