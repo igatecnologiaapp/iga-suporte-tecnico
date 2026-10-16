@@ -77,6 +77,7 @@ export type Database = {
           created_at: string
           created_by: string
           district: string | null
+          domain: string | null
           email: string | null
           id: string
           legal_name: string
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string
           created_by: string
           district?: string | null
+          domain?: string | null
           email?: string | null
           id?: string
           legal_name: string
@@ -123,6 +125,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           district?: string | null
+          domain?: string | null
           email?: string | null
           id?: string
           legal_name?: string
