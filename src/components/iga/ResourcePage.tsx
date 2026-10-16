@@ -97,7 +97,16 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true);
     const fd = new FormData(event.currentTarget); let payload: any = {};
-    if (kind === "companies") payload = { legal_name: fd.get("legal_name"), trade_name: fd.get("trade_name"), tax_id: fd.get("tax_id"), phone: fd.get("phone") || null, whatsapp: fd.get("whatsapp") || null, email: fd.get("email") || null, postal_code: fd.get("postal_code") || null, address: fd.get("address") || null, address_number: fd.get("address_number") || null, complement: fd.get("complement") || null, district: fd.get("district") || null, city: fd.get("city") || null, state: fd.get("state") || null, notes: fd.get("notes") || null, status: fd.get("status") };
+    if (kind === "companies") {
+      const rawDomain = String(fd.get("domain") ?? "");
+      const domain = normalizeDomain(rawDomain);
+      if (rawDomain.trim() && !domain) { setSaving(false); toast.error("Domínio inválido. Use o formato empresa.com.br."); return; }
+      if (domain) {
+        const other = rows.find(r => r.id !== editing?.id && r.domain === domain);
+        if (other) toast.info(`Atenção: o domínio ${domain} já está cadastrado em ${other.trade_name}.`);
+      }
+      payload = { legal_name: fd.get("legal_name"), trade_name: fd.get("trade_name"), tax_id: fd.get("tax_id"), domain, phone: fd.get("phone") || null, whatsapp: fd.get("whatsapp") || null, email: fd.get("email") || null, postal_code: fd.get("postal_code") || null, address: fd.get("address") || null, address_number: fd.get("address_number") || null, complement: fd.get("complement") || null, district: fd.get("district") || null, city: fd.get("city") || null, state: fd.get("state") || null, notes: fd.get("notes") || null, status: fd.get("status") };
+    }
     if (kind === "contacts") payload = { company_id: fd.get("company_id"), name: fd.get("name"), job_title: fd.get("job_title") || null, phone: fd.get("phone") || null, whatsapp: fd.get("whatsapp") || null, email: fd.get("email") || null, is_primary: fd.get("is_primary") === "on", status: fd.get("status") };
     if (kind === "technicians") payload = { user_id: fd.get("user_id"), name: fd.get("name"), phone: fd.get("phone") || null, email: fd.get("email"), specialty: fd.get("specialty") || null, status: fd.get("status") };
     if (kind === "categories") payload = { name: fd.get("name"), parent_id: fd.get("parent_id") || null, status: fd.get("status") };
