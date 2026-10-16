@@ -120,6 +120,20 @@
       "when": 1792012928955,
       "tag": "0016_message_templates_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792158490861,
+      "tag": "0017_companies_domain",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792158806630,
+      "tag": "0018_restore_update_grants_companies_contacts",
+      "breakpoints": true
     }
   ]
 }
