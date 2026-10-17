@@ -1,0 +1,30 @@
+{
+  "base_commit": "f3396c80e72e9b93330d9935eacee435be3e9509",
+  "branch": "codex/iga-service-fase-1",
+  "build": {
+    "exit_code": 0
+  },
+  "typescript": {
+    "exit_code": 2,
+    "diagnostics": [
+      "src/lib/iga.ts(90,62): error TS2532: Object is possibly 'undefined'."
+    ]
+  },
+  "tests": {
+    "status": "No test suite declared in package.json or test files found"
+  },
+  "eslint": {
+    "exit_code": 1,
+    "errors": 2245,
+    "warnings": 10,
+    "rules": {
+      "prettier/prettier": 2155,
+      "react-hooks/exhaustive-deps": 4,
+      "@typescript-eslint/no-explicit-any": 87,
+      "react-refresh/only-export-components": 6,
+      "prefer-const": 1,
+      "no-useless-escape": 1,
+      "@typescript-eslint/no-unused-expressions": 1
+    }
+  }
+}
