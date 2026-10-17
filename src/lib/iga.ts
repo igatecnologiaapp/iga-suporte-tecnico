@@ -78,3 +78,14 @@ export function companyCategoryOptions<T extends { id: string; parent_id: string
   const def = own.find(l => l.is_default)?.category_id ?? "";
   return { options, defaultId: options.some(o => o.id === def) ? def : "" };
 }
+
+// Subcategorias disponíveis para uma empresa dentro da categoria principal selecionada:
+// se a empresa tem subcategorias associadas para esse pai, só elas aparecem; senão, todas as ativas do pai.
+export function companySubcategoryOptions<T extends { id: string; parent_id: string | null; status?: string }>(cats: T[], links: CompanyCategoryLink[], companyId: string | null | undefined, parentId: string) {
+  const all = cats.filter(c => c.parent_id === parentId && (!c.status || c.status === "active"));
+  if (!companyId) return { options: all, defaultId: "" };
+  const linkedIds = new Set(links.filter(l => l.company_id === companyId).map(l => l.category_id));
+  const linked = all.filter(c => linkedIds.has(c.id));
+  if (linked.length === 0) return { options: all, defaultId: "" };
+  return { options: linked, defaultId: linked.length === 1 ? linked[0].id : "" };
+}
