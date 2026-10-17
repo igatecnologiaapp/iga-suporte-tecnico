@@ -53,7 +53,7 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     }
     if (kind === "companies") {
       const [{ data: cs }, { data: ls }] = await Promise.all([
-        supabase.from("ticket_categories").select("id,name,status").is("parent_id", null).order("name"),
+        supabase.from("ticket_categories").select("id,name,parent_id,status").order("name"),
         supabase.from("company_ticket_categories").select("company_id,category_id,is_default"),
       ]);
       setAllCats(cs ?? []); setLinks(ls ?? []);
@@ -68,8 +68,12 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     .filter(row => !catFilter || links.some(l => l.company_id === row.id && l.category_id === catFilter))
     .filter(row => JSON.stringify(row).toLowerCase().includes(q.toLowerCase())), [rows, q, showArchived, catFilter, links]);
   function companyCats(id: string) {
-    return links.filter(l => l.company_id === id).map(l => { const cat = allCats.find(c => c.id === l.category_id); return { ...l, name: (cat?.name ?? "—") + (cat?.status === "inactive" ? " (inativa)" : "") }; })
-      .sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
+    return links.filter(l => l.company_id === id).map(l => {
+      const cat = allCats.find(c => c.id === l.category_id);
+      const parent = cat?.parent_id ? allCats.find(c => c.id === cat.parent_id) : null;
+      const label = (parent ? `${parent.name} — ${cat?.name ?? "—"}` : cat?.name ?? "—") + (cat?.status === "inactive" ? " (inativa)" : "");
+      return { ...l, name: label };
+    }).sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
   }
   function openEditor(row: any) {
     setEditing(row);
