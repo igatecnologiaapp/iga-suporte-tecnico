@@ -1,0 +1,48 @@
+{
+  "recorded_at": "2026-10-17T10:50:05.245871-03:00",
+  "status": "BLOCKED_INFRASTRUCTURE",
+  "application_commit": "1599367012492a3c9482ccaa258d2250cb0b0b9e",
+  "branch": "codex/iga-service-fase-1",
+  "docker": {
+    "version": "28.4.0",
+    "driver": "vfs",
+    "running_containers": [],
+    "containers": [],
+    "volumes": []
+  },
+  "supabase_cli_version": "2.121.0",
+  "attempts": [
+    {
+      "destination": "public.ecr.aws",
+      "outcome": "HTTP 403 on image pull"
+    },
+    {
+      "image": "supabase/postgres:17.11.0.004",
+      "registry": "docker.io",
+      "outcome": "failed to register layer: no space left on device"
+    },
+    {
+      "image": "supabase/postgres:15.19.0.004",
+      "registry": "docker.io",
+      "outcome": "failed to register layer: no space left on device"
+    }
+  ],
+  "migrations_applied": 0,
+  "synthetic_users_created": 0,
+  "synthetic_records_created": 0,
+  "unit_tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "functional_ui_tests": "NOT_RUN_BACKEND_UNAVAILABLE",
+  "rls_auth_storage_tests": "NOT_RUN_BACKEND_UNAVAILABLE",
+  "prepared_helper_lint": "PASSED",
+  "prepared_helper_syntax": "PASSED",
+  "production_database_access": false,
+  "production_configuration_copied": false,
+  "public_preview_created": false,
+  "historical_migrations_modified": false,
+  "application_code_modified": false,
+  "next_requirement": "Docker storage capable of extracting official images; no host reconfiguration performed"
+}
