@@ -1,0 +1,97 @@
+{
+  "base_commit": "f3396c80e72e9b93330d9935eacee435be3e9509",
+  "code_commit": "6221324",
+  "build": {
+    "exit_code": 0
+  },
+  "typescript": {
+    "exit_code": 0
+  },
+  "unit_tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "chromium_tests": {
+    "passed": 22,
+    "failed": 0,
+    "skipped": 0
+  },
+  "viewports": [360, 768, 1440],
+  "themes": ["light", "dark"],
+  "production_access": false,
+  "screenshots": [
+    {
+      "file": "companies-1440-dark.png",
+      "sha256": "6cebd56c6b58fd717e0b8f0a41fc877a51296fa3c5e5b7acd96c5d7a6a0767d1"
+    },
+    {
+      "file": "companies-1440-light.png",
+      "sha256": "4bf2a7475d1801b6d4d1425d6ebf7b1e9a65534fdaaf7f9f76ee023d6db581a8"
+    },
+    {
+      "file": "companies-360-dark.png",
+      "sha256": "acce0f8791c05aeaa92edc360bb7b5f1dcce38791918df9ac797553825058a7c"
+    },
+    {
+      "file": "companies-360-light.png",
+      "sha256": "6ed3fe69d8b5074d127a06472076feadfad3371519262fd62fa35bc947a97e0e"
+    },
+    {
+      "file": "companies-768-dark.png",
+      "sha256": "bfb188dbff59c7ba587ef64db935b138bf3c62c5d3949c32578ec17912e2432d"
+    },
+    {
+      "file": "companies-768-light.png",
+      "sha256": "f7dae392bfbde4212a330e079f67e7eb227905bc32af4f5dc6fd048b8fd26984"
+    },
+    {
+      "file": "company-categories-1440-dark.png",
+      "sha256": "b73c7186a0b317fb66be7d4fb11c69c3cd825bd9efbd44227e6f7d9f4f19565e"
+    },
+    {
+      "file": "company-categories-1440-light.png",
+      "sha256": "c0bedf66c205aaaae48848cd552945d92dd4be6416ce2b4310096d5b3a272f0a"
+    },
+    {
+      "file": "company-categories-360-dark.png",
+      "sha256": "633b3de4c69db4166ee7810b49cda54091f7100129f871e5286ba1d1b826064a"
+    },
+    {
+      "file": "company-categories-360-light.png",
+      "sha256": "36e9bb416cc9960b236597b3349a3bd84378f5ef45a8c845ecc83e90210bd09b"
+    },
+    {
+      "file": "company-categories-768-dark.png",
+      "sha256": "9a13edbcbc68677928f09265d310e29c4f2072a38f5f4d40464b2287bc612a3d"
+    },
+    {
+      "file": "company-categories-768-light.png",
+      "sha256": "a813388485fd833a9e66ce526bf2a4ae261dc1767db2422451180292338f9a4e"
+    },
+    {
+      "file": "company-form-1440-dark.png",
+      "sha256": "97ef8b77dcd066666396f06ea2486947444f3052fcc740018960040cf896597c"
+    },
+    {
+      "file": "company-form-1440-light.png",
+      "sha256": "c67608af38400efcca0f8784176b670df300a7bbd0f9ba1ed369dfee913412f2"
+    },
+    {
+      "file": "company-form-360-dark.png",
+      "sha256": "8b5ca5c05e9c125ae6642a3f2fb01443f2284dfdd27eeb278b6b31ae99d25d41"
+    },
+    {
+      "file": "company-form-360-light.png",
+      "sha256": "2958ff2c2814095cb36e7913256d4eaf4c10ab3cb5b7378c6eb51c81c3485001"
+    },
+    {
+      "file": "company-form-768-dark.png",
+      "sha256": "ca00f06be319f57914596b2d63ff1a9b3919e65bac79c0df94a40dc288716d31"
+    },
+    {
+      "file": "company-form-768-light.png",
+      "sha256": "10bec86439652f2417f618e97e55db2c9b5d8372d9448d5e98e3fc3a026f7305"
+    }
+  ]
+}

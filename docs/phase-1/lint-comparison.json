@@ -1,0 +1,30 @@
+{
+  "baseline": {
+    "errors": 2245,
+    "warnings": 10,
+    "rules": {
+      "prettier/prettier": 2155,
+      "react-hooks/exhaustive-deps": 4,
+      "@typescript-eslint/no-explicit-any": 87,
+      "react-refresh/only-export-components": 6,
+      "prefer-const": 1,
+      "no-useless-escape": 1,
+      "@typescript-eslint/no-unused-expressions": 1
+    }
+  },
+  "final": {
+    "errors": 2085,
+    "warnings": 9,
+    "rules": {
+      "prettier/prettier": 1995,
+      "@typescript-eslint/no-explicit-any": 87,
+      "react-hooks/exhaustive-deps": 3,
+      "react-refresh/only-export-components": 6,
+      "prefer-const": 1,
+      "no-useless-escape": 1,
+      "@typescript-eslint/no-unused-expressions": 1
+    }
+  },
+  "comparison": "file + rule + message, ignoring shifted line numbers",
+  "new_diagnostics": []
+}
