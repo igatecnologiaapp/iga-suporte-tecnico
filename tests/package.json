@@ -1,0 +1,13 @@
+{
+  "name": "iga-service-isolated-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:unit": "node --experimental-strip-types --test unit/*.test.ts",
+    "preview": "../node_modules/.bin/vite --config interface/vite.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
+  }
+}

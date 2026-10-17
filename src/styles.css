@@ -63,8 +63,8 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.985 0.006 248);
+  --radius: 0.75rem;
+  --background: oklch(0.978 0.009 248);
   --foreground: oklch(0.2 0.035 255);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
@@ -75,7 +75,7 @@
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
+  --muted-foreground: oklch(0.47 0.035 255);
   --accent: oklch(0.94 0.035 235);
   --accent-foreground: oklch(0.3 0.09 252);
   --destructive: oklch(0.577 0.245 27.325);
@@ -88,7 +88,7 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.975 0.01 248);
+  --sidebar: oklch(0.995 0.003 248);
   --sidebar-foreground: oklch(0.129 0.042 264.695);
   --sidebar-primary: oklch(0.208 0.042 265.755);
   --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
@@ -99,9 +99,9 @@
 }
 
 .dark {
-  --background: oklch(0.16 0.025 255);
+  --background: oklch(0.165 0.025 252);
   --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.205 0.028 255);
+  --card: oklch(0.215 0.029 252);
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
@@ -110,7 +110,7 @@
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
   --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
+  --muted-foreground: oklch(0.75 0.03 248);
   --accent: oklch(0.279 0.041 260.031);
   --accent-foreground: oklch(0.984 0.003 247.858);
   --destructive: oklch(0.704 0.191 22.216);
@@ -155,13 +155,187 @@
   padding-inline: 0.75rem;
   font-size: 0.875rem;
   outline: none;
-  &:focus { border-color: var(--color-ring); box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-ring) 24%, transparent); }
+  &:focus {
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-ring) 24%, transparent);
+  }
 }
 
 @utility bg-auth {
   background-color: var(--color-background);
-  background-image: linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 9%, transparent), transparent 52%), linear-gradient(0deg, color-mix(in oklab, var(--color-border) 35%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--color-border) 35%, transparent) 1px, transparent 1px);
-  background-size: auto, 32px 32px, 32px 32px;
+  background-image:
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-primary) 9%, transparent),
+      transparent 52%
+    ),
+    linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--color-border) 35%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-border) 35%, transparent) 1px,
+      transparent 1px
+    );
+  background-size:
+    auto,
+    32px 32px,
+    32px 32px;
 }
 
-@utility bg-overlay { background: oklch(0.1 0.02 255 / 55%); }
+@utility bg-overlay {
+  background: oklch(0.1 0.02 255 / 55%);
+}
+
+/* Phase 1: semantic presentation shared by the existing application. */
+@layer base {
+  :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+.app-surface {
+  background:
+    radial-gradient(
+      ellipse at 100% 0%,
+      color-mix(in oklab, var(--primary) 5%, transparent),
+      transparent 45%
+    ),
+    var(--background);
+}
+.shell-header {
+  background: color-mix(in oklab, var(--card) 92%, transparent);
+}
+.brand-monogram {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 0.8rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+.nav-item {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition:
+    background 160ms,
+    color 160ms;
+}
+.nav-item-active {
+  background: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  border-color: color-mix(in oklab, var(--primary) 15%, transparent);
+  font-weight: 650;
+}
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 1rem;
+  z-index: 100;
+  transform: translateY(-160%);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+.page-heading {
+  padding-bottom: 0.5rem;
+}
+.company-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--card);
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 2px 4px color-mix(in oklab, var(--foreground) 2%, transparent);
+}
+.resource-toolbar {
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--card);
+  padding: 1rem;
+}
+.resource-table {
+  position: relative;
+}
+.resource-table .sr-only {
+  left: 0;
+  top: 0;
+}
+.resource-table table {
+  min-width: 36rem;
+}
+.resource-table th {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 650;
+  padding-block: 1rem;
+}
+.resource-table td {
+  padding-block: 1.15rem;
+}
+.resource-table tbody tr:hover {
+  background: color-mix(in oklab, var(--primary) 3%, var(--card));
+}
+.resource-table td:first-child {
+  font-weight: 600;
+}
+.resource-table a {
+  overflow-wrap: anywhere;
+}
+.company-fieldset {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+.company-fieldset legend {
+  padding-inline: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--primary);
+}
+@media (max-width: 639px) {
+  .resource-toolbar {
+    align-items: stretch;
+  }
+  .resource-toolbar > * {
+    max-width: 100%;
+  }
+  .resource-toolbar label {
+    min-height: 2.75rem;
+  }
+}
