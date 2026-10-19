@@ -72,8 +72,9 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
       const cat = allCats.find(c => c.id === l.category_id);
       const parent = cat?.parent_id ? allCats.find(c => c.id === cat.parent_id) : null;
       const inactive = cat?.status === "inactive" ? " (inativa)" : "";
-      return { ...l, name: (cat?.name ?? "—") + inactive, sub: !!parent, catId: cat?.id };
-    }).sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
+      return { ...l, name: (cat?.name ?? "—") + inactive, sub: !!parent, catId: cat?.id, groupId: parent?.id ?? cat?.id ?? "", groupName: parent?.name ?? cat?.name ?? "", groupDefault: false };
+    }).map((x, _i, all) => ({ ...x, groupDefault: all.some(p => !p.sub && p.catId === x.groupId && p.is_default) }))
+      .sort((a, b) => Number(b.groupDefault) - Number(a.groupDefault) || a.groupName.localeCompare(b.groupName) || a.groupId.localeCompare(b.groupId) || Number(a.sub) - Number(b.sub) || a.name.localeCompare(b.name));
   }
   function openEditor(row: any) {
     setEditing(row);
@@ -228,6 +229,7 @@ function CatChips({ cats }: { cats: { category_id: string; name: string; is_defa
   return <div className="flex flex-wrap gap-1">{cats.map(c => {
     const subStyle = c.sub ? SUB_CHIP_COLORS[c.name.replace(" (inativa)", "").trim().toUpperCase()] : undefined;
     const cls = "rounded-full border px-2 py-0.5 text-xs " + (c.is_default ? "border-primary bg-primary/10 text-primary" : "");
-    return <span key={c.category_id} className={cls} style={subStyle ? { color: subStyle.color, backgroundColor: subStyle.background, borderColor: subStyle.border } : undefined}>{c.name}{c.is_default ? " — Padrão" : ""}</span>;
+    const label = c.sub ? c.name.replace(/^SAURUS\s+/i, "") : c.name;
+    return <span key={c.category_id} className={cls} style={subStyle ? { color: subStyle.color, backgroundColor: subStyle.background, borderColor: subStyle.border } : undefined}>{label}{c.is_default ? " — Padrão" : ""}</span>;
   })}</div>;
 }
