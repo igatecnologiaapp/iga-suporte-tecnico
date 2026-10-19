@@ -8,7 +8,7 @@ if (!privateDir) throw new Error("IGA_HOMO_PRIVATE must name a private directory
 export const config = JSON.parse(readFileSync(resolve(privateDir, "local-config.json"), "utf8"));
 export const apiUrl = config.API_URL ?? config.api_url ?? config.apiUrl;
 const parsed = new URL(apiUrl);
-if (!["127.0.0.1", "localhost"].includes(parsed.hostname) || parsed.port !== "54321")
+if (!["127.0.0.1", "localhost"].includes(parsed.hostname) || parsed.port !== "55421")
   throw new Error("Refusing any non-local Supabase destination");
 const require = createRequire(resolve(repo, "package.json"));
 const { createClient } = require("@supabase/supabase-js");

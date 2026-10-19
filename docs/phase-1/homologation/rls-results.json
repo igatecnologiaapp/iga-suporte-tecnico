@@ -1,0 +1,113 @@
+{
+  "backend": "real local Supabase",
+  "results": [
+    {
+      "id": "auth.login.primary",
+      "status": "passed"
+    },
+    {
+      "id": "auth.login.admin",
+      "status": "passed"
+    },
+    {
+      "id": "auth.login.supervisor",
+      "status": "passed"
+    },
+    {
+      "id": "auth.login.technician",
+      "status": "passed"
+    },
+    {
+      "id": "auth.login.viewer",
+      "status": "passed"
+    },
+    {
+      "id": "auth.login.restricted",
+      "status": "passed"
+    },
+    {
+      "id": "auth.login.inactive",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.create-edit.primary",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.create-edit.admin",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.create-edit.supervisor",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.create-edit.technician",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.insert-denied.viewer",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.update-denied.viewer",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.insert-denied.restricted",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.update-denied.restricted",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.insert-denied.inactive",
+      "status": "passed"
+    },
+    {
+      "id": "rls.company.update-denied.inactive",
+      "status": "passed"
+    },
+    {
+      "id": "rls.anon.companies-denied",
+      "status": "passed"
+    },
+    {
+      "id": "rls.primary.distinction",
+      "status": "passed"
+    },
+    {
+      "id": "rls.modules.inactive-denied",
+      "status": "passed"
+    },
+    {
+      "id": "rls.viewer.category-link-denied",
+      "status": "passed"
+    },
+    {
+      "id": "trigger.0019.child-needs-parent",
+      "status": "passed"
+    },
+    {
+      "id": "trigger.0019.parent-then-child",
+      "status": "passed"
+    },
+    {
+      "id": "constraint.single-default-category",
+      "status": "passed"
+    },
+    {
+      "id": "rls.primary-role-protected",
+      "status": "passed"
+    },
+    {
+      "id": "rls.viewer.storage-upload-denied",
+      "status": "passed"
+    },
+    {
+      "id": "storage.operational-upload-read",
+      "status": "passed"
+    }
+  ]
+}

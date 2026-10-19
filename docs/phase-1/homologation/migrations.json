@@ -1,106 +1,106 @@
 {
-  "target": "isolated local only",
-  "applied_count": 0,
-  "review": [
+  "target": "local Docker container",
+  "container": "supabase_db_iga-service-homologation",
+  "migrations": [
     {
-      "file": "0000_create_iga_service_core.sql",
+      "migration": "0000_create_iga_service_core.sql",
       "sha256": "a4d86950f1296665253175690b0802dbe5d02e47d81b206587ba878f73907d2d",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0001_secure_ticket_storage.sql",
+      "migration": "0001_secure_ticket_storage.sql",
       "sha256": "e372c0573143a946b98f6eebd61572d4485dde70c09715031c43ff31650c04b0",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0002_harden_internal_functions.sql",
+      "migration": "0002_harden_internal_functions.sql",
       "sha256": "f5057a77a05d2024706fcc135366bc5fda6ee9981556c43dc0b7ed35483d8690",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0003_restrict_role_visibility.sql",
+      "migration": "0003_restrict_role_visibility.sql",
       "sha256": "a5b1a76a2e2d38bd98db45c19143110ef128793033279a6498089e3e76e1aadd",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0004_harden_ticket_audit_and_roles.sql",
+      "migration": "0004_harden_ticket_audit_and_roles.sql",
       "sha256": "6351b56ca6ceffadcb5dca3933af5269265ed20adf9fc87daeb892e15e690f43",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0005_consolidate_phase_1_1_lifecycle.sql",
+      "migration": "0005_consolidate_phase_1_1_lifecycle.sql",
       "sha256": "75d56f2ff3a36d9ebf8037c0be1a6a3045bb43c6e8ccb7256ccd17c77862bda0",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0006_phase_2_operations.sql",
+      "migration": "0006_phase_2_operations.sql",
       "sha256": "1ce8529a9e4ace7f5c167ed70a6997ebbaa5b8c0ea7487c7eff9a01cc90ccb55",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0007_technician_user_link_optional.sql",
+      "migration": "0007_technician_user_link_optional.sql",
       "sha256": "1df49e06cb4c117f430255b524626b62f1426b97ae15b560e8b08e31d7416f81",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0008_phase_3a_conversations_and_record_lifecycle.sql",
+      "migration": "0008_phase_3a_conversations_and_record_lifecycle.sql",
       "sha256": "e8466f5e09718fc7462a0049ce1bf9df270cb8aa9a886a2e72d08527beefcd07",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0009_harden_phase_3a_functions.sql",
+      "migration": "0009_harden_phase_3a_functions.sql",
       "sha256": "b1f88b50602ca75c3680513e1ebc0fb1849bf189bf57b8374cf88dff4354fc4d",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0010_admin_delete_ticket.sql",
+      "migration": "0010_admin_delete_ticket.sql",
       "sha256": "2e8c89dec08991be920cca868707b86cebc6f8e8a9f9ae657ea85e92997e3565",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0011_phase_3b_whatsapp_inbound.sql",
+      "migration": "0011_phase_3b_whatsapp_inbound.sql",
       "sha256": "b2eb366595ef15ce8955bedfa1ade8dbeefb833a77ae12504f3f4c0c8b963b5d",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0012_primary_admin_and_module_permissions.sql",
+      "migration": "0012_primary_admin_and_module_permissions.sql",
       "sha256": "a0295ba8b22d2abea27a24c941da14f2ba9d30b9d6a58d16523c960cada1dac8",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0013_company_ticket_categories.sql",
+      "migration": "0013_company_ticket_categories.sql",
       "sha256": "641521f24c1de13dc4e452b082cb0b8f19f3585372d26dc0a3b0649a24314843",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0014_storage_module_gates.sql",
+      "migration": "0014_storage_module_gates.sql",
       "sha256": "7770efa81e948fff992d59467e00f36a85e0eb654700c6426b71a1694a322e5e",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0015_migration.sql",
+      "migration": "0015_migration.sql",
       "sha256": "f536efb2ad12cd097313e0fb52619d231ddd255d82f942080293db370a1a09d3",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0016_message_templates_fields.sql",
+      "migration": "0016_message_templates_fields.sql",
       "sha256": "9471b76cbeb32eefede404b61a818e933c4160e1bb5d975e70c1e883ad979dfd",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0017_companies_domain.sql",
+      "migration": "0017_companies_domain.sql",
       "sha256": "7dc45665192087e7ead64b9d9558ac9b72543de257f6a027888fd23c3c3a6ea5",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0018_restore_update_grants_companies_contacts.sql",
+      "migration": "0018_restore_update_grants_companies_contacts.sql",
       "sha256": "bb3f85ed9ab2ae51fb436b184089ba991a07e5e58b727d76f82fbce5efbfb2a8",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     },
     {
-      "file": "0019_allow_subcategory_company_links.sql",
+      "migration": "0019_allow_subcategory_company_links.sql",
       "sha256": "05cd780ec695f0aa3a70cd7cfdffce22d4d29be0801995f92b4552f929629a33",
-      "status": "reviewed_not_applied"
+      "exit_code": 0
     }
   ]
 }
