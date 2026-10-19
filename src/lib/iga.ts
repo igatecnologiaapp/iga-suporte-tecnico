@@ -87,5 +87,5 @@ export function companySubcategoryOptions<T extends { id: string; parent_id: str
   const linkedIds = new Set(links.filter(l => l.company_id === companyId).map(l => l.category_id));
   const linked = all.filter(c => linkedIds.has(c.id));
   if (linked.length === 0) return { options: all, defaultId: "" };
-  return { options: linked, defaultId: linked.length === 1 ? linked[0].id : "" };
+  return { options: linked, defaultId: linked.length === 1 ? linked[0]!.id : "" };
 }

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { companyCategoryOptions, type CompanyCategoryLink } from "@/lib/iga";
+import { companyCategoryOptions, companySubcategoryOptions, type CompanyCategoryLink } from "@/lib/iga";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Inbox, Link2, MessageSquarePlus, Plus, RefreshCw, Search, Send, TicketPlus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -48,6 +48,7 @@ function InboxPage() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [simulateOpen, setSimulateOpen] = useState(false);
   const [category, setCategory] = useState("");
+  const [subcat, setSubcat] = useState("");
   const [catLinks, setCatLinks] = useState<CompanyCategoryLink[]>([]);
   const [newOpen, setNewOpen] = useState(false);
   const [newCompany, setNewCompany] = useState("");
@@ -221,7 +222,7 @@ function InboxPage() {
             </div>
             {canOperateInbox && <div className="flex flex-wrap gap-2">
               {!current.contact_id && <Button size="sm" variant="outline" onClick={() => setIdentifyOpen(true)}><UserPlus />Identificar contato</Button>}
-              {!current.ticket_id && <Button size="sm" variant="outline" title="Opcional: abra um chamado somente se a conversa exigir acompanhamento formal" onClick={() => { setCategory(companyCategoryOptions(categories, catLinks, current.company_id).defaultId); setTicketOpen(true); }} disabled={!current.contact_id}><TicketPlus />Criar chamado</Button>}
+              {!current.ticket_id && <Button size="sm" variant="outline" title="Opcional: abra um chamado somente se a conversa exigir acompanhamento formal" onClick={() => { const def = companyCategoryOptions(categories, catLinks, current.company_id).defaultId; setCategory(def); setSubcat(def ? companySubcategoryOptions(categories, catLinks, current.company_id, def).defaultId : ""); setTicketOpen(true); }} disabled={!current.contact_id}><TicketPlus />Criar chamado</Button>}
               {!current.ticket_id && <Button size="sm" variant="outline" onClick={() => setLinkOpen(true)}><Link2 />Vincular a chamado</Button>}
               {current.status !== "finished" && <Button size="sm" variant="ghost" disabled={busy} onClick={() => void run(async () => { await setConversationStatus({ data: { conversationId: current.id, status: "finished" } }); toast.success("Conversa finalizada."); })}>Finalizar</Button>}
             </div>}
@@ -277,8 +278,8 @@ function InboxPage() {
         <form onSubmit={submitTicket} className="grid gap-4 sm:grid-cols-2">
           <div><Label htmlFor="conversation-ticket-company">Empresa</Label><Input id="conversation-ticket-company" value={current.companies?.trade_name ?? ""} disabled /></div>
           <div><Label htmlFor="conversation-ticket-contact">Contato</Label><Input id="conversation-ticket-contact" value={current.contacts?.name ?? ""} disabled /></div>
-          <div><Label htmlFor="conversation-ticket-category">Categoria</Label><select id="conversation-ticket-category" name="category_id" className="form-control" value={category} onChange={e => setCategory(e.target.value)}><option value="">Selecione</option>{companyCategoryOptions(categories, catLinks, current?.company_id).options.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-          <div><Label htmlFor="conversation-ticket-subcategory">Subcategoria</Label><select id="conversation-ticket-subcategory" name="subcategory_id" className="form-control" disabled={!category}><option value="">Selecione</option>{categories.filter(c => c.parent_id === category).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+          <div><Label htmlFor="conversation-ticket-category">Categoria</Label><select id="conversation-ticket-category" name="category_id" className="form-control" value={category} onChange={e => { setCategory(e.target.value); setSubcat(companySubcategoryOptions(categories, catLinks, current?.company_id, e.target.value).defaultId); }}><option value="">Selecione</option>{companyCategoryOptions(categories, catLinks, current?.company_id).options.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+          <div><Label htmlFor="conversation-ticket-subcategory">Subcategoria</Label><select id="conversation-ticket-subcategory" name="subcategory_id" className="form-control" disabled={!category} value={subcat} onChange={e => setSubcat(e.target.value)}><option value="">Selecione</option>{companySubcategoryOptions(categories, catLinks, current?.company_id, category).options.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           <div className="sm:col-span-2"><Label htmlFor="conversation-ticket-subject">Assunto</Label><Input id="conversation-ticket-subject" name="subject" required defaultValue={(current.last_message_preview ?? "").slice(0, 80)} /></div>
           <div className="sm:col-span-2"><Label htmlFor="conversation-ticket-description">Descrição</Label><Textarea id="conversation-ticket-description" name="description" rows={5} required defaultValue={messages.filter(m => m.direction === "inbound").map(m => `${formatDate(m.sent_at)}: ${m.content ?? `[${m.message_type}]`}`).join("\n")} /></div>
           <div><Label htmlFor="conversation-ticket-priority">Prioridade</Label><select id="conversation-ticket-priority" name="priority" className="form-control" defaultValue="normal">{priorities.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
