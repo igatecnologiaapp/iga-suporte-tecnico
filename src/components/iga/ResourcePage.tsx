@@ -71,8 +71,8 @@ export function ResourcePage({ kind, userId, canManage, role }: { kind: Kind; us
     return links.filter(l => l.company_id === id).map(l => {
       const cat = allCats.find(c => c.id === l.category_id);
       const parent = cat?.parent_id ? allCats.find(c => c.id === cat.parent_id) : null;
-      const label = (parent ? `${parent.name} — ${cat?.name ?? "—"}` : cat?.name ?? "—") + (cat?.status === "inactive" ? " (inativa)" : "");
-      return { ...l, name: label };
+      const inactive = cat?.status === "inactive" ? " (inativa)" : "";
+      return { ...l, name: (cat?.name ?? "—") + inactive, sub: !!parent, catId: cat?.id };
     }).sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
   }
   function openEditor(row: any) {
