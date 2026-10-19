@@ -1,0 +1,27 @@
+{
+  "backend": "Supabase local real",
+  "safeguards": "Espera por interação e bloqueio de envio nativo no navegador de teste",
+  "simulation": "503 somente nas consultas de empresas deste navegador",
+  "results": [
+    {
+      "id": "ui.local.login-after-hydration",
+      "status": "passed"
+    },
+    {
+      "id": "ui.companies.empty-search",
+      "status": "passed"
+    },
+    {
+      "id": "ui.companies.loading",
+      "status": "passed"
+    },
+    {
+      "id": "ui.companies.error-state",
+      "status": "passed"
+    },
+    {
+      "id": "ui.companies.retry-recovery",
+      "status": "passed"
+    }
+  ]
+}

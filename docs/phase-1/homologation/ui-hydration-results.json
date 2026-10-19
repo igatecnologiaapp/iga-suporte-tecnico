@@ -1,0 +1,8 @@
+{
+  "test": "login-hydration-without-credentials",
+  "credentials_entered": false,
+  "status": "passed",
+  "http_status": 200,
+  "elapsed_ms": 10370,
+  "browser_errors": []
+}

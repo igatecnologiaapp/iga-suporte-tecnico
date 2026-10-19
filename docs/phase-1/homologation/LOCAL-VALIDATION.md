@@ -66,8 +66,8 @@ Estas melhorias não foram implementadas neste acompanhamento.
 - Login de conta inativa no Auth não significa acesso à aplicação;
   o bloqueio foi confirmado manualmente na interface.
 - Suíte automatizada de interface não executada neste acompanhamento local.
-- Testes unitários e ESLint não reexecutados nesta rodada.
-- Estados de carregamento, vazio e erro ainda exigem validação sistemática.
+- Testes unitários e ESLint executados; resultados complementares abaixo.
+- Estados de carregamento, vazio, erro e recuperação de Empresas verificados na rodada complementar.
 - Revisão estática identificou possibilidade de atualização parcial em
   updateAdminUser: dados básicos podem ser salvos antes da recusa de
   mudança de perfil/módulos. Não reproduzido neste acompanhamento.
@@ -93,3 +93,37 @@ Este relatório não declara homologação integral ou autorização de publica�
 - [empresas-mobile-360.png](screenshots/local/empresas-mobile-360.png)
 - [empresa-formulario-dominio.png](screenshots/local/empresa-formulario-dominio.png)
 - [empresa-formulario-categorias.png](screenshots/local/empresa-formulario-categorias.png)
+
+## Rodada complementar de validação
+
+- Testes unitários: 9 aprovados; zero falhas, ignorados ou cancelados.
+- Interface com serviços simulados: 22 aprovados, zero ignorados ou instáveis.
+- Interface com Supabase local: 5 verificações aprovadas de login após
+  interação pronta, busca vazia, carregamento, erro e recuperação.
+- Recusas específicas: 5 verificações aprovadas com causas de permissão/RLS
+  e resposta 403 do Storage.
+- Os testes originais de Auth/API/RLS/Storage permanecem registrados: 27 aprovados.
+- ESLint: base com 2245 erros e 10 avisos; atual com 2085 erros e 9 avisos.
+- Nenhum grupo novo ou aumentado por arquivo, regra e mensagem.
+- ESLint permanece reprovado; nenhuma correção indiscriminada realizada.
+- Evidências: [VALIDATION-SUMMARY.json](VALIDATION-SUMMARY.json).
+- A suíte completa ui.mjs não foi executada; foram usados testes
+  complementares e as verificações manuais já descritas.
+
+### Falha de segurança observada
+A primeira tentativa automatizada resultou em submissão GET do login,
+incluindo credenciais fictícias na URL. O formulário depende do JavaScript
+para impedir a submissão nativa. A interação da tela funcionou posteriormente.
+O momento exato da hidratação não foi instrumentado.
+
+A senha fictícia foi substituída e o resultado local foi sanitizado.
+O teste posterior aguardou interação e bloqueou submissão nativa somente
+no navegador de teste. Essa proteção não corrige o produto.
+Nenhuma credencial é incluída neste relatório.
+
+### Conclusão complementar
+Homologação com ressalvas, sem aprovação integral de segurança.
+Recomenda-se corrigir o formulário antes de disponibilizar o sistema a usuários.
+A revisão estática sobre atualização parcial de usuários permanece sem
+reprodução experimental. Melhorias visuais e confirmação ao sair continuam
+pendentes de autorização. Sem publicação, merge ou início da Fase 2.

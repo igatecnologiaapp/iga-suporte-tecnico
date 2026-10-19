@@ -1,0 +1,25 @@
+{
+  "backend": "Supabase local real",
+  "results": [
+    {
+      "id": "company.insert-denied-specific.viewer",
+      "status": "passed"
+    },
+    {
+      "id": "company.insert-denied-specific.restricted",
+      "status": "passed"
+    },
+    {
+      "id": "company.insert-denied-specific.inactive",
+      "status": "passed"
+    },
+    {
+      "id": "category-link.viewer-denied-specific",
+      "status": "passed"
+    },
+    {
+      "id": "storage.viewer-upload-denied-specific",
+      "status": "passed"
+    }
+  ]
+}

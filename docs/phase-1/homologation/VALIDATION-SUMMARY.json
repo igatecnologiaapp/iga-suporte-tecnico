@@ -1,0 +1,85 @@
+{
+  "unit": {
+    "tests": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "eslint": {
+    "baseline": {
+      "commit": "f3396c8",
+      "errors": 2245,
+      "warnings": 10
+    },
+    "current": {
+      "errors": 2085,
+      "warnings": 9
+    },
+    "increases": []
+  },
+  "interface_mocked": {
+    "playwright": "1.64.1",
+    "browser": "Chromium 156.0.8078.4",
+    "stats": {
+      "startTime": "2026-10-19T20:35:22.549Z",
+      "duration": 103381.651,
+      "expected": 22,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "interface_real_local": {
+    "backend": "Supabase local real",
+    "safeguards": "Espera por interação e bloqueio de envio nativo no navegador de teste",
+    "simulation": "503 somente nas consultas de empresas deste navegador",
+    "results": [
+      {
+        "id": "ui.local.login-after-hydration",
+        "status": "passed"
+      },
+      {
+        "id": "ui.companies.empty-search",
+        "status": "passed"
+      },
+      {
+        "id": "ui.companies.loading",
+        "status": "passed"
+      },
+      {
+        "id": "ui.companies.error-state",
+        "status": "passed"
+      },
+      {
+        "id": "ui.companies.retry-recovery",
+        "status": "passed"
+      }
+    ]
+  },
+  "permission_causes_real_local": {
+    "backend": "Supabase local real",
+    "results": [
+      {
+        "id": "company.insert-denied-specific.viewer",
+        "status": "passed"
+      },
+      {
+        "id": "company.insert-denied-specific.restricted",
+        "status": "passed"
+      },
+      {
+        "id": "company.insert-denied-specific.inactive",
+        "status": "passed"
+      },
+      {
+        "id": "category-link.viewer-denied-specific",
+        "status": "passed"
+      },
+      {
+        "id": "storage.viewer-upload-denied-specific",
+        "status": "passed"
+      }
+    ]
+  }
+}
