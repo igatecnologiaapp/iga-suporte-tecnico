@@ -218,7 +218,16 @@ function DomainValue({ value }: { value: string }) {
 function Field({ n, l, type = "text", req = true, value }: { n: string; l: string; type?: string; req?: boolean; value?: unknown }) { return <div><Label htmlFor={n}>{l}</Label><Input id={n} name={n} type={type} required={req} defaultValue={value == null ? "" : String(value)}/></div>; }
 function SelectField({ n, l, rows, optional = false, value }: { n: string; l: string; rows: any[]; optional?: boolean; value?: unknown }) { return <div><Label htmlFor={n}>{l}</Label><select id={n} name={n} required={!optional} className="form-control" defaultValue={value == null ? "" : String(value)}><option value="">Selecione</option>{rows.map((row) => <option key={row.id} value={row.id}>{row.trade_name || row.full_name || row.name}</option>)}</select></div>; }
 
-function CatChips({ cats }: { cats: { category_id: string; name: string; is_default: boolean }[] }) {
+const SUB_CHIP_COLORS: Record<string, { color: string; background: string; border: string }> = {
+  "SAURUS ONLINE V4": { color: "#78350F", background: "#FEF3C7", border: "#FDE68A" },
+  "SAURUS LOCAL": { color: "#1E3A8A", background: "#DBEAFE", border: "#BFDBFE" },
+  "SGBR": { color: "#166534", background: "#DCFCE7", border: "#BBF7D0" },
+};
+function CatChips({ cats }: { cats: { category_id: string; name: string; is_default: boolean; sub?: boolean }[] }) {
   if (!cats.length) return <span className="text-xs text-muted-foreground">Nenhuma categoria de chamado associada</span>;
-  return <div className="flex flex-wrap gap-1">{cats.map(c => <span key={c.category_id} className={"rounded-full border px-2 py-0.5 text-xs " + (c.is_default ? "border-primary bg-primary/10 text-primary" : "")}>{c.name}{c.is_default ? " — Padrão" : ""}</span>)}</div>;
+  return <div className="flex flex-wrap gap-1">{cats.map(c => {
+    const subStyle = c.sub ? SUB_CHIP_COLORS[c.name.replace(" (inativa)", "").trim().toUpperCase()] : undefined;
+    const cls = "rounded-full border px-2 py-0.5 text-xs " + (c.is_default ? "border-primary bg-primary/10 text-primary" : "");
+    return <span key={c.category_id} className={cls} style={subStyle ? { color: subStyle.color, backgroundColor: subStyle.background, borderColor: subStyle.border } : undefined}>{c.name}{c.is_default ? " — Padrão" : ""}</span>;
+  })}</div>;
 }
