@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Empty, Page } from "@/components/iga/Page";
 import { StatusBadge } from "@/components/iga/StatusBadge";
 import { SlaBadge } from "@/components/iga/SlaBadge";
-import { companyCategoryOptions, type CompanyCategoryLink, canOperate, formatDate, formatDuration, matchesQueue, priorities, ticketQueues, ticketStatuses } from "@/lib/iga";
+import { companyCategoryOptions, companySubcategoryOptions, type CompanyCategoryLink, canOperate, formatDate, formatDuration, matchesQueue, priorities, ticketQueues, ticketStatuses } from "@/lib/iga";
 import { computeSla, type SlaPolicy } from "@/lib/sla";
 import { syncSlaNotifications } from "@/lib/sla-notifications.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +32,7 @@ function Tickets() {
   const { user, role, technicianId } = Route.useRouteContext();
   const can = canOperate(role);
   const [rows, setRows] = useState<any[]>([]); const [companies, setCompanies] = useState<any[]>([]); const [contacts, setContacts] = useState<any[]>([]); const [cats, setCats] = useState<any[]>([]); const [technicians, setTechnicians] = useState<any[]>([]); const [policies, setPolicies] = useState<SlaPolicy[]>([]);
-  const [catLinks, setCatLinks] = useState<CompanyCategoryLink[]>([]); const [open, setOpen] = useState(false); const [q, setQ] = useState(""); const [company, setCompany] = useState(""); const [category, setCategory] = useState("");
+  const [catLinks, setCatLinks] = useState<CompanyCategoryLink[]>([]); const [open, setOpen] = useState(false); const [q, setQ] = useState(""); const [company, setCompany] = useState(""); const [category, setCategory] = useState(""); const [subcat, setSubcat] = useState("");
   const [queue, setQueue] = useState(technicianId ? "mine" : "all");
   const [statusFilter, setStatusFilter] = useState(""); const [priorityFilter, setPriorityFilter] = useState(""); const [companyFilter, setCompanyFilter] = useState(""); const [technicianFilter, setTechnicianFilter] = useState("");
 
