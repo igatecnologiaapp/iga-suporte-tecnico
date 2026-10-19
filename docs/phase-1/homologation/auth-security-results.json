@@ -1,0 +1,18 @@
+{
+  "target": "Actual application /auth route on loopback",
+  "backend": "Auth response and native POST intercepted; no database access",
+  "results": [
+    {
+      "id": "actual-auth-route.javascript-disabled",
+      "status": "passed"
+    },
+    {
+      "id": "actual-auth-route.hydrated-supabase-json-request",
+      "status": "passed"
+    },
+    {
+      "id": "actual-auth-route.native-fallback-no-query",
+      "status": "passed"
+    }
+  ]
+}

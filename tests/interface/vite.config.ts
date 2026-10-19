@@ -7,7 +7,30 @@ export default defineConfig({
   root: path("./"),
   envDir: path("./"),
   envPrefix: "ISOLATED_TEST_",
-  plugins: [react(), tailwind()],
+  plugins: [
+    react(),
+    tailwind(),
+    {
+      name: "isolated-auth-security-fixture",
+      configureServer(server) {
+        server.middlewares.use(async (request, response, next) => {
+          if (request.url?.split("?")[0] !== "/auth-security") return next();
+          if (request.method !== "GET") {
+            response.statusCode = 405;
+            response.end("Native submission is not an authentication endpoint.");
+            return;
+          }
+          try {
+            const fixture = await server.ssrLoadModule(path("./auth-security.render.tsx"));
+            response.setHeader("Content-Type", "text/html; charset=utf-8");
+            response.end(await server.transformIndexHtml("/auth-security", fixture.render()));
+          } catch (error) {
+            next(error);
+          }
+        });
+      },
+    },
+  ],
   resolve: {
     alias: [
       { find: "@/integrations/supabase/client", replacement: path("./supabase.mock.ts") },

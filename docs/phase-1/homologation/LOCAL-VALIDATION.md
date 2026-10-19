@@ -96,6 +96,10 @@ Este relatório não declara homologação integral ou autorização de publica�
 
 ## Rodada complementar de validação
 
+Atualização posterior: a correção do formulário e seus testes estão descritos em
+[SECURITY-LOGIN.md](SECURITY-LOGIN.md). Os achados abaixo preservam o histórico
+da rodada anterior; a confirmação no WSL com a cópia corrigida permanece pendente.
+
 - Testes unitários: 9 aprovados; zero falhas, ignorados ou cancelados.
 - Interface com serviços simulados: 22 aprovados, zero ignorados ou instáveis.
 - Interface com Supabase local: 5 verificações aprovadas de login após
