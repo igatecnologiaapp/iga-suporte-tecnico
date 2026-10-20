@@ -1,0 +1,405 @@
+{
+  "source_commit": "700c5f6",
+  "scope": "Review only; framework/Auth/database substituted; browser requests intercepted; no real account, token, email, network service or database operation",
+  "server": {
+    "method": "Original server handlers transpiled and executed with in-memory Auth, database and framework substitutes; no network, database or email access",
+    "results": [
+      {
+        "id": "ordinary-admin-can-obtain-principal-recovery-link",
+        "operation": "reset",
+        "actor": "ordinary",
+        "returned_success": true,
+        "error": null,
+        "returned_link": true,
+        "email_sent": null,
+        "requested_role": null,
+        "requested_status": null,
+        "state": {
+          "authCreated": false,
+          "inviteSent": false,
+          "profile": null,
+          "role": null,
+          "modules": [],
+          "technician": null,
+          "audit": [
+            {
+              "action": "password_reset_requested",
+              "target_user_id": null
+            }
+          ],
+          "calls": [
+            "auth.generateLink",
+            "admin_audit_logs.insert"
+          ]
+        }
+      },
+      {
+        "id": "viewer-reset-denied-control",
+        "operation": "reset",
+        "actor": "viewer",
+        "returned_success": false,
+        "error": "Apenas administradores podem gerenciar usuários.",
+        "returned_link": false,
+        "email_sent": null,
+        "requested_role": null,
+        "requested_status": null,
+        "state": {
+          "authCreated": false,
+          "inviteSent": false,
+          "profile": null,
+          "role": null,
+          "modules": [],
+          "technician": null,
+          "audit": [],
+          "calls": []
+        }
+      },
+      {
+        "id": "ordinary-create-denied-control",
+        "operation": "create",
+        "actor": "ordinary",
+        "returned_success": false,
+        "error": "Somente o Administrador Principal pode realizar esta ação.",
+        "returned_link": false,
+        "email_sent": null,
+        "requested_role": "viewer",
+        "requested_status": "active",
+        "state": {
+          "authCreated": false,
+          "inviteSent": false,
+          "profile": null,
+          "role": null,
+          "modules": [],
+          "technician": null,
+          "audit": [],
+          "calls": []
+        }
+      },
+      {
+        "id": "primary-create-success-control",
+        "operation": "create",
+        "actor": "primary",
+        "returned_success": true,
+        "error": null,
+        "returned_link": false,
+        "email_sent": true,
+        "requested_role": "viewer",
+        "requested_status": "active",
+        "state": {
+          "authCreated": true,
+          "inviteSent": true,
+          "profile": {
+            "full_name": "Synthetic",
+            "phone": "123",
+            "status": "active"
+          },
+          "role": "viewer",
+          "modules": [
+            "tickets"
+          ],
+          "technician": null,
+          "audit": [
+            {
+              "action": "user_created",
+              "target_user_id": "00000000-0000-4000-8000-000000000010",
+              "role_claim": "viewer"
+            }
+          ],
+          "calls": [
+            "auth.invite",
+            "profiles.update",
+            "user_roles.upsert",
+            "user_modules.insert",
+            "admin_audit_logs.insert"
+          ]
+        }
+      },
+      {
+        "id": "profile-error-ignored-create-reports-success",
+        "operation": "create",
+        "actor": "primary",
+        "returned_success": true,
+        "error": null,
+        "returned_link": false,
+        "email_sent": true,
+        "requested_role": "viewer",
+        "requested_status": "inactive",
+        "state": {
+          "authCreated": true,
+          "inviteSent": true,
+          "profile": {
+            "full_name": "Synthetic",
+            "phone": null,
+            "status": "active"
+          },
+          "role": "viewer",
+          "modules": [
+            "tickets"
+          ],
+          "technician": null,
+          "audit": [
+            {
+              "action": "user_created",
+              "target_user_id": "00000000-0000-4000-8000-000000000010",
+              "role_claim": "viewer"
+            }
+          ],
+          "calls": [
+            "auth.invite",
+            "profiles.update",
+            "user_roles.upsert",
+            "user_modules.insert",
+            "admin_audit_logs.insert"
+          ]
+        }
+      },
+      {
+        "id": "role-error-ignored-create-reports-success",
+        "operation": "create",
+        "actor": "primary",
+        "returned_success": true,
+        "error": null,
+        "returned_link": false,
+        "email_sent": true,
+        "requested_role": "admin",
+        "requested_status": "active",
+        "state": {
+          "authCreated": true,
+          "inviteSent": true,
+          "profile": {
+            "full_name": "Synthetic",
+            "phone": "123",
+            "status": "active"
+          },
+          "role": "viewer",
+          "modules": [
+            "tickets"
+          ],
+          "technician": null,
+          "audit": [
+            {
+              "action": "user_created",
+              "target_user_id": "00000000-0000-4000-8000-000000000010",
+              "role_claim": "admin"
+            }
+          ],
+          "calls": [
+            "auth.invite",
+            "profiles.update",
+            "user_roles.upsert",
+            "user_modules.insert",
+            "admin_audit_logs.insert"
+          ]
+        }
+      },
+      {
+        "id": "technician-link-error-ignored-create-reports-success",
+        "operation": "create",
+        "actor": "primary",
+        "returned_success": true,
+        "error": null,
+        "returned_link": false,
+        "email_sent": true,
+        "requested_role": "technician",
+        "requested_status": "active",
+        "state": {
+          "authCreated": true,
+          "inviteSent": true,
+          "profile": {
+            "full_name": "Synthetic",
+            "phone": "123",
+            "status": "active"
+          },
+          "role": "technician",
+          "modules": [
+            "tickets"
+          ],
+          "technician": null,
+          "audit": [
+            {
+              "action": "user_created",
+              "target_user_id": "00000000-0000-4000-8000-000000000010",
+              "role_claim": "technician"
+            }
+          ],
+          "calls": [
+            "auth.invite",
+            "profiles.update",
+            "user_roles.upsert",
+            "technicians.update",
+            "user_modules.insert",
+            "admin_audit_logs.insert"
+          ]
+        }
+      },
+      {
+        "id": "modules-failure-after-invitation-leaves-auth-account",
+        "operation": "create",
+        "actor": "primary",
+        "returned_success": false,
+        "error": "Synthetic failure: user_modules.insert",
+        "returned_link": false,
+        "email_sent": null,
+        "requested_role": "viewer",
+        "requested_status": "active",
+        "state": {
+          "authCreated": true,
+          "inviteSent": true,
+          "profile": {
+            "full_name": "Synthetic",
+            "phone": "123",
+            "status": "active"
+          },
+          "role": "viewer",
+          "modules": [],
+          "technician": null,
+          "audit": [],
+          "calls": [
+            "auth.invite",
+            "profiles.update",
+            "user_roles.upsert",
+            "user_modules.insert"
+          ]
+        }
+      },
+      {
+        "id": "new-technician-failure-after-invitation-leaves-auth-account",
+        "operation": "create",
+        "actor": "primary",
+        "returned_success": false,
+        "error": "Synthetic failure: technicians.insert",
+        "returned_link": false,
+        "email_sent": null,
+        "requested_role": "technician",
+        "requested_status": "active",
+        "state": {
+          "authCreated": true,
+          "inviteSent": true,
+          "profile": {
+            "full_name": "Synthetic",
+            "phone": "123",
+            "status": "active"
+          },
+          "role": "technician",
+          "modules": [],
+          "technician": null,
+          "audit": [],
+          "calls": [
+            "auth.invite",
+            "profiles.update",
+            "user_roles.upsert",
+            "technicians.insert"
+          ]
+        }
+      },
+      {
+        "id": "audit-error-ignored-create-reports-success",
+        "operation": "create",
+        "actor": "primary",
+        "returned_success": true,
+        "error": null,
+        "returned_link": false,
+        "email_sent": true,
+        "requested_role": "viewer",
+        "requested_status": "active",
+        "state": {
+          "authCreated": true,
+          "inviteSent": true,
+          "profile": {
+            "full_name": "Synthetic",
+            "phone": "123",
+            "status": "active"
+          },
+          "role": "viewer",
+          "modules": [
+            "tickets"
+          ],
+          "technician": null,
+          "audit": [],
+          "calls": [
+            "auth.invite",
+            "profiles.update",
+            "user_roles.upsert",
+            "user_modules.insert",
+            "admin_audit_logs.insert"
+          ]
+        }
+      },
+      {
+        "id": "fallback-link-error-ignored-without-delivery",
+        "operation": "create",
+        "actor": "primary",
+        "returned_success": true,
+        "error": null,
+        "returned_link": false,
+        "email_sent": false,
+        "requested_role": "viewer",
+        "requested_status": "active",
+        "state": {
+          "authCreated": true,
+          "inviteSent": false,
+          "profile": {
+            "full_name": "Synthetic",
+            "phone": "123",
+            "status": "active"
+          },
+          "role": "viewer",
+          "modules": [
+            "tickets"
+          ],
+          "technician": null,
+          "audit": [
+            {
+              "action": "user_created",
+              "target_user_id": "00000000-0000-4000-8000-000000000010",
+              "role_claim": "viewer"
+            }
+          ],
+          "calls": [
+            "auth.invite",
+            "auth.create",
+            "auth.generateLink",
+            "profiles.update",
+            "user_roles.upsert",
+            "user_modules.insert",
+            "admin_audit_logs.insert"
+          ]
+        }
+      },
+      {
+        "id": "reset-audit-error-still-returns-link",
+        "operation": "reset",
+        "actor": "ordinary",
+        "returned_success": true,
+        "error": null,
+        "returned_link": true,
+        "email_sent": null,
+        "requested_role": null,
+        "requested_status": null,
+        "state": {
+          "authCreated": false,
+          "inviteSent": false,
+          "profile": null,
+          "role": null,
+          "modules": [],
+          "technician": null,
+          "audit": [],
+          "calls": [
+            "auth.generateLink",
+            "admin_audit_logs.insert"
+          ]
+        }
+      }
+    ]
+  },
+  "browser": {
+    "method": "Original reset-password page rendered with framework/UI substitutes, browser JavaScript disabled, every request intercepted; no server/Auth/database calls",
+    "declared_form_method": null,
+    "password_field_enabled_without_javascript": true,
+    "native_request_method": "GET",
+    "password_in_query": true,
+    "request_path": "/reset-password",
+    "credential_kind": "Synthetic value only; omitted from this report"
+  },
+  "review_assertions": "All expected diagnostic outcomes and controls matched"
+}
