@@ -121,3 +121,32 @@ foram atualizadas por esse teste. Não versionar senhas nem tokens.
 Permanecem pendentes reenvio/limite, alvo inexistente, a explicação visual dos
 botões bloqueados e o lote separado de correções de criação/convites. Este
 registro não declara homologação integral, autorização de publicação ou Fase 2.
+
+
+## Reenvio, limite local e preparação do teste de alvo inexistente
+
+Operador confirmou reenvio: link anterior recusado sem sessão, mais recente
+aceito com nova senha e acesso limitado a Chamados. O intervalo original era
+1s; o teto de e-mails por hora observado foi 360000. Não foi tentado esgotar
+esse teto. Com autorização explícita, configuração local foi copiada para
+backup privado, intervalo temporário alterado para 60s, Supabase reiniciado e
+valor de runtime `1m0s` conferido. Em duas tentativas próximas, somente um e-mail
+chegou; a segunda exibiu envio não confirmado e auditoria correlacionada com
+admin como ator e conta exclusiva como alvo. Backup original restaurado,
+serviço reiniciado e operador confirmou runtime `1s`. Não houve alteração de
+configuração de produção nem de teto horário.
+
+`tests/homologation/recovery-missing-user.mjs` prepara a verificação direta do
+endpoint do Vite local. Confirma previamente que UUID aleatório não existe em
+Auth/perfil/papel, autentica admin fictício em navegador separado, exige a
+mensagem específica de recusa e verifica ausência de auditoria de intenção e
+de novos e-mails no Mailpit numa janela de observação de três segundos. Não
+cria nem exclui contas. Senhas/tokens não são impressos; resultado fica privado.
+A aplicação local precisa estar funcionando na porta 4180. Não solicitar outros
+e-mails durante a execução. Este teste real ainda aguarda execução no Ubuntu.
+
+Verificações da preparação: sintaxe do script válida e 27 regressões de servidor
+aprovadas, incluindo dois novos casos simulados de perfil/Auth inexistentes.
+Expiração, reenvio e limite têm evidência manual; ausência de alvo real continua
+pendente. A recusa genérica não permite atribuir um código específico do Auth,
+mas os resultados observados são compatíveis com a configuração temporária.

@@ -30,7 +30,7 @@ function setup(options = {}) {
           return {
             error: options.readFailure === table,
             data: {
-              profiles: { id: "target" },
+              profiles: options.missingProfile ? null : { id: "target" },
               user_roles: { role: options.role || "viewer" },
               primary_admin: { user_id: options.primary || "primary" },
             }[table],
@@ -46,13 +46,15 @@ function setup(options = {}) {
       admin: {
         async getUserById() {
           return {
-            error: false,
+            error: !!options.missingAuthUser,
             data: {
-              user: {
-                id: "target",
-                email: "fake@example.test",
-                email_confirmed_at: options.unconfirmed ? null : "synthetic",
-              },
+              user: options.missingAuthUser
+                ? null
+                : {
+                    id: "target",
+                    email: "fake@example.test",
+                    email_confirmed_at: options.unconfirmed ? null : "synthetic",
+                  },
             },
           };
         },
@@ -80,6 +82,8 @@ for (const options of [
   { readFailure: "user_roles" },
   { readFailure: "primary_admin" },
   { unconfirmed: true },
+  { missingProfile: true },
+  { missingAuthUser: true },
 ])
   test(`denied before side effects ${JSON.stringify(options)}`, async () => {
     const f = setup(options);
