@@ -170,7 +170,8 @@ teste aprovado. Três casos de navegador cobrem edição sem vínculo, preserva�
 do vínculo existente e opção de criação no cadastro. Eles usam o componente
 real com fixtures, sem Auth/banco. Testes SQL anteriores não foram reexecutados
 porque a migration e a função transacional não mudaram neste ajuste.
-A repetição do salvamento dos módulos no WSL permanece pendente.
+A repetição de inclusão e remoção de módulos no WSL foi confirmada pelo usuário,
+conforme o registro manual abaixo.
 
 Atualizar somente a cópia de `src/routes/_authenticated/users.tsx` e o novo
 `src/components/iga/UserTechnicianSelect.tsx`, depois reiniciar o Vite.
@@ -189,3 +190,28 @@ Não implementado neste lote. O critério de "recente" e quando o destaque deve
 desaparecer serão definidos na etapa visual; não se presume controle de leitura
 por usuário. Prever contraste nos dois temas e indicação acessível que não
 dependa somente da cor, sem alterar registros, permissões ou regras de auditoria.
+
+## Resultados manuais informados no Windows/WSL — 20/10/2026
+
+Após aplicação local da 0020 e atualização da cópia da aplicação, o usuário
+confirmou nesta conversa:
+
+- Edição de nome pelo principal e pelo administrador comum persistida após
+  recarregar, preservando perfil e módulos.
+- Perfil e módulos bloqueados na interface do administrador comum.
+- Auditoria das edições básicas com os atores e valores anteriores/novos corretos.
+- Após o ajuste do seletor, inclusão de Contatos na conta fictícia restricted,
+  mantendo Chamados, com persistência após recarregar.
+- Auditoria da inclusão por Homologação primary, de `["tickets"]` para
+  `["contacts","tickets"]`.
+- Remoção posterior de Contatos, persistida após recarregar, restaurando a conta
+  para somente Chamados.
+- Auditoria da remoção por Homologação primary, de `["contacts","tickets"]`
+  para `["tickets"]`, mostrada na captura enviada nesta conversa.
+
+São verificações manuais do usuário, não novas execuções automatizadas.
+Rollback e concorrência foram verificados no PostgreSQL temporário descrito
+acima, sem injeção de falhas no banco de cadastros manuais do WSL.
+A checagem de acesso da conta restricted após a remoção ainda será confirmada.
+As capturas desta confirmação estão na conversa; não foram anexadas ao Git
+por este registro de documentação.
