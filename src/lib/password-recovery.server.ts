@@ -12,7 +12,7 @@ export async function requestAdministrativePasswordRecovery(
   admin: SupabaseClient<Database>,
   actorId: string,
   targetId: string,
-  config: { siteUrl?: string; supabaseUrl?: string },
+  config: { siteUrl?: string | undefined; supabaseUrl?: string | undefined },
 ): Promise<RecoveryDeliveryResult> {
   const [profile, role, primary, account] = await Promise.all([
     admin.from("profiles").select("id").eq("id", targetId).single(),
