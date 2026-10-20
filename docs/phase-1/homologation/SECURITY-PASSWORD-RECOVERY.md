@@ -150,3 +150,26 @@ aprovadas, incluindo dois novos casos simulados de perfil/Auth inexistentes.
 Expiração, reenvio e limite têm evidência manual; ausência de alvo real continua
 pendente. A recusa genérica não permite atribuir um código específico do Auth,
 mas os resultados observados são compatíveis com a configuração temporária.
+
+
+## Fechamento da verificação de alvo inexistente
+
+Operador executou `recovery-missing-user.mjs` no Ubuntu e informou as duas saídas
+APROVADO: usuário inexistente recusado pelo endpoint local e nenhum e-mail novo
+no Mailpit durante a conferência. Nenhuma conta criada ou excluída; resultado
+detalhado permaneceu na pasta privada. O script exige também ausência de
+intenção de envio na auditoria para o alvo inexistente. A janela de observação
+de e-mail foi de três segundos; não é uma garantia de ausência de entrega por
+tempo ilimitado. Evidência recebida pelo chat, sem leitura remota do arquivo.
+
+O lote de recuperação foi implementado e concluiu as verificações locais
+planejadas: autorização automatizada e bloqueio visual manual, entrega ao
+Mailpit, auditoria, troca e novo login, acesso restrito, ausência de sessão,
+uso único, expiração, reenvio, intervalo temporário de 60s com restauração para
+1s e alvo inexistente. Regressões isoladas: 26 unitárias, 27 de servidor e 32 de
+interface. Os limites e o escopo de cada evidência permanecem descritos acima.
+
+Próximo lote recomendado: criação/convites, ainda com achados abertos descritos
+em `AUTH-LIFECYCLE-REVIEW.md`. Não iniciados neste fechamento. Dica visual do
+botão bloqueado permanece no backlog. Nenhuma autorização de produção,
+publicação, merge ou Fase 2 é inferida deste resultado.
