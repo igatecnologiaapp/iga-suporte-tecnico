@@ -88,3 +88,36 @@ senha e andamento em arquivo exclusivo 0600 na pasta privada fora do Git, sem
 imprimir senha nem sobrescrever fixtures existentes. Se falhar, não repetir:
 revisar o registro privado e a possível conta parcialmente preparada.
 Verificado por análise e `node --check`; execução real depende do Ubuntu local.
+
+
+## Conclusão dos testes manuais locais — 20/10/2026
+
+Evidência informada pelo operador no chat, com capturas sem credenciais:
+
+- Helper criou conta exclusiva de recuperação viewer, com módulo Chamados.
+- Nova recuperação entregue ao Mailpit. Link aberto em janela anônima;
+  atualização confirmou sucesso e direcionou a Chamados.
+- Todas as janelas anônimas foram fechadas; novo login com a senha escolhida
+  funcionou, mantendo o acesso limitado a Chamados.
+- Após sair explicitamente, acesso direto a `/reset-password` e tentativa de
+  salvar foram recusados com “Link inválido ou expirado”.
+- O link original do e-mail já utilizado foi novamente aberto sem sessão e a
+  tentativa de troca foi recusada. Uma tentativa anterior com sessão ativa teve
+  sucesso e não constitui evidência de reutilização do token original.
+- `GOTRUE_MAILER_OTP_EXP` local consultado: 3600 segundos. Outro link foi
+  solicitado às 14:40, preservado sem abertura e sem novo pedido para a conta.
+  Operador confirmou teste após 15:45 no mesmo relógio e recusa com “Link
+  inválido ou expirado”. Horários locais America/Sao_Paulo.
+
+Entrega local, troca, login subsequente, ausência de sessão, reutilização do
+link consumido e expiração do link não utilizado foram aprovados manualmente.
+Não houve envio a destinatário real nem acesso à produção. A chave histórica
+`real_email_sent: false` no JSON refere-se à execução automatizada isolada;
+`manual_local_validation.delivery_to_local_mailpit` registra a entrega local.
+A senha inicial guardada pelo helper para a conta exclusiva foi substituída
+manualmente e não representa mais a credencial atual; fixtures anteriores não
+foram atualizadas por esse teste. Não versionar senhas nem tokens.
+
+Permanecem pendentes reenvio/limite, alvo inexistente, a explicação visual dos
+botões bloqueados e o lote separado de correções de criação/convites. Este
+registro não declara homologação integral, autorização de publicação ou Fase 2.
