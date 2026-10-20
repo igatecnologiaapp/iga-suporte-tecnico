@@ -1,0 +1,152 @@
+# Atualização administrativa atômica
+
+Data: 20/10/2026. Branch: `codex/iga-service-fase-1`. Base: `fd2b9a7`.
+
+## Implementação
+
+O problema reproduzido em [ADMIN-PARTIAL-UPDATE-REVIEW.md](ADMIN-PARTIAL-UPDATE-REVIEW.md)
+foi tratado em duas camadas:
+
+1. `admin-user-update.ts` valida campos, UUIDs, perfis, status e módulos.
+   O handler faz somente leituras para verificar alvo e permissões antes
+   de qualquer solicitação de escrita. Erros de consulta impedem a operação.
+2. A migration nova `0020_atomic_admin_user_update.sql` adiciona a RPC
+   `update_admin_user_atomic`. Perfil, papel, módulos, técnico e auditoria
+   são gravados na mesma transação PostgreSQL. Qualquer erro desfaz o conjunto.
+
+As migrations `0000` a `0019` não foram alteradas. A migration nova foi registrada
+no journal do Drizzle. Não modifica políticas RLS existentes, colunas ou registros
+de empresas, Domínio, categorias, chamados ou WhatsApp.
+
+## Autorização e concorrência
+
+- A RPC usa o cliente autenticado do chamador. Não recebe ID de ator como parâmetro.
+- A identidade é obtida por `auth.uid()`; o servidor não usa a service role para
+  executar a mutação. O cliente administrativo existente é usado apenas nas
+  consultas de pré-validação e na autorização central `assertPrimary`.
+- Execução da RPC revogada de PUBLIC, anon e service_role; concedida a authenticated.
+  O corpo SECURITY DEFINER verifica administrador ativo e módulo Usuários.
+- Mudança de papel/módulos continua exclusiva do principal. O administrador comum
+  mantém alterações básicas e de status permitidas para os demais usuários.
+- Mantidas as proteções do principal e do último administrador ativo.
+- Vínculo técnico deve existir e estar disponível, conforme as opções da interface.
+- A função repete as validações sob locks, evitando usar apenas dados lidos antes
+  da transação. Solicitações concorrentes e revogação de acesso foram testadas.
+- Locks SHARE ROW EXCLUSIVE nas cinco tabelas administrativas serializam escritas
+  durante a breve transação; consultas continuam permitidas. Não há chamadas de
+  rede sob esses locks. Escritas administrativas concorrentes podem aguardar.
+- Auditoria usa os mesmos nomes de ações e campos de banco. Falha nela desfaz
+  os dados em vez de retornar um sucesso sem o registro esperado.
+
+## Resultados executados
+
+| Verificação | Resultado |
+| --- | --- |
+| Testes transacionais em PostgreSQL 17.10 real | 22 aprovados |
+| Testes unitários, incluindo Domínio/categorias | 16 aprovados |
+| Handler original com dependências simuladas | 9 aprovados |
+| Proteções do auxiliar de migration com Docker/SQL simulados | 5 aprovados |
+| Interface com serviços simulados, incluindo login seguro | 25 aprovados |
+| TypeScript | Aprovado |
+| Build sem `.env`, com variáveis sintéticas locais | Aprovado |
+| ESLint dos arquivos novos | Zero erros/avisos |
+| ESLint global | 2057 erros e 9 avisos; ver resumo estruturado |
+
+Evidência: [admin-atomic-results.json](admin-atomic-results.json).
+
+Os testes reais aplicaram as 20 migrations históricas sem alteração e a 0020
+em bancos novos de um cluster temporário, restrito a loopback. Exercitaram:
+
+- Rejeição integral de solicitações mistas com perfil/módulos proibidos.
+- Rollback por falha em perfil, papel, inclusão de módulos após remoção,
+  novo vínculo após desvinculação e auditoria após as demais alterações.
+- Alteração válida do conjunto e registro do ator correto.
+- Rejeição de ator forjado, conta inativa, não administrador, ausência do módulo,
+  alvo inexistente, técnico ocupado, campos e valores inválidos.
+- Principal protegido, último administrador ativo, desvinculação explícita
+  e lista vazia de módulos conforme as operações existentes.
+- Duas atualizações concorrentes sem combinação parcial dos estados.
+- Revogação concorrente de permissão, reavaliada antes de gravar.
+
+O cluster usa PostgreSQL nativo obtido pelo pacote npm
+`@embedded-postgres/linux-x64@17.10.0-beta.17` com verificação de integridade npm.
+Os contratos mínimos dos schemas auth/storage são fixtures de teste. Não são
+os serviços Supabase Auth/Storage nem um teste de transporte PostgREST.
+
+## Repetição dos testes
+
+```bash
+npm --prefix tests run test:unit
+npm --prefix tests run test:admin-handler
+npm --prefix tests run test:admin-migration-helper
+npm --prefix tests test
+IGA_ATOMIC_TEST_DB=postgres://USUARIO_LOCAL@127.0.0.1:55432/iga_atomic_test_NOME npm --prefix tests run test:transactions
+```
+
+O último comando exige banco descartável novo, sem tabelas de aplicação.
+O runner recusa destino remoto, porta diferente de 55432/55422, nome de banco
+fora do prefixo `iga_atomic_test_` e banco já inicializado. Ele cria fixtures,
+aplica migrations e usa triggers sintéticos de falha somente nesse banco.
+Cada repetição precisa de outro banco vazio. Não executar contra o banco
+de homologação com os cadastros manuais.
+
+## Aplicação no Supabase local do Windows/WSL — ainda pendente
+
+O computador do usuário não foi modificado por esta implementação.
+Não copiar o novo handler para a aplicação antes de aplicar a migration local.
+
+Após atualizar a branch, no Ubuntu, dentro do repositório:
+
+```bash
+export IGA_HOMO_PRIVATE="$HOME/iga-homologacao/private"
+node tests/homologation/apply-admin-atomic.mjs
+```
+
+O auxiliar não usa credenciais de banco do `.env`. Verifica a API local, o nome
+exato do container, porta PostgreSQL 55422 publicada somente em loopback e
+pré-requisitos de schema. Sem `--apply`, apenas verifica. Para aplicar:
+
+```bash
+node tests/homologation/apply-admin-atomic.mjs --apply
+```
+
+O SQL é executado por `docker exec` somente no container
+`supabase_db_iga-service-homologation`, em uma transação. O auxiliar verifica
+body e privilégios se a RPC já existir e recusa substituição automática
+de função divergente. Registra checksum e evidências sem segredos em
+`admin-atomic-local-migration.json`. Inclui recarga do schema PostgREST.
+Esse auxiliar passou por sintaxe/lint e cinco testes com Docker/SQL simulados
+(recusa de destino remoto/exposto, aplicação explícita e repetição segura); sua execução
+contra o Docker Desktop precisa da próxima validação acompanhada no WSL.
+
+Depois, parar o Vite e copiar somente os dois arquivos:
+
+```bash
+cp src/lib/admin-users.functions.ts ~/iga-homologacao/app/src/lib/admin-users.functions.ts
+cp src/lib/admin-user-update.ts ~/iga-homologacao/app/src/lib/admin-user-update.ts
+node ~/iga-homologacao/private/start-app.mjs
+```
+
+Validar com contas fictícias: edição básica por administrador comum, bloqueio de
+perfil/módulos e alteração autorizada pelo principal, verificando persistência
+e auditoria. A confirmação pela API Supabase e interface do WSL está pendente.
+
+## Limites deste lote
+
+- O fluxo de criação/convites e a redefinição de senha não fazem parte desta
+  transação de atualização. Operações que envolvem Auth exigem revisão própria.
+- Os arquivos antigos de resultados são evidências históricas, não resultados
+  reexecutados nesta versão.
+- Nenhuma migration ou operação foi executada em produção, nem no banco WSL
+  do usuário. Sem merge, publicação ou Fase 2.
+- Melhorias visuais e confirmação de saída continuam fora deste lote.
+
+## Arquivos deste lote
+
+- `src/lib/admin-user-update.ts` e `src/lib/admin-users.functions.ts`.
+- `drizzle/migrations/0020_atomic_admin_user_update.sql` e `meta/_journal.json`.
+- `tests/unit/admin-user-update.test.ts`.
+- `tests/transactions/bootstrap.sql`, `admin-user-update.test.mjs`,
+  `admin-user-handler.test.mjs` e `admin-user-migration-helper.test.mjs`.
+- `tests/homologation/apply-admin-atomic.mjs` e scripts em `tests/package.json`.
+- Este relatório, `admin-atomic-results.json` e referência no diagnóstico anterior.

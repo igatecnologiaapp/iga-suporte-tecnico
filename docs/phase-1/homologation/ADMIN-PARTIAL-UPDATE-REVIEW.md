@@ -3,6 +3,10 @@
 Data: 20/10/2026. Código analisado: `d47292a`.
 Escopo: investigação, sem alteração da aplicação ou de banco.
 
+Atualização posterior: a implementação autorizada e seus testes estão em
+[ADMIN-ATOMIC-UPDATE.md](ADMIN-ATOMIC-UPDATE.md). Este documento preserva o
+diagnóstico anterior à correção.
+
 ## Conclusão
 
 O risco foi reproduzido em simulação isolada do código original. Uma operação

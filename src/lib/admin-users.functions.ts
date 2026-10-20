@@ -1,16 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { adminUserUpdateSchema, planAdminUserUpdate, userModules } from "./admin-user-update";
+
 type AdminContext = { supabase: any; userId: string };
 
-const VALID_MODULES = ["inbox","tickets","companies","contacts","categories","sla","technicians","users","integrations","settings"];
+const VALID_MODULES: readonly string[] = userModules;
 
 async function assertAdmin(context: AdminContext) {
-  const [{ data, error }, { data: hasUsers }] = await Promise.all([
+  const [{ data, error }, { data: hasUsers, error: moduleError }] = await Promise.all([
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
     context.supabase.rpc("has_module", { _user_id: context.userId, _module: "users" }),
   ]);
-  if (error || !data || !hasUsers) throw new Error("Apenas administradores podem gerenciar usuários.");
+  if (error || moduleError || !data || !hasUsers) throw new Error("Apenas administradores podem gerenciar usuários.");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
@@ -115,72 +117,44 @@ export const createAdminUser = createServerFn({ method: "POST" })
 
 export const updateAdminUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { userId: string; fullName?: string; phone?: string | null; role?: string; status?: string; technicianId?: string | null; modules?: string[] }) => input)
+  .inputValidator((input: unknown) => adminUserUpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as AdminContext);
-    const primary = await primaryId(admin);
-    const actorIsPrimary = primary === context.userId;
-    if (data.userId === primary) {
-      if (!actorIsPrimary) throw new Error("O Administrador Principal só pode ser alterado por ele mesmo.");
-      if (data.status !== undefined && data.status !== "active") throw new Error("O Administrador Principal não pode ser desativado.");
-      if (data.role !== undefined && data.role !== "admin") throw new Error("O papel do Administrador Principal não pode ser reduzido.");
-      delete (data as { modules?: string[] }).modules; // acesso integral fixo
+    const ctx = context as AdminContext;
+    const admin = await assertAdmin(ctx);
+    const [profile, role, modules, primary] = await Promise.all([
+      admin.from("profiles").select("id").eq("id", data.userId).single(),
+      admin.from("user_roles").select("role").eq("user_id", data.userId).single(),
+      admin.from("user_modules").select("module").eq("user_id", data.userId),
+      admin.from("primary_admin").select("user_id").maybeSingle(),
+    ]);
+    for (const result of [profile, role, modules, primary]) {
+      if (result.error) throw new Error(result.error.message);
     }
-    const current = await admin.from("profiles").select("full_name,phone,status").eq("id", data.userId).single();
-    const currentRole = await admin.from("user_roles").select("role").eq("user_id", data.userId).maybeSingle();
-    const currentTech = await admin.from("technicians").select("id,name").eq("user_id", data.userId).maybeSingle();
-
-    const losesAdmin = currentRole.data?.role === "admin" && ((data.status !== undefined && data.status !== "active") || (data.role !== undefined && data.role !== "admin"));
-    if (losesAdmin) {
-      const { data: admins } = await admin.from("user_roles").select("user_id").eq("role", "admin");
-      const others = (admins ?? []).map((r: any) => r.user_id).filter((id: string) => id !== data.userId);
-      const { data: activeOthers } = others.length
-        ? await admin.from("profiles").select("id").in("id", others).eq("status", "active")
-        : { data: [] };
-      if (!activeOthers || activeOthers.length === 0) throw new Error("É necessário manter pelo menos um Administrador ativo no sistema.");
-    }
-
-
-    if (data.fullName !== undefined || data.phone !== undefined || data.status !== undefined) {
-      const patch: Record<string, unknown> = {};
-      if (data.fullName !== undefined) patch["full_name"] = data.fullName.trim();
-      if (data.phone !== undefined) patch["phone"] = data.phone?.trim() || null;
-      if (data.status !== undefined) patch["status"] = data.status;
-      const { error } = await admin.from("profiles").update(patch as never).eq("id", data.userId);
-      if (error) throw new Error(error.message);
-      if (data.status !== undefined && data.status !== current.data?.status)
-        await logAudit(admin, context.userId, data.userId, data.status === "active" ? "user_activated" : "user_deactivated", { status: current.data?.status }, { status: data.status });
-      else await logAudit(admin, context.userId, data.userId, "user_updated", current.data, patch);
-    }
-
-    if (data.role !== undefined && data.role !== currentRole.data?.role) {
-      await assertPrimary(admin, context.userId, "change_role");
-      if (data.userId === context.userId) throw new Error("Não é possível alterar o próprio perfil de acesso.");
-      const { error } = await admin.from("user_roles").upsert({ user_id: data.userId, role: data.role } as never, { onConflict: "user_id" });
-      if (error) throw new Error(error.message);
-      await logAudit(admin, context.userId, data.userId, "role_changed", { role: currentRole.data?.role ?? null }, { role: data.role });
-    }
-
-    if (data.technicianId !== undefined && (data.technicianId ?? null) !== (currentTech.data?.id ?? null)) {
-      if (currentTech.data?.id) { await admin.from("technicians").update({ user_id: null } as never).eq("id", currentTech.data.id); }
-      if (data.technicianId) {
-        const { error } = await admin.from("technicians").update({ user_id: data.userId } as never).eq("id", data.technicianId);
-        if (error) throw new Error(error.message);
-      }
-      await logAudit(admin, context.userId, data.userId, data.technicianId ? "technician_linked" : "technician_unlinked", { technician_id: currentTech.data?.id ?? null }, { technician_id: data.technicianId ?? null });
-    }
-    if (data.modules !== undefined) {
-      const next = cleanModules(data.modules);
-      const { data: cur } = await admin.from("user_modules").select("module").eq("user_id", data.userId);
-      const prev = (cur ?? []).map((m: any) => m.module).sort();
-      if (JSON.stringify(prev) !== JSON.stringify(next)) {
-        await assertPrimary(admin, context.userId, "change_modules");
-        const toAdd = next.filter(m => !prev.includes(m)); const toRemove = prev.filter((m: string) => !next.includes(m));
-        if (toRemove.length) { const { error } = await admin.from("user_modules").delete().eq("user_id", data.userId).in("module", toRemove); if (error) throw new Error(error.message); }
-        if (toAdd.length) { const { error } = await admin.from("user_modules").insert(toAdd.map(m => ({ user_id: data.userId, module: m })) as never); if (error) throw new Error(error.message); }
-        await logAudit(admin, context.userId, data.userId, "modules_changed", { modules: prev }, { modules: next });
-      }
-    }
+    if (!profile.data || !role.data || !modules.data)
+      throw new Error("Usuário ou permissões não encontrados.");
+    const plan = planAdminUserUpdate(data, {
+      actorId: ctx.userId,
+      primaryId: primary.data?.user_id ?? null,
+      currentRole: role.data.role,
+      currentModules: modules.data.map((item: { module: string }) => item.module),
+    });
+    if (plan.role !== undefined && plan.role !== role.data.role)
+      await assertPrimary(admin, ctx.userId, "change_role");
+    if (
+      plan.modules !== undefined &&
+      JSON.stringify(plan.modules) !==
+        JSON.stringify(modules.data.map((item: { module: string }) => item.module).sort())
+    )
+      await assertPrimary(admin, ctx.userId, "change_modules");
+    const { userId, ...patch } = plan;
+    // Use the authenticated caller, never a client-supplied actor or a service-role RPC.
+    // The RPC repeats authorization under locks and commits data + audit together.
+    const result = await ctx.supabase.rpc("update_admin_user_atomic", {
+      _target_id: userId,
+      _patch: patch,
+    });
+    if (result.error) throw new Error(result.error.message);
+    if (result.data?.ok !== true) throw new Error("A atualização não foi confirmada.");
     return { ok: true };
   });
 

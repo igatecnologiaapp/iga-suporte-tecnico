@@ -1,0 +1,58 @@
+{
+  "source_base": "fd2b9a7",
+  "environment": {
+    "engine": "PostgreSQL 17.10 native, dedicated temporary loopback cluster",
+    "auth_storage": "Minimal schema contracts for migrations; not Supabase Auth/Storage services",
+    "historical_migrations_applied": 20,
+    "historical_migrations_unchanged": 20,
+    "new_migration": "0020_atomic_admin_user_update.sql",
+    "new_migration_sha256": "dd7a426317bee6805240598a549a5a5e4dcf0920c3407f7864cfa839ded1f402"
+  },
+  "tests": {
+    "transactions_real_postgresql": {
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    "unit": {
+      "tests": 16,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    "handler_in_memory": {
+      "tests": 9,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    "interface_mocked": {
+      "tests": 25,
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0
+    },
+    "migration_helper_in_memory": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "checks": {
+    "typescript": "passed",
+    "isolated_build": "passed",
+    "new_files_eslint": "passed",
+    "global_eslint": {
+      "errors": 2057,
+      "warnings": 9,
+      "increased_non_format_groups": 0
+    }
+  },
+  "limitations": [
+    "Supabase/PostgREST on Windows/WSL not yet migrated or retested.",
+    "Concurrency locks serialize administrative writes; reads continue.",
+    "Creation/invites/password recovery are outside this update transaction."
+  ]
+}
