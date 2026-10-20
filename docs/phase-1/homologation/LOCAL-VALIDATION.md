@@ -98,7 +98,8 @@ Este relatório não declara homologação integral ou autorização de publica�
 
 Atualização posterior: a correção do formulário e seus testes estão descritos em
 [SECURITY-LOGIN.md](SECURITY-LOGIN.md). Os achados abaixo preservam o histórico
-da rodada anterior; a confirmação no WSL com a cópia corrigida permanece pendente.
+da rodada anterior; a confirmação manual no WSL com a cópia corrigida foi
+informada pelo usuário em 20/10/2026 e está registrada no relatório de segurança.
 
 - Testes unitários: 9 aprovados; zero falhas, ignorados ou cancelados.
 - Interface com serviços simulados: 22 aprovados, zero ignorados ou instáveis.

@@ -69,10 +69,30 @@ Também é necessário apontar o teste ao Playwright/Chromium auxiliares compat�
 
 - Os testes desta correção não reexecutam Auth/RLS/Storage contra o Supabase
   do computador Windows; esse ambiente é separado do workspace de desenvolvimento.
-- Falta confirmar o login real no WSL com a cópia atualizada e usuário fictício.
+- Login real no WSL com a cópia atualizada confirmado manualmente pelo usuário
+  em 20/10/2026, conforme registro abaixo.
 - Resultados históricos anteriores à correção permanecem como evidência histórica.
 - Esta correção não remove URLs de logs/históricos antigos. Na homologação,
   a senha fictícia exposta já havia sido substituída.
 - O risco de atualização parcial na administração de usuários e as melhorias
   visuais continuam fora deste lote.
 - Sem migrations, acesso a produção, publicação, merge em main ou Fase 2.
+
+## Confirmação manual no Windows/WSL — 20/10/2026
+
+Após atualizar a branch e copiar os dois arquivos de produção desta correção
+para a aplicação isolada, o usuário informou nesta conversa:
+
+- Login concluído com o administrador fictício local.
+- Endereço após login contendo somente o endereço local e `/tickets`, sem
+  e-mail ou senha nos parâmetros da URL.
+- Acesso normal ao menu Empresas/Clientes, ao cadastro e aos formulários
+  de edição existentes.
+- Empresas fictícias cadastradas no dia anterior preservadas após desligar
+  e reiniciar o computador e os serviços locais.
+
+Esses resultados são relatos de execução manual pelo usuário; não são uma
+nova execução automatizada nem demonstram que todos os fluxos foram retestados.
+Com os testes automatizados descritos acima, encerram a validação deste lote
+de correção do envio de credenciais pela URL. As demais ressalvas de homologação
+e o risco de atualização parcial na administração de usuários permanecem abertos.
