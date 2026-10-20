@@ -212,6 +212,13 @@ confirmou nesta conversa:
 São verificações manuais do usuário, não novas execuções automatizadas.
 Rollback e concorrência foram verificados no PostgreSQL temporário descrito
 acima, sem injeção de falhas no banco de cadastros manuais do WSL.
-A checagem de acesso da conta restricted após a remoção ainda será confirmada.
+Após novo login da conta restricted, o usuário confirmou somente Chamados
+disponível no menu. Tentativas de acesso a outros módulos redirecionaram de
+volta para Chamados, com o aviso "Você não tem permissão para acessar este
+módulo.", conforme captura enviada na conversa em 20/10/2026.
+
+Isso conclui a validação manual acompanhada deste lote de atualização atômica.
+Não equivale à homologação de todos os fluxos administrativos: criação/convites
+e recuperação de senha continuam fora do escopo, assim como as melhorias visuais.
 As capturas desta confirmação estão na conversa; não foram anexadas ao Git
 por este registro de documentação.
