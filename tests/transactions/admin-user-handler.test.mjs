@@ -57,7 +57,10 @@ function setup(options = {}) {
       return query;
     },
     async rpc() {
-      return { data: options.primary === true, error: null };
+      return {
+        data: options.primary === true,
+        error: options.primaryError ? { message: "Synthetic principal read failure" } : null,
+      };
     },
   };
   const caller = {
@@ -79,8 +82,41 @@ function setup(options = {}) {
     exports,
     process: { env: {} },
     require(name) {
-      if (name === "./password-recovery.server") return { requestAdministrativePasswordRecovery: async (_admin, actorId, targetId) => { calls.push({ actorId, targetId }); return { status: "requested", audit: "recorded" }; } };
-      if (name === "./password-recovery") return require(resolve(repo, "src/lib/password-recovery.ts"));
+      if (name === "./admin-user-creation.server")
+        return {
+          createAdministrativeUser: async (client, service, input) => {
+            calls.push({
+              kind: "create",
+              sameClient: client === caller,
+              sameService: service === admin,
+              input,
+            });
+            return { status: "pending" };
+          },
+          resumeAdministrativeUser: async (_client, _service, operationId) => {
+            calls.push({ kind: "resume", operationId });
+            return { status: "pending" };
+          },
+          deliverCreationInvitation: async (_client, _service, operationId, _config, resend) => {
+            calls.push({ kind: "resend", operationId, resend });
+            return { status: "provisioned" };
+          },
+          listAdministrativeCreations: async () => {
+            calls.push({ kind: "list" });
+            return [];
+          },
+        };
+      if (name === "./admin-user-creation")
+        return require(resolve(repo, "src/lib/admin-user-creation.ts"));
+      if (name === "./password-recovery.server")
+        return {
+          requestAdministrativePasswordRecovery: async (_admin, actorId, targetId) => {
+            calls.push({ actorId, targetId });
+            return { status: "requested", audit: "recorded" };
+          },
+        };
+      if (name === "./password-recovery")
+        return require(resolve(repo, "src/lib/password-recovery.ts"));
       if (name === "./admin-user-update") return helper;
       if (name === "@/integrations/supabase/auth-middleware") return { requireSupabaseAuth: {} };
       if (name === "@/integrations/supabase/client.server") return { supabaseAdmin: admin };
@@ -107,7 +143,15 @@ function setup(options = {}) {
   });
   return {
     calls,
-    recover(data) { return exports.sendPasswordReset({ data, context: { userId: actor, supabase: caller } }); },
+    creation(action, data) {
+      return exports[action]({
+        data,
+        context: { userId: options.primary ? primary : actor, supabase: caller },
+      });
+    },
+    recover(data) {
+      return exports.sendPasswordReset({ data, context: { userId: actor, supabase: caller } });
+    },
     run(patch) {
       return exports.updateAdminUser({
         data: { userId: target, ...patch },
@@ -158,13 +202,67 @@ test("transaction error is propagated without fallback individual writes", async
   assert.equal(fixture.calls.length, 1);
 });
 
-for (const options of [{ denied: true }, { moduleFailure: true }]) test(`recovery handler rejects unauthorized actor ${JSON.stringify(options)}`, async () => {
-  const f = setup(options); await assert.rejects(f.recover({ userId: target }), /administradores/); assert.equal(f.calls.length, 0);
-});
+for (const options of [{ denied: true }, { moduleFailure: true }])
+  test(`recovery handler rejects unauthorized actor ${JSON.stringify(options)}`, async () => {
+    const f = setup(options);
+    await assert.rejects(f.recover({ userId: target }), /administradores/);
+    assert.equal(f.calls.length, 0);
+  });
 test("recovery handler uses authenticated actor and UUID, rejects email/actor injection", async () => {
   const f = setup();
-  for (const data of [{ email: "synthetic@example.test" }, { userId: target, actorId: primary }]) await assert.rejects(async () => f.recover(data));
+  for (const data of [{ email: "synthetic@example.test" }, { userId: target, actorId: primary }])
+    await assert.rejects(async () => f.recover(data));
   assert.equal(f.calls.length, 0);
   assert.equal((await f.recover({ userId: target })).status, "requested");
-  assert.equal(f.calls[0].actorId, actor); assert.equal(f.calls[0].targetId, target);
+  assert.equal(f.calls[0].actorId, actor);
+  assert.equal(f.calls[0].targetId, target);
+});
+
+const creationInput = {
+  operationId: target,
+  fullName: "Synthetic",
+  email: "new@iga-test.example",
+  role: "viewer",
+  status: "active",
+  modules: ["tickets"],
+};
+for (const action of [
+  "createAdminUser",
+  "resumeAdminUserCreation",
+  "resendAdminUserInvitation",
+  "listAdminUserCreations",
+])
+  test(`creation endpoint ${action} requires principal`, async () => {
+    const f = setup();
+    await assert.rejects(
+      f.creation(action, action === "createAdminUser" ? creationInput : { operationId: target }),
+      /Principal/,
+    );
+    assert.equal(f.calls.length, 0);
+  });
+test("principal check fails closed on truthy result plus error", async () => {
+  const f = setup({ primary: true, primaryError: true });
+  await assert.rejects(f.creation("createAdminUser", creationInput), /Principal/);
+  assert.equal(f.calls.length, 0);
+});
+test("creation endpoint validates raw input before touching Auth and forwards authenticated client", async () => {
+  const f = setup({ primary: true });
+  await assert.rejects(async () =>
+    f.creation("createAdminUser", { ...creationInput, actorId: primary }),
+  );
+  assert.equal(f.calls.length, 0);
+  await f.creation("createAdminUser", creationInput);
+  assert.equal(f.calls[0].sameClient, true);
+  assert.equal(f.calls[0].sameService, true);
+  assert.equal(f.calls[0].input.operationId, target);
+});
+test("resume/resend accept only operation UUID and resend is explicit", async () => {
+  const f = setup({ primary: true });
+  await assert.rejects(async () =>
+    f.creation("resumeAdminUserCreation", { operationId: target, email: "x@iga-test.example" }),
+  );
+  await f.creation("resumeAdminUserCreation", { operationId: target });
+  await f.creation("resendAdminUserInvitation", { operationId: target });
+  assert.equal(f.calls[0].operationId, target);
+  assert.equal(f.calls[1].resend, true);
 });

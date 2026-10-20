@@ -56,3 +56,38 @@ test("technician selection has explicit mutually exclusive modes", () => {
       "technician",
     );
 });
+
+test("feedback distinguishes incomplete creation and unconfirmed delivery", async () => {
+  const { creationFeedback } = await import("../../src/lib/admin-user-creation.ts");
+  const base = { operationId, userId: operationId, deliveryAttempted: false };
+  assert.equal(
+    creationFeedback({ ...base, status: "pending", invitation: "not_requested" }).kind,
+    "warning",
+  );
+  for (const invitation of ["sending", "failed", "unknown", "not_requested"] as const)
+    assert.equal(creationFeedback({ ...base, status: "provisioned", invitation }).kind, "warning");
+  assert.equal(
+    creationFeedback({ ...base, status: "provisioned", invitation: "accepted" }).kind,
+    "success",
+  );
+  assert.equal(
+    creationFeedback({ ...base, status: "provisioned", invitation: "activated" }).kind,
+    "success",
+  );
+});
+
+test("repeated creation does not announce a new invitation", async () => {
+  const { creationFeedback } = await import("../../src/lib/admin-user-creation.ts");
+  const result = {
+    operationId,
+    userId: operationId,
+    status: "provisioned" as const,
+    invitation: "accepted" as const,
+    deliveryAttempted: false,
+  };
+  assert.match(creationFeedback(result).message, /Nenhum novo convite/);
+  assert.match(
+    creationFeedback({ ...result, deliveryAttempted: true }).message,
+    /Envio do convite aceito/,
+  );
+});

@@ -34,9 +34,9 @@ before(async () => {
   await sql.unsafe(readFileSync(resolve(import.meta.dirname, "bootstrap.sql"), "utf8"));
   const directory = resolve(repo, "drizzle/migrations");
   const files = readdirSync(directory)
-    .filter((name) => /^00(?:0\d|1\d|20)_.*\.sql$/.test(name))
+    .filter((name) => /^00(?:0\d|1\d|2[01])_.*\.sql$/.test(name))
     .sort();
-  assert.equal(files.length, 21);
+  assert.equal(files.length, 22);
   for (const file of files)
     await sql.begin((tx) => tx.unsafe(readFileSync(resolve(directory, file), "utf8")));
 });

@@ -8,7 +8,10 @@
     "test:admin-handler": "node --test transactions/admin-user-handler.test.mjs",
     "test:admin-migration-helper": "node --test transactions/admin-user-migration-helper.test.mjs",
     "test:transactions": "node --test transactions/admin-user-update.test.mjs",
-    "preview": "../node_modules/.bin/vite --config interface/vite.config.ts"
+    "preview": "../node_modules/.bin/vite --config interface/vite.config.ts",
+    "test:creation-server": "node --test transactions/admin-user-creation-server.test.mjs",
+    "test:creation-migration-helper": "node --test transactions/admin-creation-migration-helper.test.mjs",
+    "test:creation-transactions": "node --test transactions/admin-user-creation.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2"

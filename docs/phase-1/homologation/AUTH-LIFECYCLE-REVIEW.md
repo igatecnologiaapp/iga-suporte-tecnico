@@ -118,3 +118,12 @@ Implementação de recuperação e nova senha registrada em
 [SECURITY-PASSWORD-RECOVERY.md](SECURITY-PASSWORD-RECOVERY.md).
 Regressões isoladas passaram; a entrega e o ciclo de token no Auth/Mailpit do
 Ubuntu ainda precisam de validação. Achados de criação/convite permanecem abertos.
+
+
+## Implementação do lote B — 20/10/2026
+
+Criação, provisionamento transacional e convite posterior implementados, com
+retomada e reenvio explícito. Consulte
+[CREATION-INVITATION-IMPLEMENTATION.md](CREATION-INVITATION-IMPLEMENTATION.md).
+A revisão original acima é histórica. Aplicação da migration 0021 e validação
+completa no Auth/Mailpit do Ubuntu ainda pendentes; sem produção/publicação.

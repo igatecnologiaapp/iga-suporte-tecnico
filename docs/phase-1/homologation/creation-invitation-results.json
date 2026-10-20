@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-20",
+  "scope": "administrative-user-creation-and-invitation",
+  "status": "implemented-local-application-validation-pending",
+  "migration": "0021_admin_user_creation_operations.sql",
+  "migration_sha256": "02e2289b8a6142b2c2ed9e1a521248fe6b6c2ddbcd014fc5cf44a40f9bdc100f",
+  "automated": {
+    "unit": {
+      "passed": 31,
+      "failed": 0
+    },
+    "server_helpers_and_migration_tools_mocked": {
+      "passed": 78,
+      "failed": 0
+    },
+    "postgres_creation": {
+      "passed": 38,
+      "failed": 0
+    },
+    "postgres_existing_admin_update_with_0021": {
+      "passed": 22,
+      "failed": 0
+    },
+    "interface": {
+      "passed": 35,
+      "failed": 0
+    },
+    "typescript": "passed",
+    "scoped_eslint": "passed",
+    "isolated_build": "passed"
+  },
+  "local_auth_capability_preflight": {
+    "source": "operator-reported-script-output",
+    "reserved_uuid_accepted": true,
+    "invitation_retained_same_uuid": true,
+    "mailpit_delivered": true,
+    "account_inactive_without_modules": true
+  },
+  "wsl_migration_0021_applied": false,
+  "full_new_flow_mailpit_verified": false,
+  "production_access": false,
+  "historical_migrations_modified": false,
+  "pending": [
+    "apply-0021-in-verified-wsl-container",
+    "copy-code-to-sanitized-app",
+    "real-creation-and-first-access-mailpit",
+    "real-duplicate-email-and-explicit-resend",
+    "real-ordinary-admin-denial"
+  ]
+}

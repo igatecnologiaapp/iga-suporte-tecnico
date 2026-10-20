@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { userModules } from "./admin-user-update.ts";
 
-export const adminUserCreationSchema = z
+const basePayload = z
   .object({
-    operationId: z.string().uuid(),
     fullName: z.string().trim().min(1).max(160),
     email: z.string().trim().toLowerCase().email().max(254),
     phone: z
@@ -28,20 +27,73 @@ export const adminUserCreationSchema = z
       .max(userModules.length)
       .transform((values) => [...new Set(values)].sort()),
   })
-  .strict()
-  .superRefine((value, context) => {
-    if (value.technicianId && value.createTechnician)
-      context.addIssue({
-        code: "custom",
-        path: ["technicianId"],
-        message: "Selecione um técnico existente ou crie um cadastro, não ambos.",
-      });
-    if (value.role !== "technician" && (value.technicianId || value.createTechnician))
-      context.addIssue({
-        code: "custom",
-        path: ["technicianId"],
-        message: "Vínculo de técnico exige o perfil Técnico.",
-      });
-  });
+  .strict();
+
+function validateTechnician(value: z.infer<typeof basePayload>, context: z.RefinementCtx) {
+  if (value.technicianId && value.createTechnician)
+    context.addIssue({
+      code: "custom",
+      path: ["technicianId"],
+      message: "Selecione um técnico existente ou crie um cadastro, não ambos.",
+    });
+  if (value.role !== "technician" && (value.technicianId || value.createTechnician))
+    context.addIssue({
+      code: "custom",
+      path: ["technicianId"],
+      message: "Vínculo de técnico exige o perfil Técnico.",
+    });
+}
+export const adminUserCreationPayloadSchema = basePayload.superRefine(validateTechnician);
+export const adminUserCreationSchema = basePayload
+  .extend({ operationId: z.string().uuid() })
+  .superRefine(validateTechnician);
+
+export const adminCreationOperationIdSchema = z.object({ operationId: z.string().uuid() }).strict();
 
 export type AdminUserCreation = z.infer<typeof adminUserCreationSchema>;
+
+export type InvitationState =
+  "not_requested" | "sending" | "accepted" | "failed" | "unknown" | "activated";
+export type CreationResult = {
+  operationId: string;
+  userId: string;
+  status: "pending" | "provisioned";
+  invitation: InvitationState;
+  deliveryAttempted: boolean;
+};
+export type CreationOperation = {
+  operationId: string;
+  userId: string;
+  payload: z.infer<typeof adminUserCreationPayloadSchema>;
+  stage: "reserved" | "provisioned";
+  deliveryState: InvitationState;
+};
+
+export function creationFeedback(result: CreationResult) {
+  if (result.status === "pending")
+    return {
+      kind: "warning" as const,
+      message:
+        "Cadastro pendente. Retome a operação na lista de cadastros; não crie outro pedido para o mesmo e-mail.",
+    };
+  if (result.invitation === "accepted" && !result.deliveryAttempted)
+    return {
+      kind: "success" as const,
+      message: "Cadastro já concluído. Nenhum novo convite foi solicitado nesta tentativa.",
+    };
+  if (result.invitation === "accepted")
+    return {
+      kind: "success" as const,
+      message: "Usuário cadastrado. Envio do convite aceito; confira o e-mail do titular.",
+    };
+  if (result.invitation === "activated")
+    return {
+      kind: "success" as const,
+      message: "Usuário cadastrado e e-mail já confirmado. Nenhum novo convite foi enviado.",
+    };
+  return {
+    kind: "warning" as const,
+    message:
+      "Usuário cadastrado; entrega do convite pendente ou não confirmada. Confira o e-mail antes de reenviar pela lista de cadastros.",
+  };
+}

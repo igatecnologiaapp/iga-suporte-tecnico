@@ -16,9 +16,12 @@ export default defineConfig({
         server.middlewares.use(async (request, response, next) => {
           const pathname = request.url?.split("?")[0];
           if (
-            !["/auth-security", "/technician-selection", "/new-password-security"].includes(
-              pathname ?? "",
-            )
+            ![
+              "/auth-security",
+              "/technician-selection",
+              "/new-password-security",
+              "/creation-operations",
+            ].includes(pathname ?? "")
           )
             return next();
           if (request.method !== "GET") {
@@ -33,7 +36,9 @@ export default defineConfig({
                   ? "./technician-selection.fixture.tsx"
                   : pathname === "/new-password-security"
                     ? "./new-password-security.render.tsx"
-                    : "./auth-security.render.tsx",
+                    : pathname === "/creation-operations"
+                      ? "./creation-operations.render.tsx"
+                      : "./auth-security.render.tsx",
               ),
             );
             response.setHeader("Content-Type", "text/html; charset=utf-8");
