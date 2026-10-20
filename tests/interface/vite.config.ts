@@ -14,16 +14,25 @@ export default defineConfig({
       name: "isolated-auth-security-fixture",
       configureServer(server) {
         server.middlewares.use(async (request, response, next) => {
-          if (request.url?.split("?")[0] !== "/auth-security") return next();
+          const pathname = request.url?.split("?")[0];
+          if (!["/auth-security", "/technician-selection"].includes(pathname ?? "")) return next();
           if (request.method !== "GET") {
             response.statusCode = 405;
             response.end("Native submission is not an authentication endpoint.");
             return;
           }
           try {
-            const fixture = await server.ssrLoadModule(path("./auth-security.render.tsx"));
+            const fixture = await server.ssrLoadModule(
+              path(
+                pathname === "/technician-selection"
+                  ? "./technician-selection.fixture.tsx"
+                  : "./auth-security.render.tsx",
+              ),
+            );
             response.setHeader("Content-Type", "text/html; charset=utf-8");
-            response.end(await server.transformIndexHtml("/auth-security", fixture.render()));
+            response.end(
+              await server.transformIndexHtml("/auth-security", fixture.render(request.url)),
+            );
           } catch (error) {
             next(error);
           }

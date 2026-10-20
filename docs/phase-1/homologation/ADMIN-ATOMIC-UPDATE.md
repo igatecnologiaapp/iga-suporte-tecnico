@@ -150,3 +150,31 @@ e auditoria. A confirmação pela API Supabase e interface do WSL está pendente
   `admin-user-handler.test.mjs` e `admin-user-migration-helper.test.mjs`.
 - `tests/homologation/apply-admin-atomic.mjs` e scripts em `tests/package.json`.
 - Este relatório, `admin-atomic-results.json` e referência no diagnóstico anterior.
+
+## Ajuste encontrado na validação acompanhada no WSL
+
+O usuário confirmou edição básica por principal e administrador comum, bloqueio
+de perfil/módulos para o comum e auditoria com os atores e valores corretos.
+Ao editar módulos da conta fictícia restricted (Técnico sem cadastro vinculado),
+a validação recusou `technicianId = "new"` antes de qualquer gravação.
+
+A interface antiga usava o sentinela de criação também como valor inicial de
+edições sem vínculo. O componente `UserTechnicianSelect` agora seleciona
+"Sem vínculo" ao editar e oferece "Criar cadastro a partir deste usuário"
+somente no fluxo de criação. UUIDs válidos existentes continuam preservados;
+a validação estrita e a migration 0020 não foram enfraquecidas ou alteradas.
+
+Verificação deste ajuste: 17 testes unitários e 28 de interface aprovados,
+TypeScript e build isolado aprovados, lint dos arquivos novos/alterados de
+teste aprovado. Três casos de navegador cobrem edição sem vínculo, preservação
+do vínculo existente e opção de criação no cadastro. Eles usam o componente
+real com fixtures, sem Auth/banco. Testes SQL anteriores não foram reexecutados
+porque a migration e a função transacional não mudaram neste ajuste.
+A repetição do salvamento dos módulos no WSL permanece pendente.
+
+Atualizar somente a cópia de `src/routes/_authenticated/users.tsx` e o novo
+`src/components/iga/UserTechnicianSelect.tsx`, depois reiniciar o Vite.
+Não executar novamente migrations, seed ou rotinas de recuperação.
+
+Sugestão visual registrada pelo usuário: cursor e indicação mais claros para
+o campo Perfil de acesso desabilitado. Essa melhoria não foi implementada.

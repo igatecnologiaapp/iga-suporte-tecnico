@@ -83,3 +83,14 @@ test("absence of a primary never gives ordinary actor primary privileges", () =>
     /Principal/,
   );
 });
+
+test("editing modules without a technician link accepts null but rejects creation sentinel", () => {
+  const patch = { userId: target, role: "technician", modules: ["tickets", "contacts"] };
+  assert.equal(adminUserUpdateSchema.safeParse({ ...patch, technicianId: "new" }).success, false);
+  const valid = adminUserUpdateSchema.parse({ ...patch, technicianId: null });
+  assert.equal(
+    planAdminUserUpdate(valid, { ...state, actorId: primary, currentRole: "technician" })
+      .technicianId,
+    null,
+  );
+});

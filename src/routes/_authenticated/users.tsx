@@ -1,3 +1,4 @@
+import { UserTechnicianSelect } from "@/components/iga/UserTechnicianSelect";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { KeyRound, Pencil, Plus, ShieldAlert } from "lucide-react";
@@ -79,7 +80,7 @@ function Users() {
         <div><Label htmlFor="phone">Telefone</Label><Input id="phone" name="phone" defaultValue={editing?.phone ?? ""} /></div>
         <div><Label htmlFor="role">Perfil de acesso</Label><select id="role" className="form-control" value={newRole} onChange={e => setNewRole(e.target.value)} disabled={editing?.id === user.id || !isPrimary}>{Object.entries(roleLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>{editing?.id === user.id && <p className="mt-1 text-xs text-muted-foreground">Você não pode alterar o seu próprio perfil.</p>}</div>
         <div><Label htmlFor="status">Status</Label><select id="status" name="status" className="form-control" defaultValue={editing?.status ?? "active"}><option value="active">Ativo</option><option value="inactive">Inativo</option></select></div>
-        {newRole === "technician" && <div className="sm:col-span-2"><Label htmlFor="technician_id">Cadastro de técnico</Label><select id="technician_id" name="technician_id" className="form-control" defaultValue={editing?.technician_id ?? "new"}><option value="new">Criar cadastro a partir deste usuário</option><option value="">Sem vínculo</option>{techs.filter(t => !t.user_id || t.user_id === editing?.id).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>}
+        {newRole === "technician" && <UserTechnicianSelect editing={editing} technicians={techs} />}
         <fieldset className="sm:col-span-2"><legend className="text-sm font-medium">Módulos permitidos</legend>{editing?.is_primary ? <p className="mt-1 text-xs text-muted-foreground">Administrador Principal: acesso integral a todos os módulos.</p> : <div className="mt-2 grid gap-2 sm:grid-cols-2">{MODULES.map(m => <label key={m.key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mods.includes(m.key)} disabled={!isPrimary} onChange={e => setMods(e.target.checked ? [...mods, m.key] : mods.filter(x => x !== m.key))} />{m.label}</label>)}</div>}{!isPrimary && <p className="mt-1 text-xs text-muted-foreground">Somente o Administrador Principal altera perfis e módulos.</p>}</fieldset>
         <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button disabled={busy}>{editing ? "Salvar" : "Criar Usuário"}</Button></div>
       </form>
