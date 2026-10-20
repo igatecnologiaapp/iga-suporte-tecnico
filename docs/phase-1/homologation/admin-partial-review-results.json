@@ -1,0 +1,296 @@
+{
+  "method": "Original TypeScript handler transpiled in memory; all database and framework modules substituted; no network or database access",
+  "results": [
+    {
+      "id": "ordinary-admin.profile-and-forbidden-role",
+      "backend": "in-memory simulation of original handler",
+      "rejected": true,
+      "error": "Somente o Administrador Principal pode realizar esta ação.",
+      "data_changed": true,
+      "before": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "after": {
+        "profile": {
+          "full_name": "Nome alterado",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "writes": [
+        "profiles.update",
+        "admin_audit_logs.insert"
+      ],
+      "audit": [
+        "user_updated"
+      ]
+    },
+    {
+      "id": "ordinary-admin.profile-and-forbidden-modules",
+      "backend": "in-memory simulation of original handler",
+      "rejected": true,
+      "error": "Somente o Administrador Principal pode realizar esta ação.",
+      "data_changed": true,
+      "before": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "after": {
+        "profile": {
+          "full_name": "Nome alterado",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "writes": [
+        "profiles.update",
+        "admin_audit_logs.insert"
+      ],
+      "audit": [
+        "user_updated"
+      ]
+    },
+    {
+      "id": "primary.profile-then-role-database-failure",
+      "backend": "in-memory simulation of original handler",
+      "rejected": true,
+      "error": "Falha sintetica em user_roles.upsert",
+      "data_changed": true,
+      "before": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "after": {
+        "profile": {
+          "full_name": "Nome alterado",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "writes": [
+        "profiles.update",
+        "admin_audit_logs.insert"
+      ],
+      "audit": [
+        "user_updated"
+      ]
+    },
+    {
+      "id": "primary.remove-modules-then-add-failure",
+      "backend": "in-memory simulation of original handler",
+      "rejected": true,
+      "error": "Falha sintetica em user_modules.insert",
+      "data_changed": true,
+      "before": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "after": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [],
+        "tech": "tech-old"
+      },
+      "writes": [
+        "user_modules.delete"
+      ],
+      "audit": []
+    },
+    {
+      "id": "primary.unlink-technician-then-link-failure",
+      "backend": "in-memory simulation of original handler",
+      "rejected": true,
+      "error": "Falha sintetica em technicians.update",
+      "data_changed": false,
+      "before": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "after": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "writes": [],
+      "audit": []
+    },
+    {
+      "id": "ordinary-admin.audit-failure",
+      "backend": "in-memory simulation of original handler",
+      "rejected": false,
+      "error": "",
+      "data_changed": true,
+      "before": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "after": {
+        "profile": {
+          "full_name": "Nome alterado",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "writes": [
+        "profiles.update"
+      ],
+      "audit": []
+    },
+    {
+      "id": "ordinary-admin.basic-data-only-control",
+      "backend": "in-memory simulation of original handler",
+      "rejected": false,
+      "error": "",
+      "data_changed": true,
+      "before": {
+        "profile": {
+          "full_name": "Nome original",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "after": {
+        "profile": {
+          "full_name": "Nome permitido",
+          "phone": null,
+          "status": "active"
+        },
+        "role": "viewer",
+        "modules": [
+          "tickets",
+          "companies"
+        ],
+        "tech": "tech-old"
+      },
+      "writes": [
+        "profiles.update",
+        "admin_audit_logs.insert"
+      ],
+      "audit": [
+        "user_updated"
+      ]
+    },
+    {
+      "id": "primary.unlink-succeeds-then-link-fails",
+      "backend": "Original technician block executed in memory; simulated database",
+      "rejected": true,
+      "error": "Falha sintetica ao associar novo tecnico",
+      "data_changed": true,
+      "before": {
+        "old": "target",
+        "next": null
+      },
+      "after": {
+        "old": null,
+        "next": null
+      },
+      "writes": [
+        "old-technician-unlinked"
+      ]
+    }
+  ],
+  "source_commit": "d47292a",
+  "scope": "Review only; no application changes, migrations, network calls or database operations.",
+  "limitations": [
+    "Framework and Supabase substituted by in-memory doubles; this is not an HTTP, RLS or PostgreSQL integration test.",
+    "The complete handler was transpiled without modifying the source; the final technician scenario executes the original technician block separately.",
+    "Exceptions describe simulated technical failures, not observed production failures."
+  ]
+}
