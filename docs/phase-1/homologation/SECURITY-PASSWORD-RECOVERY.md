@@ -69,3 +69,22 @@ Criação/convites e seu fallback antigo de link continuam pendentes de outro lo
    primary/admin nem invalidar as credenciais dos testes anteriores.
 8. Ainda pendentes no Auth local: expiração, uso único, reenvio/limite e alvo
    inexistente. Não declarar homologação integral antes dessas verificações.
+
+## Acompanhamento manual informado pelo operador
+
+Após atualização local, o operador confirmou: admin comum vê chaves bloqueadas
+para primary e para si; recebeu a confirmação de solicitação; Mailpit recebeu a
+mensagem para o viewer; o link abriu `/reset-password` na origem local; nenhuma
+senha foi salva. A página administrativa continuou identificando admin após
+recarregar. A auditoria exibiu intenção e aceite com admin como ator, viewer
+como alvo e o mesmo request_id. Isso não comprova troca de senha ou consumo do
+link. A dica do botão desabilitado não apareceu no navegador, pendência visual.
+
+Para preservar fixtures anteriores, `tests/homologation/prepare-recovery-account.mjs`
+prepara uma nova conta viewer, com e-mail único, somente no Supabase HTTP local
+55421 e somente se já houver principal configurado. Usa apenas Node nativo,
+confere o papel atribuído pelo trigger e concede Chamados à conta nova. Registra
+senha e andamento em arquivo exclusivo 0600 na pasta privada fora do Git, sem
+imprimir senha nem sobrescrever fixtures existentes. Se falhar, não repetir:
+revisar o registro privado e a possível conta parcialmente preparada.
+Verificado por análise e `node --check`; execução real depende do Ubuntu local.
