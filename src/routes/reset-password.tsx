@@ -1,3 +1,40 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"; import { useState } from "react"; import { toast } from "sonner"; import { Button } from "@/components/ui/button"; import { Input } from "@/components/ui/input"; import { Label } from "@/components/ui/label"; import { supabase } from "@/integrations/supabase/client";
-export const Route=createFileRoute("/reset-password")({head:()=>({meta:[{title:"Redefinir senha — IGA Service"},{name:"description",content:"Defina uma nova senha para o IGA Service."},{property:"og:title",content:"Redefinir senha — IGA Service"},{property:"og:description",content:"Defina uma nova senha para o IGA Service."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:Page});
-function Page(){const nav=useNavigate();const [busy,setBusy]=useState(false);async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);const p=String(new FormData(e.currentTarget).get("password"));const {error}=await supabase.auth.updateUser({password:p});setBusy(false);if(error){toast.error(error.message);return;}toast.success("Senha atualizada.");nav({to:"/tickets"})}return <main className="grid min-h-screen place-items-center bg-auth px-4"><form onSubmit={submit} className="w-full max-w-md space-y-5 rounded-lg border bg-card p-7 shadow-xl"><h1 className="text-xl font-semibold">Defina uma nova senha</h1><div><Label>Nova senha</Label><Input name="password" type="password" minLength={8} required/></div><Button className="w-full" disabled={busy}>Atualizar senha</Button></form></main>}
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { NewPasswordForm } from "@/components/iga/NewPasswordForm";
+import { completePasswordRecovery } from "@/lib/password-recovery";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/reset-password")({
+  head: () => ({
+    meta: [
+      { title: "Redefinir senha — IGA Service" },
+      { name: "description", content: "Defina uma nova senha para o IGA Service." },
+      { property: "og:title", content: "Redefinir senha — IGA Service" },
+      { property: "og:description", content: "Defina uma nova senha para o IGA Service." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Page,
+});
+function Page() {
+  const nav = useNavigate();
+  return (
+    <main className="grid min-h-screen place-items-center bg-auth px-4">
+      <section className="w-full max-w-md space-y-5 rounded-lg border bg-card p-7 shadow-xl">
+        <NewPasswordForm
+          submitPassword={async (password) => {
+            await completePasswordRecovery(supabase.auth, password);
+            toast.success("Senha atualizada.");
+            await nav({ to: "/tickets" });
+          }}
+          onFailure={(error) =>
+            toast.error(
+              error instanceof Error ? error.message : "Não foi possível atualizar a senha.",
+            )
+          }
+        />
+      </section>
+    </main>
+  );
+}

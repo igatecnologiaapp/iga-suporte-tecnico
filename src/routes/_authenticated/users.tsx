@@ -1,3 +1,4 @@
+import { canRequestPasswordRecovery } from "@/lib/password-recovery";
 import { UserTechnicianSelect } from "@/components/iga/UserTechnicianSelect";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -33,6 +34,9 @@ function Users() {
   const [rows, setRows] = useState<AdminUser[]>([]); const [techs, setTechs] = useState<any[]>([]); const [audit, setAudit] = useState<any[]>([]);
   const [open, setOpen] = useState(false); const [editing, setEditing] = useState<AdminUser | null>(null); const [busy, setBusy] = useState(false); const [newRole, setNewRole] = useState("viewer"); const [mods, setMods] = useState<string[]>([]);
 
+  const [resettingId, setResettingId] = useState<string | null>(null);
+  const canReset = (row: AdminUser) => canRequestPasswordRecovery({ id: user.id, role, isPrimary }, { id: row.id, role: row.role, isPrimary: row.is_primary });
+
   async function load() {
     try {
       const [users, technicians, logs] = await Promise.all([listAdminUsers(), listTechnicianOptions(), listAdminAudit()]);
@@ -67,9 +71,16 @@ function Users() {
     catch (error) { toast.error(errorMessage(error)); }
   }
   async function resetPassword(row: AdminUser) {
-    if (!row.email) { toast.error("Usuário sem e-mail cadastrado."); return; }
-    try { const result = await sendPasswordReset({ data: { email: row.email } }) as { actionLink: string | null }; if (result.actionLink) window.prompt("Link seguro de redefinição de senha:", result.actionLink); toast.success("Redefinição de senha iniciada."); }
-    catch (error) { toast.error(errorMessage(error)); }
+    if (resettingId || !canReset(row)) return;
+    setResettingId(row.id);
+    try {
+      const result = await sendPasswordReset({ data: { userId: row.id } });
+      if (result.status === "failed") toast.error("O envio não foi confirmado. Consulte a auditoria antes de repetir.");
+      else if (result.audit === "pending") toast.warning("Solicitação aceita; registro de conclusão pendente. Não repita o envio.");
+      else toast.success("Instruções de recuperação solicitadas para o e-mail do usuário.");
+      await load();
+    } catch (error) { toast.error(errorMessage(error)); }
+    finally { setResettingId(null); }
   }
 
   return <Page title="Usuários" description="Crie usuários, defina perfis de acesso e acompanhe a auditoria administrativa." action={isPrimary ? <Button onClick={startCreate}><Plus />Novo usuário</Button> : undefined}>
@@ -95,7 +106,7 @@ function Users() {
         <td className="px-4 py-3 text-muted-foreground">{r.technician_name || "—"}</td>
         <td className="px-4 py-3 text-muted-foreground">{formatDate(r.last_sign_in_at)}</td>
         <td className="px-4 py-3 text-muted-foreground">{formatDate(r.created_at)}</td>
-        <td className="px-4 py-3"><div className="flex justify-end gap-1"><Button size="sm" variant="ghost" onClick={() => startEdit(r)}><Pencil />Editar</Button><Button size="sm" variant="ghost" onClick={() => void resetPassword(r)} aria-label="Redefinir senha"><KeyRound /></Button><Button size="sm" variant="ghost" onClick={() => void toggleStatus(r)} disabled={r.id === user.id || r.is_primary}>{r.status === "active" ? "Desativar" : "Reativar"}</Button></div></td>
+        <td className="px-4 py-3"><div className="flex justify-end gap-1"><Button size="sm" variant="ghost" onClick={() => startEdit(r)}><Pencil />Editar</Button><Button size="sm" variant="ghost" onClick={() => void resetPassword(r)} disabled={resettingId !== null || !canReset(r)} title={canReset(r) ? "Enviar instruções de recuperação por e-mail" : "Recuperação indisponível para este usuário"} aria-label="Enviar instruções de recuperação por e-mail"><KeyRound /></Button><Button size="sm" variant="ghost" onClick={() => void toggleStatus(r)} disabled={r.id === user.id || r.is_primary}>{r.status === "active" ? "Desativar" : "Reativar"}</Button></div></td>
       </tr>)}
     </tbody></table></div></div>}
 
@@ -107,5 +118,5 @@ const auditLabels: Record<string, string> = {
   user_created: "Usuário criado", user_updated: "Dados atualizados", role_changed: "Perfil de acesso alterado",
   user_activated: "Usuário ativado", user_deactivated: "Usuário desativado",
   technician_linked: "Técnico vinculado", technician_unlinked: "Técnico desvinculado",
-  password_reset_requested: "Redefinição de senha iniciada", modules_changed: "Módulos permitidos alterados",
+  password_reset_requested: "Recuperação solicitada", password_reset_email_requested: "Envio de recuperação aceito", password_reset_failed: "Envio de recuperação não confirmado", modules_changed: "Módulos permitidos alterados",
 };

@@ -3,6 +3,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 import { adminUserUpdateSchema, planAdminUserUpdate, userModules } from "./admin-user-update";
 
+import { passwordRecoveryRequestSchema } from "./password-recovery";
+
 type AdminContext = { supabase: any; userId: string };
 
 const VALID_MODULES: readonly string[] = userModules;
@@ -160,14 +162,14 @@ export const updateAdminUser = createServerFn({ method: "POST" })
 
 export const sendPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { email: string }) => input)
+  .inputValidator((input: unknown) => passwordRecoveryRequestSchema.parse(input))
   .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as AdminContext);
-    const email = data.email.trim().toLowerCase();
-    const link = await admin.auth.admin.generateLink({ type: "recovery", email });
-    if (link.error) throw new Error(link.error.message);
-    await logAudit(admin, context.userId, null, "password_reset_requested", null, { email });
-    return { actionLink: link.data?.properties?.action_link ?? null };
+    const { requestAdministrativePasswordRecovery } = await import("./password-recovery.server");
+    return requestAdministrativePasswordRecovery(admin, context.userId, data.userId, {
+      siteUrl: process.env["APP_SITE_URL"],
+      supabaseUrl: process.env["SUPABASE_URL"],
+    });
   });
 
 export const listAdminAudit = createServerFn({ method: "POST" })

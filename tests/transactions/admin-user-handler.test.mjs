@@ -62,7 +62,7 @@ function setup(options = {}) {
   };
   const caller = {
     async rpc(name, args) {
-      if (name === "has_role") return { data: true, error: null };
+      if (name === "has_role") return { data: !options.denied, error: null };
       if (name === "has_module")
         return {
           data: true,
@@ -77,7 +77,10 @@ function setup(options = {}) {
   const exports = {};
   vm.runInNewContext(source, {
     exports,
+    process: { env: {} },
     require(name) {
+      if (name === "./password-recovery.server") return { requestAdministrativePasswordRecovery: async (_admin, actorId, targetId) => { calls.push({ actorId, targetId }); return { status: "requested", audit: "recorded" }; } };
+      if (name === "./password-recovery") return require(resolve(repo, "src/lib/password-recovery.ts"));
       if (name === "./admin-user-update") return helper;
       if (name === "@/integrations/supabase/auth-middleware") return { requireSupabaseAuth: {} };
       if (name === "@/integrations/supabase/client.server") return { supabaseAdmin: admin };
@@ -104,6 +107,7 @@ function setup(options = {}) {
   });
   return {
     calls,
+    recover(data) { return exports.sendPasswordReset({ data, context: { userId: actor, supabase: caller } }); },
     run(patch) {
       return exports.updateAdminUser({
         data: { userId: target, ...patch },
@@ -152,4 +156,15 @@ test("transaction error is propagated without fallback individual writes", async
   const fixture = setup({ rpcFailure: true });
   await assert.rejects(fixture.run({ fullName: "Changed" }), /transaction failure/);
   assert.equal(fixture.calls.length, 1);
+});
+
+for (const options of [{ denied: true }, { moduleFailure: true }]) test(`recovery handler rejects unauthorized actor ${JSON.stringify(options)}`, async () => {
+  const f = setup(options); await assert.rejects(f.recover({ userId: target }), /administradores/); assert.equal(f.calls.length, 0);
+});
+test("recovery handler uses authenticated actor and UUID, rejects email/actor injection", async () => {
+  const f = setup();
+  for (const data of [{ email: "synthetic@example.test" }, { userId: target, actorId: primary }]) await assert.rejects(async () => f.recover(data));
+  assert.equal(f.calls.length, 0);
+  assert.equal((await f.recover({ userId: target })).status, "requested");
+  assert.equal(f.calls[0].actorId, actor); assert.equal(f.calls[0].targetId, target);
 });

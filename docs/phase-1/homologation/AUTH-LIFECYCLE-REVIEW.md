@@ -111,3 +111,10 @@ Nenhuma migration foi criada ou aplicada nesta revisão. Preservar 0000 a 0020.
 Estado final: revisão concluída; correções e testes reais de Auth/Mailpit ainda
 dependem do próximo lote autorizado. Sem mudanças de produto, migrations,
 credenciais, merge, publicação ou Fase 2.
+
+## Atualização de 20/10/2026 — primeiro lote autorizado
+
+Implementação de recuperação e nova senha registrada em
+[SECURITY-PASSWORD-RECOVERY.md](SECURITY-PASSWORD-RECOVERY.md).
+Regressões isoladas passaram; a entrega e o ciclo de token no Auth/Mailpit do
+Ubuntu ainda precisam de validação. Achados de criação/convite permanecem abertos.

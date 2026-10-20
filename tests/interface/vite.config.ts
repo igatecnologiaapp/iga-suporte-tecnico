@@ -15,7 +15,12 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use(async (request, response, next) => {
           const pathname = request.url?.split("?")[0];
-          if (!["/auth-security", "/technician-selection"].includes(pathname ?? "")) return next();
+          if (
+            !["/auth-security", "/technician-selection", "/new-password-security"].includes(
+              pathname ?? "",
+            )
+          )
+            return next();
           if (request.method !== "GET") {
             response.statusCode = 405;
             response.end("Native submission is not an authentication endpoint.");
@@ -26,7 +31,9 @@ export default defineConfig({
               path(
                 pathname === "/technician-selection"
                   ? "./technician-selection.fixture.tsx"
-                  : "./auth-security.render.tsx",
+                  : pathname === "/new-password-security"
+                    ? "./new-password-security.render.tsx"
+                    : "./auth-security.render.tsx",
               ),
             );
             response.setHeader("Content-Type", "text/html; charset=utf-8");
