@@ -178,3 +178,14 @@ Não executar novamente migrations, seed ou rotinas de recuperação.
 
 Sugestão visual registrada pelo usuário: cursor e indicação mais claros para
 o campo Perfil de acesso desabilitado. Essa melhoria não foi implementada.
+
+### Sugestão visual do usuário — destaque de auditoria recente
+
+Em 20/10/2026, o usuário solicitou registrar para a futura melhoria visual:
+exibir uma pequena bolinha azul-clara à esquerda do título dos registros
+mais recentes na Auditoria administrativa, destacando as novas alterações.
+
+Não implementado neste lote. O critério de "recente" e quando o destaque deve
+desaparecer serão definidos na etapa visual; não se presume controle de leitura
+por usuário. Prever contraste nos dois temas e indicação acessível que não
+dependa somente da cor, sem alterar registros, permissões ou regras de auditoria.
