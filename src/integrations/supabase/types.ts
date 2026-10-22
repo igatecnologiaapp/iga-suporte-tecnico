@@ -1063,6 +1063,16 @@ export type Database = {
       my_modules: { Args: never; Returns: Json }
       my_profile: { Args: never; Returns: Json }
       normalize_phone: { Args: { value: string }; Returns: string }
+      pending_first_response_alerts: { Args: never; Returns: Json }
+      record_customer_communication: {
+        Args: {
+          _channel: string
+          _recipient: string
+          _summary: string
+          _ticket_id: string
+        }
+        Returns: string
+      }
       technician_contacts: {
         Args: never
         Returns: {
