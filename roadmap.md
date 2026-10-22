@@ -1,5 +1,11 @@
 # IGA Service — Fase 1
 
+## IGA-ST-001 — Alertas de primeira resposta
+- [x] Examinar como Chamados, WhatsApp e notificações registram primeira resposta
+- [ ] Aprovar adaptação do registro manual de comunicação ao cliente — mecanismo atual registra mudança de status, não comunicação
+- [ ] Implementar monitoramento autorizado, aviso persistente e áudio consolidado (180s / 60s)
+- [ ] Validar os dez cenários e apresentar relatório, sem publicação
+
 - [x] Criar banco, segurança, automações da timeline e armazenamento privado
 - [x] Implementar autenticação e recuperação de senha
 - [x] Implementar navegação responsiva, tema claro/escuro e permissões
