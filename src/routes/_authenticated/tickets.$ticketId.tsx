@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Archive, ArrowLeft, CalendarClock, Download, MessageSquare, Paperclip, Pencil, Save, Trash2, UserCheck, Users } from "lucide-react";
 
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/tickets/$ticketId")({
 });
 
 function TicketDetail() {
+  const registerCommunication = useServerFn(recordCustomerCommunication);
   const { ticketId } = Route.useParams(); const { user, role } = Route.useRouteContext();
   const canManage = canOperate(role); const canTransfer = canManageCatalogs(role); const isAdmin = role === "admin"; const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false); const [deleteReason, setDeleteReason] = useState(""); const [deleteInfo, setDeleteInfo] = useState<{ number: string; company: string; subject: string; related: { label: string; total: number }[] } | null>(null);
@@ -45,7 +47,7 @@ function TicketDetail() {
   const [communicationOpen, setCommunicationOpen] = useState(false);
   async function submitCommunication(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); const form = new FormData(e.currentTarget); setBusy(true);
-    try { await recordCustomerCommunication({ data: { ticketId, channel: String(form.get("channel")), recipient: String(form.get("recipient")), summary: String(form.get("summary")) } }); setCommunicationOpen(false); toast.success("Comunicação registrada."); await load(); }
+    try { await registerCommunication({ data: { ticketId, channel: String(form.get("channel")), recipient: String(form.get("recipient")), summary: String(form.get("summary")) } }); setCommunicationOpen(false); toast.success("Comunicação registrada."); await load(); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível registrar a comunicação."); }
     finally { setBusy(false); }
   }

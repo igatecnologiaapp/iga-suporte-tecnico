@@ -9,6 +9,8 @@ export const getFirstResponseAlerts = createServerFn({ method: 'POST' }).middlew
 export const recordCustomerCommunication = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
   .inputValidator((data: { ticketId: string; channel: string; recipient: string; summary: string }) => data)
   .handler(async ({ data, context }) => {
+    const { data: ticket, error: readError } = await context.supabase.from('tickets').select('id').eq('id', data.ticketId).maybeSingle();
+    if (readError || !ticket) throw new Error('Chamado indisponível ou acesso não autorizado.');
     const { error } = await context.supabase.rpc('record_customer_communication', { _ticket_id: data.ticketId, _channel: data.channel, _recipient: data.recipient, _summary: data.summary });
     if (error) throw new Error(error.message);
     return { ok: true };
