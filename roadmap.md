@@ -2,9 +2,11 @@
 
 ## IGA-ST-001 — Alertas de primeira resposta
 - [x] Examinar como Chamados, WhatsApp e notificações registram primeira resposta
-- [ ] Aprovar adaptação do registro manual de comunicação ao cliente — mecanismo atual registra mudança de status, não comunicação
-- [ ] Implementar monitoramento autorizado, aviso persistente e áudio consolidado (180s / 60s)
-- [ ] Validar os dez cenários e apresentar relatório, sem publicação
+- [x] Aprovar adaptação do registro manual de comunicação ao cliente — comunicação realizada com canal, destinatário e resumo auditável
+- [x] Implementar monitoramento autorizado, aviso persistente e áudio consolidado (180s / 60s)
+- [x] Validar cenários 1–5 e 7–10 na tela autenticada, limpar os três chamados de teste e apresentar relatório, sem publicação
+- [ ] Completar cenário 6 com conta ativa sem módulo Chamados — depende de conta de validação autorizada; políticas e grants revisados, acesso real desse perfil ainda não exercitado
+- [ ] Confirmar encerramento por WhatsApp real — depende de autorização de envio controlado; nenhum envio real nesta validação
 
 - [x] Criar banco, segurança, automações da timeline e armazenamento privado
 - [x] Implementar autenticação e recuperação de senha
