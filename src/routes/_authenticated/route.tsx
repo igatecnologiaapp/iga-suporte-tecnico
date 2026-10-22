@@ -46,5 +46,5 @@ export const Route = createFileRoute("/_authenticated")({
 
 function Layout() {
   const { user, profile, role, modules } = Route.useRouteContext();
-  return <AppShell userName={profile?.full_name || user.email || "Usuário"} role={roleLabels[role] || role} modules={modules}><Outlet /></AppShell>;
+  return <AppShell userId={user.id} userName={profile?.full_name || user.email || "Usuário"} role={roleLabels[role] || role} modules={modules}><Outlet /></AppShell>;
 }

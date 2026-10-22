@@ -6,6 +6,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/iga/NotificationsBell";
+import { FirstResponseAlert } from "./FirstResponseAlert";
+import type { ResponsePending } from "@/lib/first-response";
 import { moduleForPath } from "@/lib/modules";
 
 const groups = [
@@ -17,7 +19,8 @@ const groups = [
 
 const OPEN_KEY = "iga-menu-groups";
 
-export function AppShell({ children, userName, role, modules }: { children: ReactNode; userName: string; role: string; modules: string[] }) {
+export function AppShell({ children, userName, role, modules, userId }: { children: ReactNode; userName: string; role: string; modules: string[]; userId: string }) {
+  const [pendingResponses, setPendingResponses] = useState<ResponsePending[]>([]);
   const [collapsed, setCollapsed] = useState(false); const [mobile, setMobile] = useState(false); const [dark, setDark] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const path = useRouterState({ select: s => s.location.pathname }); const navigate = useNavigate();
@@ -73,6 +76,6 @@ export function AppShell({ children, userName, role, modules }: { children: Reac
 
       <div className="border-t border-sidebar-border p-3"><div className={cn("mb-2 flex items-center gap-3 rounded-md bg-muted p-2", collapsed && "justify-center")}><span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{userName.slice(0, 2).toUpperCase()}</span>{!collapsed && <div className="min-w-0"><p className="truncate text-sm font-medium">{userName}</p><p className="truncate text-xs text-muted-foreground">{role}</p></div>}</div><Button variant="ghost" className={cn("w-full", collapsed ? "px-0" : "justify-start")} onClick={logout}><LogOut />{!collapsed && "Sair"}</Button></div>
     </aside>
-    <div className={cn("transition-all", collapsed ? "md:pl-18" : "md:pl-64")}><header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:px-6"><div className="flex items-center gap-2"><Button size="icon" variant="ghost" className="md:hidden" onClick={() => setMobile(true)} aria-label="Abrir menu"><Menu /></Button><Button size="icon" variant="ghost" className="hidden md:inline-flex" onClick={() => setCollapsed(!collapsed)} aria-label="Recolher menu">{collapsed ? <ChevronRight /> : <ChevronLeft />}</Button></div><div className="flex items-center gap-1"><NotificationsBell /><Button size="icon" variant="ghost" onClick={toggleTheme} aria-label="Alternar tema">{dark ? <Sun /> : <Moon />}</Button></div></header><main className="mx-auto max-w-[1600px] p-4 md:p-6">{children}</main></div>
+    <div className={cn("transition-all", collapsed ? "md:pl-18" : "md:pl-64")}><header className="sticky top-0 z-30 flex min-h-16 flex-wrap items-center justify-between gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur md:px-6"><div className="flex items-center gap-2"><Button size="icon" variant="ghost" className="md:hidden" onClick={() => setMobile(true)} aria-label="Abrir menu"><Menu /></Button><Button size="icon" variant="ghost" className="hidden md:inline-flex" onClick={() => setCollapsed(!collapsed)} aria-label="Recolher menu">{collapsed ? <ChevronRight /> : <ChevronLeft />}</Button></div>{modules.includes("tickets") && <FirstResponseAlert userId={userId} operational={path.startsWith("/tickets") || path.startsWith("/inbox")} onRows={setPendingResponses} />}<div className="flex items-center gap-1"><NotificationsBell pending={pendingResponses} /><Button size="icon" variant="ghost" onClick={toggleTheme} aria-label="Alternar tema">{dark ? <Sun /> : <Moon />}</Button></div></header><main className="mx-auto max-w-[1600px] p-4 md:p-6">{children}</main></div>
   </div></TooltipProvider>;
 }

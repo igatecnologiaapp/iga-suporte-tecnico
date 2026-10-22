@@ -15,6 +15,7 @@ import { SlaBadge } from "@/components/iga/SlaBadge";
 import { canManageCatalogs, canOperate, channelLabels, conversationStatusLabels, formatDate, formatDuration, priorities, statusLabels, ticketTransitions } from "@/lib/iga";
 import { computeSla, type SlaPolicy } from "@/lib/sla";
 import { supabase } from "@/integrations/supabase/client";
+import { recordCustomerCommunication } from "@/lib/first-response.functions";
 import { deleteTicket, inspectTicket } from "@/lib/tickets-admin.functions";
 
 
@@ -40,6 +41,14 @@ function TicketDetail() {
   const [transferOpen, setTransferOpen] = useState(false); const [scheduleOpen, setScheduleOpen] = useState(false); const [scheduleGoesToStatus, setScheduleGoesToStatus] = useState(false);
   const [conversations, setConversations] = useState<any[]>([]); const [categories, setCategories] = useState<any[]>([]);
   const [editOpen, setEditOpen] = useState(false); const [editCategory, setEditCategory] = useState(""); const [cancelOpen, setCancelOpen] = useState(false); const [cancelReason, setCancelReason] = useState("");
+
+  const [communicationOpen, setCommunicationOpen] = useState(false);
+  async function submitCommunication(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); const form = new FormData(e.currentTarget); setBusy(true);
+    try { await recordCustomerCommunication({ data: { ticketId, channel: String(form.get("channel")), recipient: String(form.get("recipient")), summary: String(form.get("summary")) } }); setCommunicationOpen(false); toast.success("Comunicação registrada."); await load(); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível registrar a comunicação."); }
+    finally { setBusy(false); }
+  }
 
   async function load() {
     const [{ data: row, error }, { data: timeline }, { data: files }, { data: techs }, { data: sched }, { data: sla }, { data: convos }, { data: cats }] = await Promise.all([
@@ -145,6 +154,7 @@ function TicketDetail() {
     </div>
 
     {canManage && <div className="flex flex-wrap gap-2">
+      {ticket.channel === "manual" && !["cancelled", "duplicate", "resolved", "closed"].includes(ticket.status) && <Button size="sm" variant="outline" onClick={() => setCommunicationOpen(true)}><MessageSquare />Registrar comunicação ao cliente</Button>}
       {!ticket.acknowledged_at && <Button size="sm" onClick={acknowledge} disabled={busy}><UserCheck />Acolher</Button>}
       {canTransfer && <Button size="sm" variant="outline" onClick={() => setTransferOpen(true)} disabled={busy || !ticket.assigned_technician_id}><Users />Transferir</Button>}
       <Button size="sm" variant="outline" onClick={() => { setScheduleGoesToStatus(false); setScheduleOpen(true); }} disabled={busy}><CalendarClock />{ticket.scheduled_at ? "Reagendar" : "Agendar"}</Button>
@@ -169,7 +179,7 @@ function TicketDetail() {
         <div className="rounded-md border bg-card p-5"><div className="flex items-center justify-between"><h2 className="font-semibold">Anexos</h2>{canManage && <Label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground"><Paperclip className="size-4" />Anexar<Input className="hidden" type="file" onChange={upload} disabled={busy} /></Label>}</div><div className="mt-4 divide-y">{attachments.length === 0 ? <p className="py-5 text-sm text-muted-foreground">Nenhum arquivo anexado.</p> : attachments.map(a => <div key={a.id} className="flex items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{a.file_name}</p><p className="text-xs text-muted-foreground">{formatDate(a.created_at)}</p></div><Button size="icon" variant="ghost" onClick={() => download(a.storage_path, a.file_name)} aria-label="Baixar arquivo"><Download /></Button></div>)}</div></div>
       </section>
 
-      <aside className="rounded-md border bg-card p-5"><h2 className="font-semibold">Timeline</h2><div className="mt-5 space-y-0">{events.map((event, index) => <div key={event.id} className="relative flex gap-3 pb-6"><span className="mt-1.5 size-2.5 shrink-0 rounded-full bg-primary ring-4 ring-primary/15" />{index < events.length - 1 && <span className="absolute left-[4px] top-4 h-full w-px bg-border" />}<div><p className="text-sm font-medium">{eventLabel(event.event_type)}</p><p className="mt-0.5 text-xs text-muted-foreground">{event.note} · {event.profiles?.full_name || "Usuário"}</p>{event.event_type === "resolved" && event.new_value?.solution && <p className="mt-2 whitespace-pre-wrap text-sm">{event.new_value.solution}</p>}<time className="mt-1 block text-xs text-muted-foreground">{formatDate(event.created_at)}</time></div></div>)}</div></aside>
+      <aside className="rounded-md border bg-card p-5"><h2 className="font-semibold">Timeline</h2><div className="mt-5 space-y-0">{events.map((event, index) => <div key={event.id} className="relative flex gap-3 pb-6"><span className="mt-1.5 size-2.5 shrink-0 rounded-full bg-primary ring-4 ring-primary/15" />{index < events.length - 1 && <span className="absolute left-[4px] top-4 h-full w-px bg-border" />}<div><p className="text-sm font-medium">{eventLabel(event.event_type)}</p><p className="mt-0.5 text-xs text-muted-foreground">{event.note} · {event.profiles?.full_name || "Usuário"}</p>{event.event_type === "customer_response" && event.new_value?.source === "manual" && <p className="mt-1 text-xs text-muted-foreground">{event.new_value.channel} · {event.new_value.recipient}</p>}{event.event_type === "resolved" && event.new_value?.solution && <p className="mt-2 whitespace-pre-wrap text-sm">{event.new_value.solution}</p>}<time className="mt-1 block text-xs text-muted-foreground">{formatDate(event.created_at)}</time></div></div>)}</div></aside>
     </div>
 
     <Dialog open={transferOpen} onOpenChange={setTransferOpen}><DialogContent><DialogHeader><DialogTitle>Transferir chamado</DialogTitle><DialogDescription>O técnico anterior, o novo técnico, o responsável pela transferência e o motivo ficam registrados na timeline.</DialogDescription></DialogHeader><form onSubmit={submitTransfer} className="grid gap-4"><div><Label htmlFor="transfer-current">Técnico atual</Label><Input id="transfer-current" value={ticket.technicians?.name || "Não atribuído"} disabled /></div><div><Label htmlFor="transfer-technician">Novo técnico</Label><select id="transfer-technician" name="technician_id" className="form-control" required><option value="">Selecione</option>{technicians.filter(t => t.id !== ticket.assigned_technician_id).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div><div><Label htmlFor="transfer-reason">Motivo (opcional)</Label><Textarea id="transfer-reason" name="reason" rows={3} /></div><div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setTransferOpen(false)}>Cancelar</Button><Button disabled={busy}>Transferir</Button></div></form></DialogContent></Dialog>
@@ -199,6 +209,7 @@ function TicketDetail() {
     </DialogContent></Dialog>
 
 
+    <Dialog open={communicationOpen} onOpenChange={setCommunicationOpen}><DialogContent><DialogHeader><DialogTitle>Registrar comunicação ao cliente</DialogTitle><DialogDescription>Registre uma comunicação já realizada com o solicitante. Este registro não envia mensagens nem efetua ligações.</DialogDescription></DialogHeader><form onSubmit={submitCommunication} className="grid gap-4"><div><Label htmlFor="communication-channel">Canal utilizado</Label><select id="communication-channel" name="channel" className="form-control" required><option value="phone">Telefone</option><option value="email">E-mail</option><option value="in_person">Presencial</option><option value="other">Outro</option></select></div><div><Label htmlFor="communication-recipient">Destinatário</Label><Input id="communication-recipient" name="recipient" maxLength={200} defaultValue={ticket.contacts?.name || ""} required /></div><div><Label htmlFor="communication-summary">Resumo da comunicação realizada</Label><Textarea id="communication-summary" name="summary" maxLength={4000} required /></div><div className="flex justify-end gap-2"><Button variant="outline" type="button" onClick={() => setCommunicationOpen(false)}>Cancelar</Button><Button disabled={busy}>Confirmar comunicação realizada</Button></div></form></DialogContent></Dialog>
     <AlertDialog open={pendingStatus !== null} onOpenChange={open => { if (!open) setPendingStatus(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{pendingStatus === "resolved" ? "Resolver chamado?" : "Encerrar chamado?"}</AlertDialogTitle><AlertDialogDescription>{pendingStatus === "resolved" ? "A solução informada será registrada na timeline." : "O chamado será marcado como encerrado."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => void confirmTransition()}>Confirmar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </Page>;
 }
@@ -207,5 +218,5 @@ function Summary({ label, children }: { label: string; children: React.ReactNode
   return <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p><div className="mt-1 text-sm font-medium">{children}</div></div>;
 }
 function eventLabel(type: string) {
-  return ({ created: "Criação", acknowledged: "Acolhimento", assignment_changed: "Atribuição", transferred: "Transferência", scheduled: "Agendamento", rescheduled: "Reagendamento", priority_changed: "Prioridade", status_changed: "Status", internal_note: "Nota interna", solution: "Solução", resolved: "Resolução", closed: "Encerramento", reopened: "Reabertura", attachment: "Anexo", field_changed: "Alteração de dados", cancelled: "Cancelamento/arquivamento" } as Record<string, string>)[type] || type;
+  return ({ customer_response: "Comunicação ao cliente", customer_response_failed: "Falha de comunicação WhatsApp", created: "Criação", acknowledged: "Acolhimento", assignment_changed: "Atribuição", transferred: "Transferência", scheduled: "Agendamento", rescheduled: "Reagendamento", priority_changed: "Prioridade", status_changed: "Status", internal_note: "Nota interna", solution: "Solução", resolved: "Resolução", closed: "Encerramento", reopened: "Reabertura", attachment: "Anexo", field_changed: "Alteração de dados", cancelled: "Cancelamento/arquivamento" } as Record<string, string>)[type] || type;
 }

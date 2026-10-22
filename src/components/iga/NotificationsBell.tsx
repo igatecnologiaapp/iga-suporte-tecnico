@@ -6,16 +6,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { formatDate, notificationLabels } from "@/lib/iga";
 import { supabase } from "@/integrations/supabase/client";
 
+import { PendingResponseList } from "./FirstResponseAlert";
+import type { ResponsePending } from "@/lib/first-response";
+
 type Notification = { id: string; title: string; body: string | null; event_type: string; read_at: string | null; created_at: string };
 
-export function NotificationsBell() {
+export function NotificationsBell({ pending = [] }: { pending?: ResponsePending[] }) {
   const [rows, setRows] = useState<Notification[]>([]);
   async function load() {
     const { data } = await supabase.from("notifications").select("id,title,body,event_type,read_at,created_at").order("created_at", { ascending: false }).limit(30);
     setRows((data ?? []) as Notification[]);
   }
   useEffect(() => { void load(); const timer = setInterval(() => void load(), 60_000); return () => clearInterval(timer); }, []);
-  const unread = rows.filter(r => !r.read_at).length;
+  const unread = rows.filter(r => !r.read_at).length + pending.length;
   async function markRead(ids: string[]) {
     if (ids.length === 0) return;
     const { error } = await supabase.from("notifications").update({ read_at: new Date().toISOString() } as never).in("id", ids);
@@ -27,7 +30,8 @@ export function NotificationsBell() {
       <Bell />{unread > 0 && <span className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-4 text-destructive-foreground">{unread}</span>}
     </Button>
   </PopoverTrigger><PopoverContent align="end" className="w-80 p-0">
-    <div className="flex items-center justify-between border-b px-4 py-3"><p className="text-sm font-semibold">Notificações</p>{unread > 0 && <Button size="sm" variant="ghost" onClick={() => void markRead(rows.filter(r => !r.read_at).map(r => r.id))}>Marcar todas</Button>}</div>
+    <div className="flex items-center justify-between border-b px-4 py-3"><p className="text-sm font-semibold">Notificações</p>{rows.some(r => !r.read_at) && <Button size="sm" variant="ghost" onClick={() => void markRead(rows.filter(r => !r.read_at).map(r => r.id))}>Marcar todas</Button>}</div>
+    {pending.length > 0 && <div className="border-b px-4"><p className="pt-3 text-sm font-semibold text-destructive">{pending.length} chamados sem primeira resposta</p><PendingResponseList rows={pending} /></div>}
     <div className="max-h-80 divide-y overflow-y-auto">
       {rows.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhuma notificação.</p> : rows.map(r =>
         <button key={r.id} type="button" onClick={() => void markRead([r.id])} className="block w-full px-4 py-3 text-left hover:bg-muted/50">
