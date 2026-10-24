@@ -10,7 +10,7 @@
       "failed": 0
     },
     "server_helpers_and_migration_tools_mocked": {
-      "passed": 90,
+      "passed": 92,
       "failed": 0
     },
     "postgres_creation": {
@@ -82,6 +82,17 @@
     "audit_same_operation_across_reservation_creation_and_invitation": "passed",
     "audit_same_attempt_between_intent_and_acceptance": "passed",
     "test_account": "Homologação convite completo 24-10",
-    "private_password_note": "First-access password chosen by operator; not read, stored or versioned by assistant."
+    "private_password_note": "First-access password chosen by operator; not read, stored or versioned by assistant.",
+    "duplicate_email_request_ui": "refused-with-generic-error",
+    "duplicate_email_database_counts": "pending",
+    "duplicate_email_no_new_mailpit_message": "pending"
+  },
+  "duplicate_email_feedback_fix": {
+    "status": "implemented-WSL-copy-pending",
+    "known_sql_conflict_only": true,
+    "unknown_errors_sanitized": true,
+    "typescript": "passed",
+    "scoped_eslint": "passed",
+    "isolated_build": "passed"
   }
 }

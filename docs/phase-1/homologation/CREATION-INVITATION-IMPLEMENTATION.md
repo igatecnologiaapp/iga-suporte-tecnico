@@ -208,3 +208,27 @@ Concluída validação local de retomada após correção, entrega e primeiro ac
 Permanecem recusa real de e-mail duplicado, reenvio explícito antes da ativação e
 recusa de criação pelo admin comum. A senha de primeiro acesso foi escolhida e
 mantida apenas pelo operador. Sem acesso à produção/publicação.
+
+
+## Recusa de e-mail repetido e clareza da mensagem — 24/10/2026
+
+Operador tentou criar “Homologação tentativa duplicada” com o e-mail da conta
+já ativada, Técnico, Ativo, técnico novo e somente Chamados. A interface recusou
+com erro genérico e manteve o formulário aberto. Ainda aguarda conferência local
+das contagens de reserva/Auth/perfil/técnico/auditoria e ausência de novo e-mail.
+A captura de erro, sozinha, não prova esses invariantes.
+
+Ajustado o helper servidor para traduzir exclusivamente o conflito SQL conhecido
+(código 22023 e mensagem literal revisada) para: “Este e-mail já está cadastrado
+ou possui um cadastro pendente. Confira a lista de usuários e a seção Cadastros
+e convites.” Demais erros continuam sanitizados, orientando a conferir a lista
+sem afirmar que existe uma operação pendente. Não repassa texto bruto do SQL/Auth.
+Não houve mudança de migration ou do fluxo de criação.
+
+Duas regressões novas exercitam o conflito antes de qualquer chamada Auth e a
+remoção de detalhes sensíveis em falhas não reconhecidas. 92 testes de servidor/
+aplicadores aprovados, TypeScript e ESLint do helper sem erros, build isolado
+aprovado. Interface/unitárias e testes SQL mantêm os resultados anteriores;
+nenhum comportamento desses grupos foi modificado. Para instalar a mensagem
+no WSL, atualizar Git e copiar somente `src/lib/admin-user-creation.server.ts`
+para a cópia isolada da aplicação, reiniciando Vite. Essa cópia ainda está pendente.

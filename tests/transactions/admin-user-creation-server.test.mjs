@@ -57,7 +57,7 @@ function setup(options = {}) {
     async rpc(name, args) {
       calls.push({ name, args });
       if (options.rpcFailure === name)
-        return { data: null, error: { message: "synthetic failure" } };
+        return { data: null, error: options.rpcError || { message: "synthetic failure" } };
       if (name === "provision_admin_user_creation") op.stage = "provisioned";
       if (name === "claim_admin_user_invitation") {
         if (options.claimBusy || (op.deliveryState !== "not_requested" && !args._resend))
@@ -253,4 +253,34 @@ test("cached accepted delivery is explicit about no new attempt", async () => {
     f.calls.some((call) => call.name === "auth.invite"),
     false,
   );
+});
+
+test("known duplicate-email refusal is clear and stops before all Auth requests", async () => {
+  const f = setup({
+    rpcFailure: "reserve_admin_user_creation",
+    rpcError: { code: "22023", message: "E-mail já cadastrado ou com operação pendente." },
+  });
+  await assert.rejects(
+    f.create(),
+    (error) =>
+      /Este e-mail já está cadastrado/.test(error.message) && !/retome/i.test(error.message),
+  );
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].name, "reserve_admin_user_creation");
+});
+test("unknown SQL/provider messages remain sanitized", async () => {
+  for (const rpcError of [
+    { code: "XX001", message: "synthetic-sensitive-token" },
+    { code: "22023", message: "synthetic-sensitive-token" },
+    "synthetic-sensitive-token",
+  ]) {
+    const f = setup({ rpcFailure: "reserve_admin_user_creation", rpcError });
+    await assert.rejects(
+      f.create(),
+      (error) =>
+        /Não foi possível confirmar/.test(error.message) &&
+        !error.message.includes("synthetic-sensitive-token"),
+    );
+    assert.equal(f.calls.length, 1);
+  }
 });

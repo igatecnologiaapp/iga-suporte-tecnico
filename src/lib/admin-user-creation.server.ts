@@ -34,10 +34,19 @@ function result(op: CreationOperation): CreationResult {
 }
 async function rpc(client: CreationRpc, name: string, args?: Record<string, unknown>) {
   const response = await client.rpc(name, args);
-  if (response.error)
+  if (response.error) {
+    const duplicateEmail = z
+      .object({
+        code: z.literal("22023"),
+        message: z.literal("E-mail já cadastrado ou com operação pendente."),
+      })
+      .safeParse(response.error).success;
     throw new Error(
-      "Não foi possível concluir esta etapa. Atualize a lista e retome a operação pendente; não crie outro pedido para o mesmo e-mail.",
+      duplicateEmail
+        ? "Este e-mail já está cadastrado ou possui um cadastro pendente. Confira a lista de usuários e a seção Cadastros e convites."
+        : "Não foi possível confirmar esta etapa. Atualize a lista e confira a seção Cadastros e convites antes de tentar novamente.",
     );
+  }
   return response.data;
 }
 function parseOperation(value: unknown, operationId?: string) {
