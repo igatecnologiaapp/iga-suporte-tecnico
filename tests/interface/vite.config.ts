@@ -21,6 +21,7 @@ export default defineConfig({
               "/technician-selection",
               "/new-password-security",
               "/creation-operations",
+              "/reset-password",
             ].includes(pathname ?? "")
           )
             return next();
@@ -38,7 +39,9 @@ export default defineConfig({
                     ? "./new-password-security.render.tsx"
                     : pathname === "/creation-operations"
                       ? "./creation-operations.render.tsx"
-                      : "./auth-security.render.tsx",
+                      : pathname === "/reset-password"
+                        ? "./password-reset-session.render.tsx"
+                        : "./auth-security.render.tsx",
               ),
             );
             response.setHeader("Content-Type", "text/html; charset=utf-8");

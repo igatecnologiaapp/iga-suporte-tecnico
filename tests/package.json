@@ -11,7 +11,8 @@
     "preview": "../node_modules/.bin/vite --config interface/vite.config.ts",
     "test:creation-server": "node --test transactions/admin-user-creation-server.test.mjs",
     "test:creation-migration-helper": "node --test transactions/admin-creation-migration-helper.test.mjs",
-    "test:creation-transactions": "node --test transactions/admin-user-creation.test.mjs"
+    "test:creation-transactions": "node --test transactions/admin-user-creation.test.mjs",
+    "test:primary-fixture-sync": "python3 transactions/primary-fixture-password.test.py"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2"

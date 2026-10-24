@@ -40,19 +40,84 @@ export function passwordRecoveryRedirect(siteUrl?: string, supabaseUrl?: string)
   return new URL("/reset-password", url).href;
 }
 
-type RecoveryAuth = {
-  getSession(): Promise<{ data: { session: unknown | null }; error: unknown }>;
+export function shouldDetectSharedAuthCallback(pathname: string) {
+  return pathname.replace(/\/+$/, "") !== "/reset-password";
+}
+
+const invalidLink = "Link inválido ou expirado. Solicite novas instruções de recuperação.";
+export interface PasswordResetAuth {
+  setSession(tokens: { access_token: string; refresh_token: string }): Promise<{
+    data: { session: { user: { id: string } } | null };
+    error: unknown;
+  }>;
+  getUser(): Promise<{ data: { user: { id: string; email?: string } | null }; error: unknown }>;
   updateUser(attributes: { password: string }): Promise<{ error: unknown }>;
+  signOut(options: { scope: "local" }): Promise<{ error: unknown }>;
+}
+export type PasswordResetSession = {
+  email: string | null;
+  complete(password: string): Promise<void>;
 };
 
-export async function completePasswordRecovery(auth: RecoveryAuth, password: string) {
-  if (password.length < 8) throw new Error("Use uma senha com pelo menos 8 caracteres.");
-  const session = await auth.getSession().catch(() => ({ data: { session: null }, error: true }));
-  if (session.error || !session.data.session)
-    throw new Error("Link inválido ou expirado. Solicite novas instruções de recuperação.");
-  const result = await auth.updateUser({ password }).catch(() => ({ error: true }));
-  if (result.error)
-    throw new Error(
-      "Não foi possível atualizar a senha. Solicite novas instruções de recuperação.",
-    );
+/** Accept only an explicit invite/recovery callback. A stored login is never evidence. */
+export async function initializePasswordResetSession(
+  callbackUrl: string,
+  createIsolatedAuth: () => PasswordResetAuth,
+): Promise<PasswordResetSession> {
+  let accessToken: string, refreshToken: string;
+  try {
+    const url = new URL(callbackUrl);
+    const params = new URLSearchParams(url.hash.slice(1));
+    const errors = ["error", "error_code", "error_description"];
+    const required = ["access_token", "refresh_token", "type", "token_type"];
+    if (
+      shouldDetectSharedAuthCallback(url.pathname) ||
+      errors.some((key) => params.has(key) || url.searchParams.has(key)) ||
+      required.some((key) => params.getAll(key).length !== 1) ||
+      !["invite", "recovery"].includes(params.get("type") || "") ||
+      params.get("token_type") !== "bearer"
+    )
+      throw new Error(invalidLink);
+    accessToken = params.get("access_token") || "";
+    refreshToken = params.get("refresh_token") || "";
+    if (!accessToken || !refreshToken) throw new Error(invalidLink);
+  } catch {
+    throw new Error(invalidLink);
+  }
+  // The caller must supply a dedicated, nonpersistent SDK client. Never the app login.
+  const auth = createIsolatedAuth();
+  const authenticated = await auth
+    .setSession({ access_token: accessToken, refresh_token: refreshToken })
+    .catch(() => null);
+  if (!authenticated || authenticated.error || !authenticated.data.session?.user.id)
+    throw new Error(invalidLink);
+  const expectedId = authenticated.data.session.user.id;
+  const verified = await auth.getUser().catch(() => null);
+  if (!verified || verified.error || verified.data.user?.id !== expectedId)
+    throw new Error(invalidLink);
+  let used = false;
+  let busy = false;
+  return {
+    email: verified.data.user.email ?? null,
+    async complete(password) {
+      if (used || busy) throw new Error(invalidLink);
+      if (password.length < 8) throw new Error("Use uma senha com pelo menos 8 caracteres.");
+      busy = true;
+      try {
+        const current = await auth.getUser().catch(() => null);
+        if (!current || current.error || current.data.user?.id !== expectedId)
+          throw new Error(invalidLink);
+        const updated = await auth.updateUser({ password }).catch(() => ({ error: true }));
+        if (updated.error)
+          throw new Error(
+            "Não foi possível atualizar a senha. Solicite novas instruções de recuperação.",
+          );
+        used = true;
+        // Only the isolated link session is closed; the main browser login is untouched.
+        await auth.signOut({ scope: "local" }).catch(() => undefined);
+      } finally {
+        busy = false;
+      }
+    },
+  };
 }

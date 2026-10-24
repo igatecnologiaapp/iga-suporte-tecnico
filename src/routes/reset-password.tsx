@@ -1,8 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
-import { NewPasswordForm } from "@/components/iga/NewPasswordForm";
-import { completePasswordRecovery } from "@/lib/password-recovery";
-import { supabase } from "@/integrations/supabase/client";
+import { PasswordResetPage } from "@/components/iga/PasswordResetPage";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -18,23 +15,6 @@ export const Route = createFileRoute("/reset-password")({
   component: Page,
 });
 function Page() {
-  const nav = useNavigate();
-  return (
-    <main className="grid min-h-screen place-items-center bg-auth px-4">
-      <section className="w-full max-w-md space-y-5 rounded-lg border bg-card p-7 shadow-xl">
-        <NewPasswordForm
-          submitPassword={async (password) => {
-            await completePasswordRecovery(supabase.auth, password);
-            toast.success("Senha atualizada.");
-            await nav({ to: "/tickets" });
-          }}
-          onFailure={(error) =>
-            toast.error(
-              error instanceof Error ? error.message : "Não foi possível atualizar a senha.",
-            )
-          }
-        />
-      </section>
-    </main>
-  );
+  const navigate = useNavigate();
+  return <PasswordResetPage onComplete={() => navigate({ to: "/auth" })} />;
 }

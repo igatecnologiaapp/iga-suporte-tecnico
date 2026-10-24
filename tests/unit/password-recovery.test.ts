@@ -4,7 +4,8 @@ import {
   canRequestPasswordRecovery,
   passwordRecoveryRequestSchema,
   passwordRecoveryRedirect,
-  completePasswordRecovery,
+  initializePasswordResetSession,
+  shouldDetectSharedAuthCallback,
 } from "../../src/lib/password-recovery.ts";
 const actor = { id: "actor", role: "admin", isPrimary: false };
 for (const role of ["viewer", "technician", "supervisor", "admin"])
@@ -65,54 +66,131 @@ test("redirect is trusted configuration, with local-only fallback", () => {
     assert.throws(() => passwordRecoveryRedirect(url));
   assert.throws(() => passwordRecoveryRedirect(undefined, "https://remote.example.test"));
 });
-test("missing/expired session prevents password mutation and sanitizes provider errors", async () => {
-  for (const getSession of [
-    async () => ({ data: { session: null }, error: null }),
-    async () => {
-      throw Error("secret provider detail");
+const grant = (type = "recovery") =>
+  `http://127.0.0.1:4180/reset-password#access_token=synthetic-access&refresh_token=synthetic-refresh&token_type=bearer&type=${type}`;
+function authFixture(
+  options: {
+    setError?: boolean;
+    verifyError?: boolean;
+    mismatch?: boolean;
+    changedUser?: boolean;
+    updateError?: boolean;
+    updateThrow?: boolean;
+  } = {},
+) {
+  const calls: { action: string; scope?: string }[] = [];
+  let reads = 0;
+  const auth = {
+    async setSession() {
+      calls.push({ action: "set" });
+      return {
+        data: { session: options.setError ? null : { user: { id: "invited" } } },
+        error: options.setError,
+      };
     },
-  ]) {
-    let calls = 0;
-    await assert.rejects(
-      completePasswordRecovery(
-        {
-          getSession,
-          updateUser: async () => {
-            calls++;
-            return { error: null };
+    async getUser() {
+      calls.push({ action: "verify" });
+      reads++;
+      return {
+        data: {
+          user: {
+            id: options.mismatch || (options.changedUser && reads > 1) ? "primary" : "invited",
+            email: "invited@iga-test.example",
           },
         },
-        "synthetic-password",
-      ),
+        error: options.verifyError,
+      };
+    },
+    async updateUser() {
+      calls.push({ action: "update" });
+      if (options.updateThrow) throw Error("provider-secret");
+      return { error: options.updateError };
+    },
+    async signOut(options: { scope: "local" }) {
+      calls.push({ action: "logout", scope: options.scope });
+      return { error: null };
+    },
+  };
+  return { auth, calls };
+}
+test("shared login skips reset callbacks while preserving ordinary auth routes", () => {
+  for (const path of ["/reset-password", "/reset-password/"])
+    assert.equal(shouldDetectSharedAuthCallback(path), false);
+  for (const path of ["/auth", "/tickets", "/"])
+    assert.equal(shouldDetectSharedAuthCallback(path), true);
+});
+test("missing, invalid or ambiguous callbacks never open an Auth client or use a stored login", async () => {
+  for (const url of [
+    "http://127.0.0.1:4180/reset-password",
+    "http://127.0.0.1:4180/reset-password#error=access_denied&error_code=otp_expired",
+    grant() + "&error=expired",
+    grant().replace("#", "?error=expired#"),
+    grant("signup"),
+    grant().replace("reset-password", "auth"),
+    grant() + "&access_token=another",
+    grant().replace("refresh_token=synthetic-refresh&", ""),
+    grant().replace("bearer", "other"),
+  ]) {
+    let opened = 0;
+    await assert.rejects(
+      initializePasswordResetSession(url, () => {
+        opened++;
+        return authFixture().auth;
+      }),
       /Link inválido/,
     );
-    assert.equal(calls, 0);
+    assert.equal(opened, 0);
   }
 });
-test("update success, rejected password and provider failure", async () => {
-  const getSession = async () => ({ data: { session: {} }, error: null });
-  let calls = 0;
-  const updateUser = async () => {
-    calls++;
-    return { error: null };
-  };
-  await assert.rejects(
-    completePasswordRecovery({ getSession, updateUser }, "short"),
-    /8 caracteres/,
+for (const type of ["invite", "recovery"])
+  test(`valid ${type} verifies identity and updates only once`, async () => {
+    const f = authFixture();
+    const session = await initializePasswordResetSession(grant(type), () => f.auth);
+    assert.equal(session.email, "invited@iga-test.example");
+    await session.complete("synthetic-password");
+    await assert.rejects(session.complete("another-password"), /Link inválido/);
+    assert.equal(f.calls.filter((c) => c.action === "update").length, 1);
+    assert.deepEqual(
+      f.calls.filter((c) => c.action === "logout"),
+      [{ action: "logout", scope: "local" }],
+    );
+  });
+for (const options of [{ setError: true }, { verifyError: true }, { mismatch: true }])
+  test(`invalid link session never falls back to primary ${JSON.stringify(options)}`, async () => {
+    const f = authFixture(options);
+    await assert.rejects(
+      initializePasswordResetSession(grant(), () => f.auth),
+      /Link inválido/,
+    );
+    assert.equal(
+      f.calls.some((c) => c.action === "update"),
+      false,
+    );
+  });
+test("identity changing between validation and save cannot receive the password", async () => {
+  const f = authFixture({ changedUser: true });
+  const session = await initializePasswordResetSession(grant(), () => f.auth);
+  await assert.rejects(session.complete("synthetic-password"), /Link inválido/);
+  assert.equal(
+    f.calls.some((c) => c.action === "update"),
+    false,
   );
-  assert.equal(calls, 0);
-  await completePasswordRecovery({ getSession, updateUser }, "synthetic-password");
-  assert.equal(calls, 1);
-  await assert.rejects(
-    completePasswordRecovery(
-      {
-        getSession,
-        updateUser: async () => {
-          throw Error("secret provider detail");
-        },
-      },
-      "synthetic-password",
-    ),
-    /Não foi possível atualizar/,
+});
+test("short password and sanitized update failure do not announce success", async () => {
+  const f = authFixture();
+  const session = await initializePasswordResetSession(grant(), () => f.auth);
+  await assert.rejects(session.complete("short"), /8 caracteres/);
+  assert.equal(
+    f.calls.some((c) => c.action === "update"),
+    false,
   );
+  for (const options of [{ updateError: true }, { updateThrow: true }]) {
+    const failed = authFixture(options);
+    const context = await initializePasswordResetSession(grant(), () => failed.auth);
+    await assert.rejects(context.complete("synthetic-password"), /Não foi possível atualizar/);
+    assert.equal(
+      failed.calls.some((c) => c.action === "logout"),
+      false,
+    );
+  }
 });

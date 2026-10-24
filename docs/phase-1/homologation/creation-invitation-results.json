@@ -1,7 +1,7 @@
 {
   "date": "2026-10-20",
   "scope": "administrative-user-creation-and-invitation",
-  "status": "local-creation-resume-and-first-access-validated-additional-regressions-pending",
+  "status": "session-isolation-followup-implemented-local-validation-pending",
   "migration": "0021_admin_user_creation_operations.sql",
   "migration_sha256": "02e2289b8a6142b2c2ed9e1a521248fe6b6c2ddbcd014fc5cf44a40f9bdc100f",
   "automated": {
@@ -38,12 +38,14 @@
     "account_inactive_without_modules": true
   },
   "wsl_migration_0021_applied": true,
-  "full_new_flow_mailpit_verified": true,
+  "full_new_flow_mailpit_verified": false,
   "production_access": false,
   "historical_migrations_modified": false,
   "pending": [
-    "real-explicit-invitation-resend-before-first-access",
-    "real-ordinary-admin-denial"
+    "verify-and-sync-private-primary-password-if-needed",
+    "install-isolated-reset-session-code",
+    "real-old-invite-refusal-and-latest-invite-first-access",
+    "real-recovery-with-primary-already-signed-in"
   ],
   "last_update": "2026-10-24",
   "wsl_application_code_installed": true,
@@ -92,7 +94,11 @@
       "original_name_preserved": true
     },
     "duplicate_email_no_new_mailpit_message": "passed-original-invitation-only",
-    "duplicate_email_feedback": "specific-conflict-message-confirmed-by-screenshot"
+    "duplicate_email_feedback": "specific-conflict-message-confirmed-by-screenshot",
+    "ordinary_admin_four_endpoints_denied": "passed-operator-script-output",
+    "ordinary_admin_no_account_reservation_or_mail": "passed-three-second-observation",
+    "explicit_invitation_resend_delivery_before_activation": "two-mails-and-acceptance-audit-observed",
+    "old_and_latest_invitation_link_test": "inconclusive-session-confusion"
   },
   "duplicate_email_feedback_fix": {
     "status": "installed-and-verified-in-WSL",
@@ -101,5 +107,18 @@
     "typescript": "passed",
     "scoped_eslint": "passed",
     "isolated_build": "passed"
-  }
+  },
+  "session_isolation_followup": {
+    "report": "SECURITY-RESET-SESSION-ISOLATION.md",
+    "status": "implemented-isolated-tests-passed",
+    "main_session_fallback_identified": true,
+    "primary_password_may_have_changed": true,
+    "operator_kept_entered_password": true,
+    "private_primary_password_verification": "pending",
+    "unit_passed": 38,
+    "interface_passed": 40,
+    "server_regressions_passed": 92,
+    "private_fixture_sync_simulated_tests_passed": 8
+  },
+  "historical_creation_and_first_access_verified_before_session_isolation": true
 }

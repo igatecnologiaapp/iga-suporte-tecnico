@@ -263,3 +263,19 @@ Senhas e tokens não são impressos; resultado fica na pasta privada. Mantém UR
 Supabase HTTP loopback:55421 e navegador apenas em portas locais 4180/55421.
 Verificação de preparação: `node --check` aprovado; execução real dos quatro
 endpoints com admin comum ainda aguarda o Ubuntu do operador.
+
+
+## Verificações subsequentes e isolamento de sessão — 24/10/2026
+
+Operador executou o teste real de admin comum: criar, retomar, reenviar e listar
+operações foram recusados, sem conta/reserva nova nem mensagem no Mailpit durante
+a conferência. Outro usuário fictício de Visualização foi criado para reenvio,
+sem primeiro acesso. Reenvio explícito gerou segundo convite e auditoria de aceite.
+
+Na tentativa seguinte houve abertura de convite de outra conta e tela de senha
+atualizada com principal conectado. O erro genérico no convite antigo de reenvio
+não comprova uso único ou expiração. Validação desses links permanece inconclusiva.
+Defeito de fallback para sessão existente foi identificado e corrigido; detalhes,
+limites e recuperação da fixture estão em
+[SECURITY-RESET-SESSION-ISOLATION.md](SECURITY-RESET-SESSION-ISOLATION.md).
+Não declarar fluxo integral aprovado até aplicar e revalidar essa correção no WSL.
