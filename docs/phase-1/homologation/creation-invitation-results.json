@@ -42,9 +42,9 @@
   "production_access": false,
   "historical_migrations_modified": false,
   "pending": [
-    "real-duplicate-email-refusal-without-extra-account-or-invitation",
     "real-explicit-invitation-resend-before-first-access",
-    "real-ordinary-admin-denial"
+    "real-ordinary-admin-denial",
+    "install-and-verify-clear-duplicate-email-feedback"
   ],
   "last_update": "2026-10-24",
   "wsl_application_code_installed": true,
@@ -83,9 +83,16 @@
     "audit_same_attempt_between_intent_and_acceptance": "passed",
     "test_account": "Homologação convite completo 24-10",
     "private_password_note": "First-access password chosen by operator; not read, stored or versioned by assistant.",
-    "duplicate_email_request_ui": "refused-with-generic-error",
-    "duplicate_email_database_counts": "pending",
-    "duplicate_email_no_new_mailpit_message": "pending"
+    "duplicate_email_request_ui": "refused",
+    "duplicate_email_database_counts": {
+      "reservations": 1,
+      "auth_accounts": 1,
+      "profiles": 1,
+      "technicians": 1,
+      "user_created_audit_events": 1,
+      "original_name_preserved": true
+    },
+    "duplicate_email_no_new_mailpit_message": "passed-original-invitation-only"
   },
   "duplicate_email_feedback_fix": {
     "status": "implemented-WSL-copy-pending",

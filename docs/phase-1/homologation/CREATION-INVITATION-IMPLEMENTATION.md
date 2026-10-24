@@ -232,3 +232,15 @@ aprovado. Interface/unitárias e testes SQL mantêm os resultados anteriores;
 nenhum comportamento desses grupos foi modificado. Para instalar a mensagem
 no WSL, atualizar Git e copiar somente `src/lib/admin-user-creation.server.ts`
 para a cópia isolada da aplicação, reiniciando Vite. Essa cópia ainda está pendente.
+
+
+## E-mail duplicado: efeitos conferidos — 24/10/2026
+
+Operador executou consulta somente de leitura após a recusa: uma reserva, uma
+conta Auth, um perfil, um técnico e um registro user_created, com nome original
+“Homologação convite completo 24-10” preservado. No Mailpit confirmou somente o
+convite original para esse destinatário, sem mensagem adicional após a tentativa.
+Cenário real de e-mail duplicado aprovado quanto à recusa e ausência dos efeitos
+verificados. A mensagem específica preparada ainda precisa ser copiada para a
+aplicação isolada e conferida na interface. Reenvio antes do primeiro acesso e
+recusa pelo administrador comum continuam pendentes.
