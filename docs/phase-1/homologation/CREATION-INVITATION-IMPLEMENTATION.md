@@ -1,8 +1,8 @@
 # Criação e convites — implementação e preparação para validação local
 
-Data: 20/10/2026. Autorização: implementar e testar em homologação, sem produção,
-merge ou publicação. Implementação pronta; aplicação da migration e verificação
-do fluxo completo no Ubuntu ainda pendentes.
+Data inicial: 20/10/2026; atualização: 24/10/2026. Autorização: implementar e testar
+em homologação, sem produção, merge ou publicação. Migration 0021 instalada no
+Ubuntu; correção 0022 e verificação completa do fluxo ainda pendentes.
 
 ## Problema e comportamento final
 
@@ -46,8 +46,9 @@ quando a reserva ou envio estiver pendente, para proteger a resolução por e-ma
 
 ## Migração e isolamento
 
-Nova migration: `0021_admin_user_creation_operations.sql`. Histórico 0000–0020
-preservado. Tabela de operações com RLS, sem leitura/escrita direta de usuários
+Migration do fluxo: `0021_admin_user_creation_operations.sql`; correção de
+compatibilidade obrigatória: `0022_allow_auth_creation_metadata_initialization.sql`.
+Ambas preservam os arquivos históricos já publicados. Tabela de operações com RLS, sem leitura/escrita direta de usuários
 ou escrita de service_role; service_role apenas lê. Seis RPCs autenticadas
 revalidam principal ativo; helpers internos não são executáveis pelos clientes.
 Novas proteções também atingem Auth, perfil, papel, módulos e vínculo técnico.
@@ -96,8 +97,9 @@ migrations reais; não executam GoTrue nem SMTP. Registros em
 
 1. Preservar Docker/Supabase funcionando. Atualizar a branch pelo Git.
 2. Executar o aplicador sem `--apply`; conferir isolamento. Executar depois com
-   `--apply` no mesmo ambiente autorizado. Não copiar código novo para a aplicação
-   antes de concluir a migration.
+   `--apply` no mesmo ambiente autorizado. Aplicar também a correção 0022 com
+   `apply-auth-creation-initialization.mjs --apply` antes de testar o cadastro.
+   Não copiar código novo para a aplicação antes de concluir as migrations.
 3. Parar Vite com Ctrl+C. Copiar mantendo caminhos: `src/lib/admin-users.functions.ts`,
    `src/lib/admin-user-creation.ts`, `src/lib/admin-user-creation.server.ts`,
    `src/components/iga/AdminCreationOperations.tsx` e
@@ -124,6 +126,59 @@ sem editar payload reservado, adotar conta anterior ou excluir automaticamente.
 Operações pertencem ao principal autor; eventual troca do principal exige revisão
 explícita de pendências. Não foi implementado cancelamento/limpeza automática.
 
-Não houve aplicação da 0021 no WSL, criação pela nova interface, entrega do novo
-handler ou primeiro acesso desse cadastro nesta execução. Essas validações são
-os próximos passos com o operador. Nenhuma autorização de produção ou Fase 2.
+Na entrega inicial, aplicação da 0021 e validações reais ainda estavam pendentes.
+O andamento local posterior e a correção necessária estão registrados abaixo.
+Nenhuma autorização de produção ou Fase 2.
+
+## Correção de compatibilidade Auth — 24/10/2026
+
+Operador confirmou aplicação da 0021, verificação de permissões e atualização da
+cópia local da aplicação. No primeiro cadastro técnico pela nova interface, a
+operação ficou `reserved` / `not_requested`. Consulta somente leitura confirmou
+nenhuma identidade Auth, perfil ou papel para o UUID reservado e zero módulos.
+Nenhum convite do novo fluxo foi confirmado. Não é evidência de cadastro concluído.
+
+Foi identificada e reproduzida uma lacuna dos testes anteriores: GoTrue cria o
+usuário com metadata de provedor, faz atualizações internas (incluindo papel Auth)
+e só depois aplica o app_metadata personalizado na mesma transação. O guard da
+0021 exigia o marcador em toda atualização, bloqueando a etapa intermediária e
+fazendo a criação Auth inteira reverter. O diagnóstico de capacidade ocorreu
+antes da instalação desse guard; os testes SQL originais inseriam o marcador
+junto com a linha, sem reproduzir a ordem interna. Fonte pública consultada:
+https://github.com/supabase/auth/blob/master/internal/api/admin.go
+(`adminUserCreate`, SetRole antes de UpdateAppMetaData). O teste não presume que
+a fonte master seja idêntica à versão local; a reprodução SQL comprova o defeito
+na sequência identificada, e o resultado final ainda depende da retomada no WSL.
+
+A nova migration `0022_allow_auth_creation_metadata_initialization.sql` preserva
+0021 e seu histórico. Permite intervalo inicial sem marcador somente se a operação
+estiver reservada e o marcador estiver ausente tanto antes quanto depois da
+atualização. UUID/e-mail continuam fixos. Marcador errado é recusado; após ser
+gravado, não pode ser removido durante a reserva. Envio em andamento nunca usa
+essa exceção. Exclusão continua bloqueada. Perfil permanece inativo, viewer e
+sem módulos; a RPC de provisionamento ainda exige o marcador correto do servidor.
+
+Cinco regressões novas exercitam ordem interna/rollback histórico, bloqueio sem
+marcador, UUID/e-mail/marcador incorretos, preservação do marcador e aplicação da
+correção sobre reserva já existente com retomada do mesmo UUID. Resultado:
+43 testes de criação + 22 da atualização em PostgreSQL real, e 90 testes de
+servidor/aplicadores simulados aprovados. Desses últimos, 20 verificam aplicadores
+0021/0022, incluindo destinos remotos, portas expostas, drift e permissões indevidas.
+Schema mínimo dos testes ganhou o campo Auth `role`, para reproduzir SetRole.
+Não houve alteração do código de aplicação, build ou interface neste ajuste;
+os resultados anteriores desses grupos permanecem como evidência histórica.
+
+Aplicação local: atualizar Git e executar
+`tests/homologation/apply-auth-creation-initialization.mjs --apply` com
+IGA_HOMO_PRIVATE. O aplicador verifica container/portas locais, as 11 funções da
+0021, permissões, RLS e cinco triggers antes de alterar apenas o guard em transação.
+Recusa definições diferentes das duas versões revisadas e reconhece correção já
+instalada. O aplicador da 0021 também reconhece a definição exata da 0022, sem
+sobrescrevê-la. Evidência e checksum ficam privados.
+
+Não recriar o pedido nem excluir a reserva. Após aplicação conferida, usar
+**Retomar cadastro** na operação existente. Não é necessário copiar novamente
+arquivos da aplicação nem reiniciar Supabase. Em instalação nova, aplicar também
+0022 antes de validar criação. Ainda pendentes: aplicação da correção no WSL,
+retomada com GoTrue real, convite do fluxo completo, primeiro acesso e regressões
+manuais restantes. Nenhuma modificação de produção ou autorização de publicação.

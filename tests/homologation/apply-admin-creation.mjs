@@ -64,6 +64,13 @@ const functions = [
   definer: match[0].includes("SECURITY DEFINER"),
 }));
 assert.equal(functions.length, 11, "Unexpected migration function set");
+// A later, reviewed migration may replace this one guard without changing 0021.
+const guardPatch = readFileSync(
+  resolve(repo, "drizzle/migrations/0022_allow_auth_creation_metadata_initialization.sql"),
+  "utf8",
+);
+const compatibleGuardBody = guardPatch.match(/AS \$\$([\s\S]*?)\$\$;/)?.[1];
+assert.ok(compatibleGuardBody);
 const present = JSON.parse(
   sql(
     `SELECT json_build_object('present',to_regclass('public.admin_user_creation_operations') IS NOT NULL);`,
@@ -85,7 +92,11 @@ for (const fn of functions) {
   );
   assert.equal(rows.length, 1, `Function missing/overloaded: ${fn.name}`);
   const current = rows[0];
-  assert.equal(current.body, fn.body, `Function differs: ${fn.name}`);
+  assert.ok(
+    current.body === fn.body ||
+      (fn.name === "guard_admin_creation_auth_identity" && current.body === compatibleGuardBody),
+    `Function differs: ${fn.name}`,
+  );
   assert.equal(current.definer, fn.definer);
   assert.equal(current.public_access, false);
   assert.equal(current.service_access, false);

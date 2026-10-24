@@ -38,9 +38,9 @@ before(async () => {
   await sql.unsafe(readFileSync(resolve(import.meta.dirname, "bootstrap.sql"), "utf8"));
   const directory = resolve(repo, "drizzle/migrations");
   const files = readdirSync(directory)
-    .filter((name) => /^00(?:0\d|1\d|2[01])_.*\.sql$/.test(name))
+    .filter((name) => /^00(?:0\d|1\d|2[012])_.*\.sql$/.test(name))
     .sort();
-  assert.equal(files.length, 22);
+  assert.equal(files.length, 23);
   for (const name of files)
     await sql.begin((tx) => tx.unsafe(readFileSync(resolve(directory, name), "utf8")));
 });
@@ -414,4 +414,136 @@ test("unresolved in-flight delivery needs five-minute wait and explicit resend",
   assert.equal((await claim()).claimed, false);
   assert.equal((await claim(operation, id(13), true)).claimed, true);
   await assert.rejects(record("accepted"), /substituída/);
+});
+
+async function authCreationSteps(tx, op) {
+  await tx`INSERT INTO auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
+    VALUES(${op.userId},${op.payload.email},'{}','{"provider":"email","providers":["email"]}')`;
+  await tx`UPDATE auth.users SET role='authenticated' WHERE id=${op.userId}`;
+  await tx`UPDATE auth.users SET raw_app_meta_data=raw_app_meta_data || ${tx.json({ admin_creation_operation: op.operationId })}::jsonb WHERE id=${op.userId}`;
+}
+test("0021 reproduces GoTrue creation rollback; 0022 resumes the same reservation", async () => {
+  const op = await reserve();
+  const historical = readFileSync(
+    resolve(repo, "drizzle/migrations/0021_admin_user_creation_operations.sql"),
+    "utf8",
+  );
+  const originalGuard = historical
+    .match(/CREATE FUNCTION public\.guard_admin_creation_auth_identity\(\)[\s\S]*?\$\$;/)[0]
+    .replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
+  await assert.rejects(
+    sql.begin(async (tx) => {
+      await tx.unsafe(originalGuard);
+      await authCreationSteps(tx, op);
+    }),
+    /operação pendente/,
+  );
+  assert.equal(
+    (await sql`SELECT count(*)::int AS count FROM auth.users WHERE id=${op.userId}`)[0].count,
+    0,
+  );
+  assert.equal(
+    (
+      await sql`SELECT stage FROM public.admin_user_creation_operations WHERE id=${op.operationId}`
+    )[0].stage,
+    "reserved",
+  );
+  // Failed transaction restores the patched guard as well as rolling back Auth.
+  await sql.begin((tx) => authCreationSteps(tx, op));
+  assert.equal(
+    (await sql`SELECT status FROM public.profiles WHERE id=${op.userId}`)[0].status,
+    "inactive",
+  );
+  assert.equal(
+    (
+      await sql`SELECT count(*)::int AS count FROM public.user_modules WHERE user_id=${op.userId}`
+    )[0].count,
+    0,
+  );
+  assert.equal((await provision()).stage, "provisioned");
+  assert.equal(
+    (
+      await sql`SELECT count(*)::int AS count FROM public.admin_audit_logs WHERE action='user_created'`
+    )[0].count,
+    1,
+  );
+});
+test("initial missing provenance cannot provision or activate the reserved account", async () => {
+  const op = await reserve();
+  await sql`INSERT INTO auth.users(id,email,raw_user_meta_data,raw_app_meta_data) VALUES(${op.userId},${op.payload.email},'{}','{"provider":"email"}')`;
+  await sql`UPDATE auth.users SET role='authenticated' WHERE id=${op.userId}`;
+  await sql`UPDATE public.profiles SET status='active' WHERE id=${op.userId}`;
+  assert.equal(
+    (await sql`SELECT status FROM public.profiles WHERE id=${op.userId}`)[0].status,
+    "inactive",
+  );
+  await assert.rejects(provision(), /Identidade/);
+  await assert.rejects(
+    sql`INSERT INTO public.user_modules(user_id,module) VALUES(${op.userId},'tickets')`,
+    /pendente/,
+  );
+  await assert.rejects(claim(), /concluído/);
+});
+test("initialization cannot change email/UUID or set a foreign marker", async () => {
+  const op = await reserve();
+  await sql`INSERT INTO auth.users(id,email,raw_user_meta_data,raw_app_meta_data) VALUES(${op.userId},${op.payload.email},'{}','{"provider":"email"}')`;
+  await assert.rejects(
+    sql`UPDATE auth.users SET email='changed@iga-test.example' WHERE id=${op.userId}`,
+    /operação pendente/,
+  );
+  await assert.rejects(
+    sql`UPDATE auth.users SET id=${id(99)} WHERE id=${op.userId}`,
+    /operação pendente/,
+  );
+  await assert.rejects(
+    sql`UPDATE auth.users SET raw_app_meta_data=${sql.json({ admin_creation_operation: otherOperation })} WHERE id=${op.userId}`,
+    /operação pendente/,
+  );
+  await assert.rejects(sql`DELETE FROM auth.users WHERE id=${op.userId}`, /operação pendente/);
+});
+test("once installed, the operation marker cannot be removed during reservation", async () => {
+  const op = await reserve();
+  await sql.begin((tx) => authCreationSteps(tx, op));
+  await assert.rejects(
+    sql`UPDATE auth.users SET raw_app_meta_data='{"provider":"email"}' WHERE id=${op.userId}`,
+    /operação pendente/,
+  );
+  await sql`UPDATE auth.users SET raw_app_meta_data=raw_app_meta_data || '{"additional":"allowed"}'::jsonb WHERE id=${op.userId}`;
+  assert.equal(
+    (
+      await sql`SELECT raw_app_meta_data->>'admin_creation_operation' AS marker FROM auth.users WHERE id=${op.userId}`
+    )[0].marker,
+    op.operationId,
+  );
+});
+
+test("0022 patch preserves a failed reservation and reuses its original user UUID", async () => {
+  const op = await reserve();
+  const historical = readFileSync(
+    resolve(repo, "drizzle/migrations/0021_admin_user_creation_operations.sql"),
+    "utf8",
+  );
+  const oldGuard = historical
+    .match(/CREATE FUNCTION public\.guard_admin_creation_auth_identity\(\)[\s\S]*?\$\$;/)[0]
+    .replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
+  await sql.begin((tx) => tx.unsafe(oldGuard));
+  await assert.rejects(
+    sql.begin((tx) => authCreationSteps(tx, op)),
+    /operação pendente/,
+  );
+  const before = await snapshot();
+  const patch = readFileSync(
+    resolve(repo, "drizzle/migrations/0022_allow_auth_creation_metadata_initialization.sql"),
+    "utf8",
+  );
+  await sql.begin((tx) => tx.unsafe(patch));
+  assert.equal(await snapshot(), before);
+  await sql.begin((tx) => authCreationSteps(tx, op));
+  const done = await provision();
+  assert.equal(done.userId, op.userId);
+  assert.equal(done.operationId, op.operationId);
+  assert.equal(
+    (await sql`SELECT count(*)::int AS count FROM public.admin_user_creation_operations`)[0].count,
+    1,
+  );
 });

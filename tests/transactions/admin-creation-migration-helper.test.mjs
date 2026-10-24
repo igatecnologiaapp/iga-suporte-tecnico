@@ -12,6 +12,11 @@ const migration = readFileSync(
   resolve(repo, "drizzle/migrations/0021_admin_user_creation_operations.sql"),
   "utf8",
 );
+const patch = readFileSync(
+  resolve(repo, "drizzle/migrations/0022_allow_auth_creation_metadata_initialization.sql"),
+  "utf8",
+);
+const patchBody = patch.match(/AS \$\$([\s\S]*?)\$\$;/)[1];
 const functions = [
   ...migration.matchAll(
     /CREATE FUNCTION public\.(\w+)\([\s\S]*?\n(?:LANGUAGE[\s\S]*?)AS \$\$([\s\S]*?)\$\$;/g,
@@ -58,6 +63,8 @@ function run(options = {}) {
                     ? "https://remote.example.test"
                     : "http://127.0.0.1:55421",
                 });
+              if (path.endsWith("0022_allow_auth_creation_metadata_initialization.sql"))
+                return patch;
               return migration;
             },
             writeFileSync(_path, _value, flags) {
@@ -105,7 +112,11 @@ function run(options = {}) {
                   fn = functions.find((f) => f.name === name);
                 return JSON.stringify([
                   {
-                    body: options.drift ? "changed" : fn.body,
+                    body: options.drift
+                      ? "changed"
+                      : options.patched && name === "guard_admin_creation_auth_identity"
+                        ? patchBody
+                        : fn.body,
                     definer: fn.definer,
                     public_access: !!options.publicAccess,
                     service_access: false,
@@ -171,3 +182,10 @@ for (const options of [{ drift: true }, { publicAccess: true }, { missingGuard: 
     assert.equal(r.applied, 0);
     assert.equal(r.evidence, 0);
   });
+
+test("0021 verification accepts the exact reviewed 0022 guard without reapplying", () => {
+  const r = run({ present: true, patched: true, apply: true });
+  assert.equal(r.error, undefined);
+  assert.equal(r.applied, 0);
+  assert.equal(r.evidence, 1);
+});

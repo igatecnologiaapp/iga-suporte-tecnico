@@ -1,7 +1,7 @@
 {
   "date": "2026-10-20",
   "scope": "administrative-user-creation-and-invitation",
-  "status": "implemented-local-application-validation-pending",
+  "status": "auth-initialization-compatibility-fixed-local-application-pending",
   "migration": "0021_admin_user_creation_operations.sql",
   "migration_sha256": "02e2289b8a6142b2c2ed9e1a521248fe6b6c2ddbcd014fc5cf44a40f9bdc100f",
   "automated": {
@@ -10,11 +10,11 @@
       "failed": 0
     },
     "server_helpers_and_migration_tools_mocked": {
-      "passed": 78,
+      "passed": 90,
       "failed": 0
     },
     "postgres_creation": {
-      "passed": 38,
+      "passed": 43,
       "failed": 0
     },
     "postgres_existing_admin_update_with_0021": {
@@ -27,7 +27,8 @@
     },
     "typescript": "passed",
     "scoped_eslint": "passed",
-    "isolated_build": "passed"
+    "isolated_build": "passed",
+    "previous_unchanged_application_checks": "Unit, interface, TypeScript, lint and build results retained from previous implementation; this fix changes SQL/helpers/tests only."
   },
   "local_auth_capability_preflight": {
     "source": "operator-reported-script-output",
@@ -36,15 +37,35 @@
     "mailpit_delivered": true,
     "account_inactive_without_modules": true
   },
-  "wsl_migration_0021_applied": false,
+  "wsl_migration_0021_applied": true,
   "full_new_flow_mailpit_verified": false,
   "production_access": false,
   "historical_migrations_modified": false,
   "pending": [
-    "apply-0021-in-verified-wsl-container",
-    "copy-code-to-sanitized-app",
+    "apply-0022-in-verified-wsl-container",
+    "resume-existing-reservation-with-real-auth",
     "real-creation-and-first-access-mailpit",
     "real-duplicate-email-and-explicit-resend",
     "real-ordinary-admin-denial"
-  ]
+  ],
+  "last_update": "2026-10-24",
+  "wsl_application_code_installed": true,
+  "wsl_migration_0022_applied": false,
+  "auth_initialization_fix": {
+    "migration": "0022_allow_auth_creation_metadata_initialization.sql",
+    "sha256": "0b731246a626b24772b00f5fe581c317f1446443de2817e5d132529e80880fbd",
+    "historical_guard_failure_reproduced": true,
+    "pending_reservation_preserved_in_test": true,
+    "same_reserved_uuid_resumed_in_test": true,
+    "wsl_first_creation_observation": {
+      "source": "operator-read-only-query",
+      "stage": "reserved",
+      "delivery_state": "not_requested",
+      "auth_exists": false,
+      "profile_status": null,
+      "role": null,
+      "module_count": 0
+    },
+    "actual_wsl_resume_verified": false
+  }
 }
