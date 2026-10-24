@@ -1,8 +1,8 @@
 # Criação e convites — implementação e preparação para validação local
 
 Data inicial: 20/10/2026; atualização: 24/10/2026. Autorização: implementar e testar
-em homologação, sem produção, merge ou publicação. Migration 0021 instalada no
-Ubuntu; correção 0022 e verificação completa do fluxo ainda pendentes.
+em homologação, sem produção, merge ou publicação. Migrations 0021 e 0022 instaladas
+no Ubuntu; retomada e primeiro acesso aprovados, com regressões adicionais pendentes.
 
 ## Problema e comportamento final
 
@@ -182,3 +182,29 @@ arquivos da aplicação nem reiniciar Supabase. Em instalação nova, aplicar ta
 0022 antes de validar criação. Ainda pendentes: aplicação da correção no WSL,
 retomada com GoTrue real, convite do fluxo completo, primeiro acesso e regressões
 manuais restantes. Nenhuma modificação de produção ou autorização de publicação.
+
+
+## Retomada e primeiro acesso confirmados — 24/10/2026
+
+Operador informou saída aprovada do aplicador 0022. Na operação já existente,
+**Retomar cadastro** exibiu usuário cadastrado/envio de convite aceito. Após
+recarregar, confirmou perfil Técnico, status Ativo, vínculo técnico e um módulo.
+Convite recebido no Mailpit para a conta fictícia exclusiva do teste.
+
+Em janela anônima sem sessão anterior, o convite abriu nova senha; conclusão
+mostrou “Senha atualizada” e encaminhou a Chamados. Fechadas as janelas anônimas,
+novo login com a senha escolhida funcionou. Acesso direto a `/companies` foi
+recusado, com aviso e retorno a Chamados; menu exibiu somente Chamados.
+
+Captura de auditoria confirmou **Cadastro reservado**, **Usuário criado**,
+**Convite solicitado** e **Envio de convite aceito**, tendo principal como autor.
+Mesmo operation_id nos quatro eventos e mesmo attempt_id no par solicitação/
+aceite. Cadastro gravou papel technician, status active, módulo tickets e UUID
+de técnico criado. Evidência é a captura/relato do operador, sem consulta remota
+às credenciais nem contagem global de registros. Não é prova isolada de ausência
+de toda duplicação; esse cenário será verificado a seguir.
+
+Concluída validação local de retomada após correção, entrega e primeiro acesso.
+Permanecem recusa real de e-mail duplicado, reenvio explícito antes da ativação e
+recusa de criação pelo admin comum. A senha de primeiro acesso foi escolhida e
+mantida apenas pelo operador. Sem acesso à produção/publicação.

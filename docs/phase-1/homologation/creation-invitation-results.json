@@ -1,7 +1,7 @@
 {
   "date": "2026-10-20",
   "scope": "administrative-user-creation-and-invitation",
-  "status": "auth-initialization-compatibility-fixed-local-application-pending",
+  "status": "local-creation-resume-and-first-access-validated-additional-regressions-pending",
   "migration": "0021_admin_user_creation_operations.sql",
   "migration_sha256": "02e2289b8a6142b2c2ed9e1a521248fe6b6c2ddbcd014fc5cf44a40f9bdc100f",
   "automated": {
@@ -38,19 +38,17 @@
     "account_inactive_without_modules": true
   },
   "wsl_migration_0021_applied": true,
-  "full_new_flow_mailpit_verified": false,
+  "full_new_flow_mailpit_verified": true,
   "production_access": false,
   "historical_migrations_modified": false,
   "pending": [
-    "apply-0022-in-verified-wsl-container",
-    "resume-existing-reservation-with-real-auth",
-    "real-creation-and-first-access-mailpit",
-    "real-duplicate-email-and-explicit-resend",
+    "real-duplicate-email-refusal-without-extra-account-or-invitation",
+    "real-explicit-invitation-resend-before-first-access",
     "real-ordinary-admin-denial"
   ],
   "last_update": "2026-10-24",
   "wsl_application_code_installed": true,
-  "wsl_migration_0022_applied": false,
+  "wsl_migration_0022_applied": true,
   "auth_initialization_fix": {
     "migration": "0022_allow_auth_creation_metadata_initialization.sql",
     "sha256": "0b731246a626b24772b00f5fe581c317f1446443de2817e5d132529e80880fbd",
@@ -66,6 +64,24 @@
       "role": null,
       "module_count": 0
     },
-    "actual_wsl_resume_verified": false
+    "actual_wsl_resume_verified": true
+  },
+  "manual_local_validation": {
+    "date": "2026-10-24",
+    "source": "operator-reports-and-screenshots",
+    "scope": "Supabase local and Mailpit only",
+    "patch_0022_applied_and_checked": "passed",
+    "existing_operation_resumed": "passed",
+    "profile_role_status_technician_and_module_retained_after_reload": "passed",
+    "invitation_delivered_to_fictitious_recipient": "passed",
+    "first_access_in_incognito_password_update": "passed",
+    "new_session_password_login": "passed",
+    "tickets_module_visible": "passed",
+    "direct_companies_route_denied_and_redirected_to_tickets": "passed",
+    "audit_creation_intent_acceptance_principal_actor": "passed",
+    "audit_same_operation_across_reservation_creation_and_invitation": "passed",
+    "audit_same_attempt_between_intent_and_acceptance": "passed",
+    "test_account": "Homologação convite completo 24-10",
+    "private_password_note": "First-access password chosen by operator; not read, stored or versioned by assistant."
   }
 }
