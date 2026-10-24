@@ -43,8 +43,7 @@
   "historical_migrations_modified": false,
   "pending": [
     "real-explicit-invitation-resend-before-first-access",
-    "real-ordinary-admin-denial",
-    "install-and-verify-clear-duplicate-email-feedback"
+    "real-ordinary-admin-denial"
   ],
   "last_update": "2026-10-24",
   "wsl_application_code_installed": true,
@@ -92,10 +91,11 @@
       "user_created_audit_events": 1,
       "original_name_preserved": true
     },
-    "duplicate_email_no_new_mailpit_message": "passed-original-invitation-only"
+    "duplicate_email_no_new_mailpit_message": "passed-original-invitation-only",
+    "duplicate_email_feedback": "specific-conflict-message-confirmed-by-screenshot"
   },
   "duplicate_email_feedback_fix": {
-    "status": "implemented-WSL-copy-pending",
+    "status": "installed-and-verified-in-WSL",
     "known_sql_conflict_only": true,
     "unknown_errors_sanitized": true,
     "typescript": "passed",

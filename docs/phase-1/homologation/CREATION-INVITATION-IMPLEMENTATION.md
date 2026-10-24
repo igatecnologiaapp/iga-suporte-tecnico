@@ -244,3 +244,22 @@ Cenário real de e-mail duplicado aprovado quanto à recusa e ausência dos efei
 verificados. A mensagem específica preparada ainda precisa ser copiada para a
 aplicação isolada e conferida na interface. Reenvio antes do primeiro acesso e
 recusa pelo administrador comum continuam pendentes.
+
+
+## Mensagem de conflito instalada e próxima verificação — 24/10/2026
+
+Operador atualizou o helper na aplicação isolada, reiniciou Vite e repetiu a
+tentativa duplicada. Captura confirmou a mensagem específica de e-mail já
+cadastrado/cadastro pendente. Conferência de clareza da mensagem aprovada.
+
+Preparado `tests/homologation/creation-ordinary-admin-denial.mjs`: usa a fixture
+admin em navegador isolado, confirma papel admin, perfil ativo, módulo Usuários
+e que ele não é principal. Envia pedidos válidos diretamente aos endpoints de
+criar, retomar, reenviar e listar operações; exige a recusa específica de principal.
+Consulta somente leitura verifica ausência de reserva e de conta Auth para o
+e-mail fictício exclusivo. Confere também que nenhuma mensagem nova entrou no
+Mailpit numa janela de três segundos. Não solicitar outros e-mails durante o teste.
+Senhas e tokens não são impressos; resultado fica na pasta privada. Mantém URL
+Supabase HTTP loopback:55421 e navegador apenas em portas locais 4180/55421.
+Verificação de preparação: `node --check` aprovado; execução real dos quatro
+endpoints com admin comum ainda aguarda o Ubuntu do operador.
