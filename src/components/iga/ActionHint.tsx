@@ -15,14 +15,18 @@ export function ActionHint({
     <TooltipProvider delayDuration={250}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span
-            className={`inline-flex rounded-md ${disabled ? "cursor-not-allowed" : ""}`}
-            tabIndex={disabled ? 0 : undefined}
-            role={disabled ? "group" : undefined}
-            aria-label={disabled ? message : undefined}
-          >
-            {children}
-          </span>
+          {disabled ? (
+            <span
+              className="inline-flex cursor-not-allowed rounded-md"
+              tabIndex={0}
+              role="group"
+              aria-label={message}
+            >
+              {children}
+            </span>
+          ) : (
+            children
+          )}
         </TooltipTrigger>
         <TooltipContent className="max-w-72 text-pretty leading-relaxed">{message}</TooltipContent>
       </Tooltip>

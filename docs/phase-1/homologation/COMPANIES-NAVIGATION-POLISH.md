@@ -5,6 +5,9 @@ na ordem combinada; aplicação e conferência manual no WSL ainda pendentes.
 
 ## Comportamento
 
+- Os botões de ícone mostram dicas “Editar cadastro”, “Arquivar cadastro”,
+  “Restaurar cadastro” e “Excluir cadastro” ao passar o mouse e focar pelo teclado,
+  a pedido do operador. Reutilizam o componente ActionHint já instalado.
 - Excluir recebe texto/ícone, fundo e foco em vermelho no hover e foco de teclado.
   A confirmação de exclusão definitiva também usa a variante destrutiva. O
   componente compartilhado de cadastros recebe a apresentação; papéis, motivo,
@@ -48,7 +51,7 @@ na ordem combinada; aplicação e conferência manual no WSL ainda pendentes.
 ## Aplicar e revisar no WSL
 
 Parar Vite, atualizar Git, copiar mantendo caminhos `src/components/iga/LogoutButton.tsx`,
-`AppShell.tsx`, `CompanyFields.tsx`, `ResourcePage.tsx` e
+`AppShell.tsx`, `CompanyFields.tsx`, `ResourcePage.tsx`, `ActionHint.tsx` e
 `src/lib/company-save-feedback.ts` para a aplicação isolada. Reiniciar pelo
 launcher privado existente. Manter Supabase ligado. Não aplicar migration.
 
@@ -58,3 +61,16 @@ fictícia existente, preservando os dados e cancelando o formulário após obser
 recusa. A confirmação real de saída pode usar conta de teste em janela separada.
 Após essa conferência, próxima etapa combinada é modernização visual de Contatos.
 Sem merge, publicação ou credenciais registradas neste lote.
+
+
+## Dicas dos ícones — complemento de 26/10/2026
+
+Conferência em Chromium com o componente real e dados sintéticos: Editar,
+Arquivar, Excluir e Restaurar exibiram suas respectivas descrições com mouse e
+foco, em oito interações independentes, sem gravações no mock. Botões habilitados
+recebem o TooltipTrigger diretamente, associando a descrição ao próprio botão;
+os desabilitados mantêm o invólucro focável usado nas verificações anteriores.
+Seis regressões de foco de edição, destaque destrutivo nos dois temas/tamanhos
+e dicas de botão desabilitado passaram. TypeScript e lint do ActionHint aprovados.
+Não exige alteração de permissões,
+serviços, dados ou migrations. Confirmação visual pelo operador ainda pendente.

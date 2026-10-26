@@ -27,6 +27,7 @@ import { CompanyFields } from "./CompanyFields";
 import { CompanyOverview } from "./CompanyOverview";
 import { Empty, Page, LoadState } from "./Page";
 import { StatusBadge } from "./StatusBadge";
+import { ActionHint } from "./ActionHint";
 
 type Kind = RecordEntity;
 const config = {
@@ -712,44 +713,52 @@ export function ResourcePage({
                     {canManage && (
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => openEditor(row)}
-                            id={`edit-${kind}-${row.id}`}
-                            aria-label={`Editar ${row[c.name]}`}
-                          >
-                            <Pencil />
-                          </Button>
+                          <ActionHint disabled={false} message="Editar cadastro">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => openEditor(row)}
+                              id={`edit-${kind}-${row.id}`}
+                              aria-label={`Editar ${row[c.name]}`}
+                            >
+                              <Pencil />
+                            </Button>
+                          </ActionHint>
                           {row.status === "inactive" ? (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => void restore(row)}
-                              aria-label={`Restaurar ${row[c.name]}`}
-                            >
-                              <ArchiveRestore />
-                            </Button>
+                            <ActionHint disabled={false} message="Restaurar cadastro">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => void restore(row)}
+                                aria-label={`Restaurar ${row[c.name]}`}
+                              >
+                                <ArchiveRestore />
+                              </Button>
+                            </ActionHint>
                           ) : (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => void startAction("archive", row)}
-                              aria-label={`Arquivar ${row[c.name]}`}
-                            >
-                              <Archive />
-                            </Button>
+                            <ActionHint disabled={false} message="Arquivar cadastro">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => void startAction("archive", row)}
+                                aria-label={`Arquivar ${row[c.name]}`}
+                              >
+                                <Archive />
+                              </Button>
+                            </ActionHint>
                           )}
                           {canDelete && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive"
-                              onClick={() => void startAction("delete", row)}
-                              aria-label={`Excluir ${row[c.name]}`}
-                            >
-                              <Trash2 />
-                            </Button>
+                            <ActionHint disabled={false} message="Excluir cadastro">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive"
+                                onClick={() => void startAction("delete", row)}
+                                aria-label={`Excluir ${row[c.name]}`}
+                              >
+                                <Trash2 />
+                              </Button>
+                            </ActionHint>
                           )}
                         </div>
                       </td>
