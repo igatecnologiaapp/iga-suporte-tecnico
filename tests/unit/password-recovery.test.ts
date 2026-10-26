@@ -74,7 +74,7 @@ function authFixture(
     verifyError?: boolean;
     mismatch?: boolean;
     changedUser?: boolean;
-    updateError?: boolean;
+    updateError?: unknown;
     updateThrow?: boolean;
   } = {},
 ) {
@@ -193,4 +193,26 @@ test("short password and sanitized update failure do not announce success", asyn
       false,
     );
   }
+});
+
+test("same-password code gives safe guidance and allows retry in the isolated session", async () => {
+  const f = authFixture({ updateError: { code: "same_password", message: "provider-secret" } });
+  const session = await initializePasswordResetSession(grant(), () => f.auth);
+  await assert.rejects(session.complete("synthetic-password"), /diferente da senha atual/);
+  assert.equal(
+    f.calls.some((c) => c.action === "logout"),
+    false,
+  );
+  f.auth.updateUser = async () => ({ error: null });
+  await session.complete("different-synthetic-password");
+  assert.equal(f.calls.filter((c) => c.action === "logout").length, 1);
+});
+test("provider message alone never bypasses sanitized error handling", async () => {
+  const f = authFixture({ updateError: { message: "same_password provider-secret" } });
+  const session = await initializePasswordResetSession(grant(), () => f.auth);
+  await assert.rejects(session.complete("synthetic-password"), (error: Error) => {
+    assert.match(error.message, /Não foi possível atualizar/);
+    assert.doesNotMatch(error.message, /provider-secret|same_password/);
+    return true;
+  });
 });

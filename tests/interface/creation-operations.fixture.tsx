@@ -1,3 +1,6 @@
+import { AdminAudit } from "../../src/components/iga/AdminAudit";
+import { Input } from "../../src/components/ui/input";
+import { Label } from "../../src/components/ui/label";
 import { useEffect, useState } from "react";
 import { AdminCreationOperations } from "../../src/components/iga/AdminCreationOperations";
 import { adminUserCreationSchema, type CreationOperation } from "../../src/lib/admin-user-creation";
@@ -37,7 +40,7 @@ export function Fixture() {
   useEffect(() => setReady(true), []);
   const [busyId, setBusyId] = useState<string | null>(null);
   return (
-    <div data-ready={ready}>
+    <div data-ready={ready} className="mx-auto max-w-4xl space-y-6 p-4">
       <AdminCreationOperations
         operations={operations}
         busyId={busyId}
@@ -50,6 +53,37 @@ export function Fixture() {
           setBusyId(id);
         }}
       />
+      <AdminAudit
+        records={[
+          {
+            id: "recent",
+            action: "modules_changed",
+            actor_name: "Administrador de teste",
+            target_name: "Conta de teste recente",
+            created_at: new Date(Date.now() - 300_000).toISOString(),
+            old_value: { modules: ["tickets"] },
+            new_value: { modules: ["tickets", "contacts"] },
+          },
+          {
+            id: "old",
+            action: "user_updated",
+            actor_name: "Administrador de teste",
+            target_name: "Conta de teste anterior",
+            created_at: "2020-01-01T12:00:00Z",
+            new_value: {
+              email: "long-fictitious-address-for-mobile-overflow-check@iga-test.example",
+            },
+          },
+        ]}
+      />
+      <section className="rounded-md border bg-card p-5">
+        <Label htmlFor="sample-name">Nome</Label>
+        <Input id="sample-name" placeholder="Nome do usuário" />
+        <Label htmlFor="sample-role">Perfil de acesso</Label>
+        <select id="sample-role" className="form-control">
+          <option>Visualização</option>
+        </select>
+      </section>
     </div>
   );
 }

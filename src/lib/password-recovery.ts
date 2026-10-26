@@ -108,10 +108,19 @@ export async function initializePasswordResetSession(
         if (!current || current.error || current.data.user?.id !== expectedId)
           throw new Error(invalidLink);
         const updated = await auth.updateUser({ password }).catch(() => ({ error: true }));
-        if (updated.error)
+        if (updated.error) {
+          if (
+            typeof updated.error === "object" &&
+            "code" in updated.error &&
+            updated.error.code === "same_password"
+          )
+            throw new Error(
+              "A nova senha deve ser diferente da senha atual. Escolha outra senha e tente novamente.",
+            );
           throw new Error(
             "Não foi possível atualizar a senha. Solicite novas instruções de recuperação.",
           );
+        }
         used = true;
         // Only the isolated link session is closed; the main browser login is untouched.
         await auth.signOut({ scope: "local" }).catch(() => undefined);

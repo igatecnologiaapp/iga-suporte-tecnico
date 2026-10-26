@@ -72,7 +72,7 @@ test("feedback distinguishes incomplete creation and unconfirmed delivery", asyn
   );
   assert.equal(
     creationFeedback({ ...base, status: "provisioned", invitation: "activated" }).kind,
-    "success",
+    "info",
   );
 });
 

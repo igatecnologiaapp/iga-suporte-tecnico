@@ -88,8 +88,9 @@ export function creationFeedback(result: CreationResult) {
     };
   if (result.invitation === "activated")
     return {
-      kind: "success" as const,
-      message: "Usuário cadastrado e e-mail já confirmado. Nenhum novo convite foi enviado.",
+      kind: "info" as const,
+      message:
+        "Esta conta já tem o e-mail confirmado. Nenhum novo convite foi enviado. Para trocar a senha, use a recuperação na lista de usuários.",
     };
   return {
     kind: "warning" as const,

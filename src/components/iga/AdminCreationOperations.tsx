@@ -1,5 +1,6 @@
 import type { CreationOperation } from "../../lib/admin-user-creation";
 import { Button } from "../ui/button";
+import { ActionHint } from "./ActionHint";
 
 const labels = {
   not_requested: "Convite ainda não solicitado",
@@ -33,9 +34,9 @@ export function AdminCreationOperations({
         {operations.map((op) => (
           <div
             key={op.operationId}
-            className="flex flex-wrap items-center justify-between gap-3 py-3"
+            className="flex flex-col items-start justify-between gap-3 py-3 sm:flex-row sm:items-center"
           >
-            <div>
+            <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
               <p className="font-medium">{op.payload.fullName}</p>
               <p className="text-sm text-muted-foreground">{op.payload.email}</p>
               <p className="text-sm" role="status">
@@ -43,23 +44,49 @@ export function AdminCreationOperations({
                   ? "Cadastro pendente — acesso ainda bloqueado"
                   : labels[op.deliveryState]}
               </p>
+              {op.stage === "provisioned" && op.deliveryState === "activated" && (
+                <p className="mt-1 max-w-lg text-xs text-muted-foreground">
+                  Nenhum novo convite será enviado. Para trocar a senha, use a recuperação na lista
+                  de usuários.
+                </p>
+              )}
             </div>
             {op.stage === "reserved" ? (
-              <Button
-                variant="outline"
+              <ActionHint
                 disabled={busyId !== null}
-                onClick={() => onResume(op.operationId)}
+                message={
+                  busyId !== null
+                    ? "Aguarde a operação em andamento terminar."
+                    : "Concluir este cadastro sem criar outra conta."
+                }
               >
-                Retomar cadastro
-              </Button>
+                <Button
+                  variant="outline"
+                  disabled={busyId !== null}
+                  onClick={() => onResume(op.operationId)}
+                >
+                  Retomar cadastro
+                </Button>
+              </ActionHint>
             ) : (
-              <Button
-                variant="outline"
+              <ActionHint
                 disabled={busyId !== null || op.deliveryState === "activated"}
-                onClick={() => onResend(op.operationId)}
+                message={
+                  op.deliveryState === "activated"
+                    ? "E-mail já confirmado. Use a recuperação de senha na lista de usuários."
+                    : busyId !== null
+                      ? "Aguarde a operação em andamento terminar."
+                      : "Enviar outro convite. O link anterior será substituído."
+                }
               >
-                Reenviar convite
-              </Button>
+                <Button
+                  variant="outline"
+                  disabled={busyId !== null || op.deliveryState === "activated"}
+                  onClick={() => onResend(op.operationId)}
+                >
+                  Reenviar convite
+                </Button>
+              </ActionHint>
             )}
           </div>
         ))}

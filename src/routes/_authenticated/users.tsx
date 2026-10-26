@@ -1,3 +1,5 @@
+import { AdminAudit, type AdminAuditRecord } from "@/components/iga/AdminAudit";
+import { ActionHint } from "@/components/iga/ActionHint";
 import { AdminCreationOperations } from "@/components/iga/AdminCreationOperations";
 import { adminUserCreationSchema, creationFeedback, type CreationOperation, type CreationResult } from "@/lib/admin-user-creation";
 import { canRequestPasswordRecovery } from "@/lib/password-recovery";
@@ -33,7 +35,7 @@ type AdminUser = { id: string; full_name: string; phone: string | null; status: 
 function Users() {
   const { user, role, isPrimary } = Route.useRouteContext();
   const isAdmin = role === "admin";
-  const [rows, setRows] = useState<AdminUser[]>([]); const [techs, setTechs] = useState<any[]>([]); const [audit, setAudit] = useState<any[]>([]);
+  const [rows, setRows] = useState<AdminUser[]>([]); const [techs, setTechs] = useState<any[]>([]); const [audit, setAudit] = useState<AdminAuditRecord[]>([]);
   const [open, setOpen] = useState(false); const [editing, setEditing] = useState<AdminUser | null>(null); const [busy, setBusy] = useState(false); const [newRole, setNewRole] = useState("viewer"); const [mods, setMods] = useState<string[]>([]);
 
   const [creationId, setCreationId] = useState("");
@@ -45,7 +47,7 @@ function Users() {
   async function load() {
     try {
       const [users, technicians, logs, creations] = await Promise.all([listAdminUsers(), listTechnicianOptions(), listAdminAudit(), isPrimary ? listAdminUserCreations() : Promise.resolve([])]);
-      setRows(users as AdminUser[]); setTechs(technicians as any[]); setAudit(logs as any[]); setOperations(creations);
+      setRows(users as AdminUser[]); setTechs(technicians as any[]); setAudit(logs as AdminAuditRecord[]); setOperations(creations);
     } catch (error) { toast.error(errorMessage(error)); }
   }
   useEffect(() => { if (isAdmin) void load(); }, [isAdmin, isPrimary]);
@@ -120,7 +122,19 @@ function Users() {
     {isPrimary && <AdminCreationOperations operations={operations} busyId={operationBusyId} onResume={id => void continueCreation(id, false)} onResend={id => void continueCreation(id, true)} />}
 
     {rows.length === 0 ? <Empty>Nenhum usuário encontrado.</Empty> : <div className="overflow-hidden rounded-md border bg-card"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/60 text-left"><tr><th className="px-4 py-3">Nome</th><th className="px-4 py-3">E-mail</th><th className="px-4 py-3">Perfil</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Técnico vinculado</th><th className="px-4 py-3">Último acesso</th><th className="px-4 py-3">Criado em</th><th className="px-4 py-3 text-right">Ações</th></tr></thead><tbody>
-      {rows.map(r => <tr key={r.id} className="border-t">
+      {rows.map(r => {
+        const pending = operations.some(op => op.userId === r.id && op.stage === "reserved");
+        const resetDisabled = resettingId !== null || !canReset(r);
+        const resetHint = r.id === user.id
+          ? "A recuperação por esta ação é destinada a outra conta, não à sua própria."
+          : !canReset(r)
+            ? "Somente o Administrador Principal pode solicitar recuperação para esta conta administrativa."
+            : resettingId !== null
+              ? "Aguarde a solicitação de recuperação em andamento terminar."
+              : "Enviar instruções de recuperação para o e-mail deste usuário.";
+        const statusDisabled = r.id === user.id || r.is_primary;
+        const statusHint = r.is_primary ? "O Administrador Principal não pode ser desativado." : r.id === user.id ? "Você não pode desativar sua própria conta." : r.status === "active" ? "Bloquear o acesso deste usuário à aplicação." : "Permitir novamente o acesso deste usuário à aplicação.";
+        return <tr key={r.id} className="border-t">
         <td className="px-4 py-3 font-medium">{r.full_name || "Sem nome"}{r.phone && <span className="block text-xs text-muted-foreground">{r.phone}</span>}</td>
         <td className="px-4 py-3 text-muted-foreground">{r.email || "—"}</td>
         <td className="px-4 py-3">{r.is_primary ? "Administrador Principal" : (roleLabels[r.role] ?? r.role)}<span className="block text-xs text-muted-foreground">{r.is_primary ? "Todos os módulos" : `${r.modules.length} módulo(s)`}</span></td>
@@ -128,18 +142,20 @@ function Users() {
         <td className="px-4 py-3 text-muted-foreground">{r.technician_name || "—"}</td>
         <td className="px-4 py-3 text-muted-foreground">{formatDate(r.last_sign_in_at)}</td>
         <td className="px-4 py-3 text-muted-foreground">{formatDate(r.created_at)}</td>
-        <td className="px-4 py-3"><div className="flex justify-end gap-1"><Button size="sm" variant="ghost" disabled={operations.some(op => op.userId === r.id && op.stage === "reserved")} onClick={() => startEdit(r)}><Pencil />Editar</Button><Button size="sm" variant="ghost" onClick={() => void resetPassword(r)} disabled={resettingId !== null || !canReset(r)} title={canReset(r) ? "Enviar instruções de recuperação por e-mail" : "Recuperação indisponível para este usuário"} aria-label="Enviar instruções de recuperação por e-mail"><KeyRound /></Button><Button size="sm" variant="ghost" onClick={() => void toggleStatus(r)} disabled={r.id === user.id || r.is_primary}>{r.status === "active" ? "Desativar" : "Reativar"}</Button></div></td>
-      </tr>)}
+        <td className="px-4 py-3"><div className="flex justify-end gap-1">
+          <ActionHint disabled={pending} message={pending ? "Retome o cadastro pendente antes de editar este usuário." : "Editar os dados deste usuário."}>
+            <Button size="sm" variant="ghost" disabled={pending} onClick={() => startEdit(r)}><Pencil />Editar</Button>
+          </ActionHint>
+          <ActionHint disabled={resetDisabled} message={resetHint}>
+            <Button size="sm" variant="ghost" onClick={() => void resetPassword(r)} disabled={resetDisabled} aria-label={`Recuperar senha de ${r.full_name || "usuário"}`}><KeyRound />Recuperar senha</Button>
+          </ActionHint>
+          <ActionHint disabled={statusDisabled} message={statusHint}>
+            <Button size="sm" variant="ghost" className={r.status === "active" ? "hover:bg-destructive/10 hover:text-destructive" : undefined} onClick={() => void toggleStatus(r)} disabled={statusDisabled}>{r.status === "active" ? "Desativar" : "Reativar"}</Button>
+          </ActionHint>
+        </div></td>
+      </tr>; })}
     </tbody></table></div></div>}
 
-    <div className="rounded-md border bg-card p-5"><h2 className="font-semibold">Auditoria administrativa</h2>{audit.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Nenhuma alteração administrativa registrada.</p> : <div className="mt-4 divide-y">{audit.map(a => <div key={a.id} className="py-3 text-sm"><p className="font-medium">{auditLabels[a.action] ?? a.action}{a.target_name !== "—" ? ` · ${a.target_name}` : ""}</p><p className="text-xs text-muted-foreground">por {a.actor_name} em {formatDate(a.created_at)}{a.old_value || a.new_value ? ` · de ${JSON.stringify(a.old_value)} para ${JSON.stringify(a.new_value)}` : ""}</p></div>)}</div>}</div>
+    <AdminAudit records={audit} />
   </Page>;
 }
-
-const auditLabels: Record<string, string> = {
-  user_creation_reserved: "Cadastro reservado", user_invitation_requested: "Convite solicitado", user_invitation_accepted: "Envio de convite aceito", user_invitation_failed: "Envio de convite recusado", user_invitation_unknown: "Envio de convite não confirmado", user_invitation_activated: "E-mail já confirmado",
-  user_created: "Usuário criado", user_updated: "Dados atualizados", role_changed: "Perfil de acesso alterado",
-  user_activated: "Usuário ativado", user_deactivated: "Usuário desativado",
-  technician_linked: "Técnico vinculado", technician_unlinked: "Técnico desvinculado",
-  password_reset_requested: "Recuperação solicitada", password_reset_email_requested: "Envio de recuperação aceito", password_reset_failed: "Envio de recuperação não confirmado", modules_changed: "Módulos permitidos alterados",
-};
