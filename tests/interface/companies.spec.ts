@@ -417,6 +417,7 @@ test("status counts and listing share search/category scope without changing rec
     "true",
   );
   await expect(group.getByRole("button", { name: "Todas 4", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
   await group.getByRole("button", { name: "Inativas / Arquivadas 1", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Editar Arquivo Sintético", exact: true }),
@@ -425,7 +426,9 @@ test("status counts and listing share search/category scope without changing rec
     page.getByRole("button", { name: "Editar Alfa Sintética", exact: true }),
   ).toHaveCount(0);
   await expect(page.locator("tbody")).toContainText("Inativo / Arquivado");
+  await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: /^Todas / }).click();
+  await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
   await page
     .getByRole("textbox", { name: "Pesquisar empresas por nome, documento ou domínio" })
     .fill("alfa");
@@ -438,10 +441,10 @@ test("status counts and listing share search/category scope without changing rec
   await group.getByRole("button", { name: "Inativas / Arquivadas 0", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Nenhum cadastro encontrado");
   await page.getByRole("button", { name: "Limpar filtros", exact: true }).click();
-  await expect(group.getByRole("button", { name: "Ativas 3", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
+  await expect(
+    group.getByRole("button", { name: "Inativas / Arquivadas 1", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("combobox", { name: "Filtrar por categoria" })).toHaveValue("");
   expect(await page.evaluate(() => window.testWrites.length)).toBe(0);
 });
@@ -466,8 +469,14 @@ test("advanced domain filters combine with status and restore natural name order
   ]);
   await expect(page.getByRole("button", { name: /^Mais filtros/ })).toContainText("2");
   await page.getByRole("button", { name: "Limpar filtros", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Todas 4", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await expect(page.locator("tbody tr td:first-child")).toHaveText([
     "Alfa Sintética",
+    "Arquivo Sintético",
     "Beta Sintética",
     "Cliente sem domínio",
   ]);

@@ -23,9 +23,7 @@ export function CompanyToolbar({
 }) {
   const [open, setOpen] = useState(false);
   const advancedCount = Number(filters.sort !== "name_asc") + Number(filters.domain !== "all");
-  const hasFilters = Boolean(
-    filters.search || filters.categoryId || advancedCount || filters.status !== "active",
-  );
+  const hasFilters = Boolean(filters.search.trim() || filters.categoryId || advancedCount);
   return (
     <div className="company-list-controls space-y-3">
       <div className="resource-toolbar company-toolbar">
@@ -164,7 +162,7 @@ export function CompanyToolbar({
               onChange({
                 search: "",
                 categoryId: "",
-                status: "active",
+                status: filters.status,
                 sort: "name_asc",
                 domain: "all",
               })

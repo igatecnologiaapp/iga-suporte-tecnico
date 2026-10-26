@@ -17,7 +17,8 @@ conferência manual. Sem publicação.
   criação recente/antiga e domínio preenchido/vazio. Texto livre no campo Domínio
   também conta como preenchido; seu conteúdo não é normalizado nem alterado.
   Seleções atualizam a lista imediatamente; Concluir fecha o painel e Limpar
-  filtros restaura pesquisa/categoria vazias, Ativas e ordenação A–Z.
+  filtros restaura pesquisa/categoria vazias e ordenação A–Z, preservando a
+  situação selecionada.
 - Categoria conserva categorias e subcategorias, incluindo prefixo da categoria
   principal e indicação de inativa quando aplicável.
 - Ativo recebe indicador verde; Inativo / Arquivado recebe âmbar. As duas condições
@@ -102,3 +103,18 @@ lote preservam o histórico da primeira versão.
 Para aplicar apenas estes adendos: atualizar Git, copiar `src/styles.css` para a
 aplicação isolada e reiniciar Vite pelo launcher privado. Sem migration. Conferência
 manual do operador ainda pendente para as barras e demais adendos.
+
+
+## Limpar filtros independente da situação — 26/10/2026
+
+A pedido do operador, a seleção rápida Todas/Ativas/Inativas não ativa Limpar
+filtros. O botão aparece somente com pesquisa não vazia, categoria ou filtros
+adicionais (ordenação/domínio). Ao limpar, mantém a situação escolhida e restaura
+os demais campos. Pesquisa só com espaços não ativa o botão, coerente com a
+filtragem que ignora espaços externos.
+
+Três verificações existentes de filtros/contadores/ordenação foram ajustadas e
+passaram: ausência de Limpar em cada situação sem filtros, limpeza de pesquisa e
+categoria mantendo Inativas, limpeza de opções avançadas mantendo Todas e
+ordenação A–Z restaurada, sem gravações. Capturas anteriores são históricas.
+Aplicar junto ao CSS do adendo anterior, copiando também CompanyToolbar.tsx.
