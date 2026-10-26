@@ -79,7 +79,7 @@ export function CompanyToolbar({
           </PopoverTrigger>
           <PopoverContent
             align="end"
-            className="w-80 max-w-[calc(100vw_-_2rem)] space-y-4"
+            className="w-80 max-w-[calc(100vw_-_2rem)] space-y-4 bg-card text-card-foreground"
             aria-label="Mais filtros de empresas"
           >
             <h2 className="text-sm font-semibold">Refinar listagem</h2>

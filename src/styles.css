@@ -87,6 +87,8 @@
   --ring: var(--primary);
   --list-selection: oklch(0.53 0.19 252);
   --list-selection-foreground: oklch(0.99 0.002 250);
+  --filter-count-background: oklch(0.28 0.055 255);
+  --filter-count-foreground: oklch(0.98 0.005 250);
   --record-active: oklch(0.4 0.12 155);
   --record-active-surface: oklch(0.89 0.075 155);
   --record-active-border: oklch(0.7 0.12 155);
@@ -450,13 +452,11 @@
   height: 1.5rem;
   place-items: center;
   border-radius: 999px;
-  background: var(--muted);
+  background: var(--filter-count-background);
+  color: var(--filter-count-foreground);
   padding-inline: 0.4rem;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
-}
-.company-status-filter[aria-pressed="true"] .company-filter-count {
-  background: color-mix(in oklab, oklch(0 0 0) 16%, transparent);
 }
 .record-status {
   display: inline-flex;

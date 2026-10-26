@@ -155,3 +155,31 @@ Não houve alteração de banco, permissões ou contratos de domínio.
 
 Aplicar os ajustes pendentes copiando styles.css, ResourcePage.tsx e CompanyToolbar.tsx
 para a aplicação isolada e reiniciando Vite. Conferência manual no WSL pendente.
+
+
+## Contadores e painel de filtros harmonizados — 26/10/2026
+
+Contadores de situação usam preenchimento azul-escuro sólido e números claros,
+com a mesma cor antes/depois de selecionar o filtro nos dois temas. Removido o
+preenchimento translúcido que misturava o contador ao fundo azul da seleção.
+O painel Mais filtros usa os mesmos tokens de fundo/texto dos cartões, inclusive
+no escuro, preservando os demais popovers do sistema.
+
+Seis verificações responsivas existentes passaram em ambos os temas e larguras
+360/768/1440; lint de CompanyToolbar passou. Inspeção adicional em Chromium
+confirmou igualdade das cores dos três contadores antes/depois de selecionar,
+fundo do painel idêntico ao do cartão nos dois temas, sem gravações sintéticas.
+Capturas em `../screenshots/company-filter-panel-{light,dark}.png`.
+Atualização: copiar styles.css e CompanyToolbar.tsx e reiniciar pelo launcher.
+
+### Situação da programação de Empresas/Clientes
+
+As funcionalidades combinadas deste lote estão implementadas: organização,
+filtros de situação/contadores, categoria/pesquisa, filtros adicionais/ordenação,
+cores dos status, temas, dicas das ações, destaque destrutivo, recuperação visual
+de domínio vazio, barras de rolagem e independência do Limpar filtros.
+Permanecem sem confirmação manual explícita do operador: mensagem específica
+para CNPJ/CPF duplicado e cancelamento da confirmação de saída, além da revisão
+dos retoques mais recentes. Têm cobertura isolada; não são novas implementações
+pendentes. Próxima etapa combinada é a modernização visual de Contatos, com
+vínculos/permissões preservados e filtros próprios; não foi iniciada neste adendo.
