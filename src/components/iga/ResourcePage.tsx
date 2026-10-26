@@ -831,6 +831,7 @@ export function ResourcePage({
   );
 }
 function DomainValue({ value }: { value: string }) {
+  if (!value.trim()) return null;
   const href = normalizeDomain(value);
   return (
     <div className="mt-0.5 text-xs">

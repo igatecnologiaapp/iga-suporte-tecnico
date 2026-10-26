@@ -66,6 +66,7 @@
   color-scheme: light;
   --radius: 0.75rem;
   --background: oklch(0.978 0.009 248);
+  --app-background: oklch(0.955 0.025 248);
   --foreground: oklch(0.2 0.035 255);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
@@ -87,11 +88,11 @@
   --list-selection: oklch(0.53 0.19 252);
   --list-selection-foreground: oklch(0.99 0.002 250);
   --record-active: oklch(0.4 0.12 155);
-  --record-active-surface: oklch(0.96 0.03 155);
-  --record-active-border: oklch(0.82 0.08 155);
-  --record-inactive: oklch(0.43 0.1 75);
-  --record-inactive-surface: oklch(0.97 0.035 85);
-  --record-inactive-border: oklch(0.84 0.08 85);
+  --record-active-surface: oklch(0.89 0.075 155);
+  --record-active-border: oklch(0.7 0.12 155);
+  --record-inactive: oklch(0.46 0.19 25);
+  --record-inactive-surface: oklch(0.9 0.06 25);
+  --record-inactive-border: oklch(0.74 0.12 25);
   --scrollbar-track: oklch(0.95 0.012 248);
   --scrollbar-thumb: oklch(0.6 0.035 240);
   --scrollbar-thumb-hover: oklch(0.5 0.05 245);
@@ -113,6 +114,7 @@
 .dark {
   color-scheme: dark;
   --background: oklch(0.165 0.025 252);
+  --app-background: var(--background);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.215 0.029 252);
   --card-foreground: oklch(0.984 0.003 247.858);
@@ -136,9 +138,9 @@
   --record-active: oklch(0.8 0.15 155);
   --record-active-surface: oklch(0.27 0.04 160);
   --record-active-border: oklch(0.4 0.065 155);
-  --record-inactive: oklch(0.84 0.15 85);
-  --record-inactive-surface: oklch(0.27 0.045 85);
-  --record-inactive-border: oklch(0.43 0.06 85);
+  --record-inactive: oklch(0.78 0.17 25);
+  --record-inactive-surface: oklch(0.28 0.06 25);
+  --record-inactive-border: oklch(0.45 0.12 25);
   --scrollbar-track: oklch(0.2 0.025 252);
   --scrollbar-thumb: oklch(0.55 0.04 240);
   --scrollbar-thumb-hover: oklch(0.68 0.06 240);
@@ -165,7 +167,7 @@
   }
 
   body {
-    background-color: var(--color-background);
+    background-color: var(--app-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     letter-spacing: 0;
@@ -250,7 +252,7 @@
 }
 
 @utility bg-auth {
-  background-color: var(--color-background);
+  background-color: var(--app-background);
   background-image:
     linear-gradient(
       135deg,
@@ -301,7 +303,7 @@
       color-mix(in oklab, var(--primary) 5%, transparent),
       transparent 45%
     ),
-    var(--background);
+    var(--app-background);
 }
 .shell-header {
   background: color-mix(in oklab, var(--card) 92%, transparent);

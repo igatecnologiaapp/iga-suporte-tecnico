@@ -118,3 +118,40 @@ passaram: ausência de Limpar em cada situação sem filtros, limpeza de pesquis
 categoria mantendo Inativas, limpeza de opções avançadas mantendo Todas e
 ordenação A–Z restaurada, sem gravações. Capturas anteriores são históricas.
 Aplicar junto ao CSS do adendo anterior, copiando também CompanyToolbar.tsx.
+
+
+## Fundo claro, status vermelho e domínio vazio — 26/10/2026
+
+Solicitação posterior do operador: Inativo/Arquivado vermelho nos dois temas,
+fundo geral claro levemente azul e preenchimento dos status mais visível no
+claro. Implementação exclusivamente de apresentação:
+
+- Novo token `--app-background` para o fundo da página/autenticação, separado de
+  `--background` usado por controles e janelas. No claro recebe azul suave;
+  no escuro mantém a cor anterior. Cartões e tabelas seguem brancos no claro,
+  sem mudar a paleta de campos, janelas, popovers ou menu lateral.
+- Superfície/borda verde do status Ativo reforçadas no claro. Inativo/Arquivado
+  usa preenchimento vermelho suave e texto vermelho escuro no claro; versão
+  ajustada de vermelho no escuro. Indicador do filtro acompanha o mesmo estado,
+  mantendo sua cor quando selecionado. Tokens de status de registros continuam
+  compartilhados; não altera prioridade/situação de chamados.
+- Após esclarecimento explícito, operador escolheu manter a empresa sem domínio
+  na tabela e ocultar somente a informação vazia. Não há nova restrição de linhas,
+  alteração de contadores nem mudança de filtro padrão. Valores null/vazios já
+  não produziam a linha; DomainValue agora também ignora texto só com espaços.
+  Formulário mantém o campo para preenchimento e texto livre existente permanece.
+
+Seis verificações responsivas passaram em 360/768/1440 e ambos os temas. Três
+regressões de domínio/gravação passaram, incluindo criação sem domínio, limpeza
+explícita mantendo a empresa visível, ausência do rótulo vazio, preservação de
+texto livre e categorias. Em inspeção adicional com serviços sintéticos, empresa
+com domínio só de espaços permaneceu visível sem rótulo Domínio, nos dois temas,
+sem gravação. Capturas em `../screenshots/theme-status-{light,dark}.png`.
+
+Contraste texto/fundo medido em Chromium: Ativo 6,31:1 claro e 8,48:1 escuro;
+Inativo 5,57:1 e 6,39:1. Cartão claro manteve fundo branco; a cor escura da área
+de trabalho foi preservada. Medições não equivalem a auditoria completa WCAG.
+Não houve alteração de banco, permissões ou contratos de domínio.
+
+Aplicar os ajustes pendentes copiando styles.css, ResourcePage.tsx e CompanyToolbar.tsx
+para a aplicação isolada e reiniciando Vite. Conferência manual no WSL pendente.

@@ -117,6 +117,11 @@ test("explicit clearing and creation without domain remain allowed", async ({ pa
   await page.getByRole("button", { name: "Salvar alterações", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(await page.evaluate(() => window.testDatabase.companies[0]!.domain)).toBeNull();
+  const clearedRow = page
+    .getByRole("row")
+    .filter({ has: page.getByRole("button", { name: "Editar Alfa Sintética", exact: true }) });
+  await expect(clearedRow).toBeVisible();
+  await expect(clearedRow).not.toContainText("Domínio:");
   await page.getByRole("button", { name: "Novo cadastro" }).click();
   await page.getByLabel("Razão Social", { exact: true }).fill("Nova Empresa Sintética");
   await page.getByLabel("Nome Fantasia", { exact: true }).fill("Nova Sintética");
@@ -128,6 +133,11 @@ test("explicit clearing and creation without domain remain allowed", async ({ pa
       () => window.testDatabase.companies.find((row) => row.id === "synthetic-new")!.domain,
     ),
   ).toBeNull();
+  const newRow = page
+    .getByRole("row")
+    .filter({ has: page.getByRole("button", { name: "Editar Nova Sintética", exact: true }) });
+  await expect(newRow).toBeVisible();
+  await expect(newRow).not.toContainText("Domínio:");
 });
 test("filters by linked subcategory and preserves one default main category", async ({ page }) => {
   await page.goto("/companies");
