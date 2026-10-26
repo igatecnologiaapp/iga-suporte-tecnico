@@ -8,6 +8,8 @@ interface Query {
   select(): Query;
   order(): Query;
   limit(): Query;
+  range(start: number, end: number): Query;
+  gt(key: string, value: number): Query;
   eq(key: string, value: unknown): Query;
   is(key: string, value: unknown): Query;
   not(key: string, op: string, values: string): Query;
@@ -113,6 +115,9 @@ export const database = {
     last_activity_at: "2026-01-20T12:00:00Z",
     resolved_at: index < 6 ? null : "2026-01-21T12:00:00Z",
   })),
+  conversations: params.has("inbox-badge")
+    ? Array.from({ length: 501 }, (_, index) => ({ id: `conversation-${index}`, unread_count: 1 }))
+    : [],
   notifications: [],
 };
 if (params.has("pagination")) {
@@ -136,15 +141,27 @@ Object.assign(window, {
   testWrites: writes,
   testPageReads: [],
   testPageResponses: [],
+  testInboxReads: [],
 });
 function query(table: string) {
   let operation = "select";
   let payload: Row | Row[] = {};
   const filters: ((row: Row) => boolean)[] = [];
+  let start = 0,
+    end = Infinity;
   const api: Query = {
     select: () => api,
     order: () => api,
     limit: () => api,
+    range: (from, to) => {
+      start = from;
+      end = to;
+      return api;
+    },
+    gt: (key, value) => {
+      filters.push((row) => Number(row[key]) > value);
+      return api;
+    },
     eq: (key, value) => {
       filters.push((row) => row[key] === value);
       return api;
@@ -182,6 +199,7 @@ function query(table: string) {
       return api;
     },
     then: async (resolve) => {
+      if (table === "conversations") window.testInboxReads.push({ start, end });
       if (params.has("loading")) await new Promise((r) => setTimeout(r, 1200));
       if (
         failOnce &&
@@ -233,7 +251,7 @@ function query(table: string) {
           )
             rows.push({ is_default: false, ...row });
         }
-      resolve({ data: selected, error: null });
+      resolve({ data: selected.slice(start, end + 1), error: null });
     },
   };
   return api;
@@ -358,5 +376,6 @@ declare global {
     testSignOutCalls?: number;
     testPageReads: Record<string, unknown>[];
     testPageResponses: Record<string, unknown>[];
+    testInboxReads: { start: number; end: number }[];
   }
 }

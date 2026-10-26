@@ -1,24 +1,20 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
-import { PAGE_SIZES, pageRange } from "../../lib/list-pagination";
+import { DEFAULT_PAGE_SIZE, pageRange } from "../../lib/list-pagination";
 export function TablePager({
   total,
   page,
-  pageSize,
   busy = false,
   label,
   onPage,
-  onPageSize,
 }: {
   total: number;
   page: number;
-  pageSize: number;
   busy?: boolean;
   label: string;
   onPage: (page: number) => void;
-  onPageSize: (size: number) => void;
 }) {
-  const range = pageRange(total, page, pageSize);
+  const range = pageRange(total, page, DEFAULT_PAGE_SIZE);
   return (
     <nav className="table-pager" aria-label={`Paginação de ${label}`}>
       <p className="text-xs text-muted-foreground" aria-live="polite">
@@ -55,19 +51,6 @@ export function TablePager({
         >
           <ChevronRight />
         </Button>
-        <select
-          className="form-control w-auto"
-          aria-label="Registros por página"
-          disabled={busy}
-          value={pageSize}
-          onChange={(event) => onPageSize(Number(event.target.value))}
-        >
-          {PAGE_SIZES.map((size) => (
-            <option key={size} value={size}>
-              {size} por página
-            </option>
-          ))}
-        </select>
       </div>
     </nav>
   );

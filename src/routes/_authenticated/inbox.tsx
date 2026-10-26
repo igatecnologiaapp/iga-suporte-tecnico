@@ -1,3 +1,4 @@
+import { notifyInboxUnreadChanged } from "@/lib/inbox-unread";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { companyCategoryOptions, type CompanyCategoryLink } from "@/lib/iga";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -77,7 +78,7 @@ function InboxPage() {
   }
   async function select(conversationId: string) {
     setSelected(conversationId); selectedRef.current = conversationId; setReply(""); await loadMessages(conversationId);
-    if (canOperateInbox) { try { await markConversationRead({ data: { conversationId } }); await loadConversations(); } catch { /* leitura opcional */ } }
+    if (canOperateInbox) { try { await markConversationRead({ data: { conversationId } }); notifyInboxUnreadChanged(); await loadConversations(); } catch { /* leitura opcional */ } }
   }
 
   // Atualização automática leve: apenas conversas e mensagens da conversa aberta, sem recarregar a página.
@@ -94,7 +95,7 @@ function InboxPage() {
         if (open) {
           await loadMessages(open);
           const row = data?.find(r => r.id === open);
-          if (row && row.unread_count > 0 && canOperateInbox) { try { await markConversationRead({ data: { conversationId: open } }); } catch { /* opcional */ } }
+          if (row && row.unread_count > 0 && canOperateInbox) { try { await markConversationRead({ data: { conversationId: open } }); notifyInboxUnreadChanged(); } catch { /* opcional */ } }
         }
       } finally { pollingRef.current = false; }
     }

@@ -27,7 +27,11 @@ export function Harness() {
         userName="Pessoa de Teste"
         role={viewer ? "Visualização" : admin ? "Administrador" : "Supervisor"}
         modules={
-          path === "/tickets" ? ["tickets", "companies", "contacts"] : ["companies", "contacts"]
+          new URLSearchParams(location.search).has("inbox-badge")
+            ? ["inbox", "companies", "contacts"]
+            : path === "/tickets"
+              ? ["tickets", "companies", "contacts"]
+              : ["companies", "contacts"]
         }
       >
         {path === "/tickets" ? (

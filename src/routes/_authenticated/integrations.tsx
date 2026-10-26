@@ -52,7 +52,7 @@ function IntegrationsPage() {
   const loadRequest = useRef(0);
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const pageSize = 5;
   const [info, setInfo] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
   async function load(test = false) {
@@ -228,13 +228,8 @@ function IntegrationsPage() {
             label="Log técnico"
             total={info.eventsTotal}
             page={page}
-            pageSize={pageSize}
             busy={busy}
             onPage={setPage}
-            onPageSize={(size) => {
-              setPageSize(size);
-              setPage(1);
-            }}
           />
         )}
       </section>

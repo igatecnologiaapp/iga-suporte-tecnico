@@ -779,10 +779,8 @@ export function ResourcePage({
             label={c.title}
             total={paged.data.total}
             page={paged.page}
-            pageSize={paged.pageSize}
             busy={loading}
             onPage={paged.setPage}
-            onPageSize={paged.setPageSize}
           />
         )}
       </div>

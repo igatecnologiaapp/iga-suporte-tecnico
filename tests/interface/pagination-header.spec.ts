@@ -17,9 +17,10 @@ test("company pages request five rows and preserve full totals", async ({ page }
   await expect(pager).toContainText("Mostrando 11 a 12 de 12 registros");
   await expect(page.locator("tbody tr")).toHaveCount(2);
   await expect(pager.getByRole("button", { name: "Próxima página", exact: true })).toBeDisabled();
-  await pager.getByLabel("Registros por página").selectOption("10");
-  await expect(pager).toContainText("Mostrando 1 a 10 de 12 registros");
-  await expect(page.locator("tbody tr")).toHaveCount(10);
+  await expect(pager.getByRole("combobox")).toHaveCount(0);
+  await pager.getByRole("button", { name: "Página anterior", exact: true }).click();
+  await expect(pager).toContainText("Mostrando 6 a 10 de 12 registros");
+  await expect(page.locator("tbody tr")).toHaveCount(5);
   const reads = await page.evaluate(() => window.testPageReads);
   expect(reads.some((read) => read["_page"] === 3 && read["_page_size"] === 5)).toBe(true);
   expect(

@@ -434,10 +434,8 @@ export function TicketsPage({
             label="Chamados"
             total={paged.data.total}
             page={paged.page}
-            pageSize={paged.pageSize}
             busy={paged.loading}
             onPage={paged.setPage}
-            onPageSize={paged.setPageSize}
           />
         )}
       </div>

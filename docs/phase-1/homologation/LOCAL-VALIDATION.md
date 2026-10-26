@@ -161,3 +161,11 @@ Operador escolheu explicitamente paginação também nas consultas ao banco.
 Implementação, verificações isoladas e comandos de instalação local estão em
 [PAGINATION-HEADER-ICONS.md](PAGINATION-HEADER-ICONS.md). Migration 0023 deve
 preceder a atualização da cópia da aplicação. Conferência manual no WSL pendente.
+
+## Sidebar, contadores e paginação fixa — 26/10/2026
+
+Implementados os ajustes pedidos de cores de contadores, marcador da aba ativa
+no menu recolhido, selo de não lidas na Caixa de Entrada e cinco registros fixos
+por página. Detalhes e comandos em
+[SIDEBAR-COUNTERS-FIXED-PAGES.md](SIDEBAR-COUNTERS-FIXED-PAGES.md).
+Não exige nova migration; conferência manual no Ubuntu pendente.

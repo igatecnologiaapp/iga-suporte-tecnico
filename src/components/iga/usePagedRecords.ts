@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PAGE_SIZES, pagedRecordsSchema } from "../../lib/list-pagination";
+import { DEFAULT_PAGE_SIZE, pagedRecordsSchema } from "../../lib/list-pagination";
 const empty = pagedRecordsSchema.parse({
   rows: [],
   total: 0,
@@ -25,9 +25,9 @@ export function usePagedRecords(
   }, [entity, search, debounced]);
   const filterKey = JSON.stringify({ ...filters, search: appliedSearch });
   const scope = JSON.stringify([entity, filterKey]);
-  const [selection, setSelection] = useState({ scope, page: 1, pageSize: 5 });
+  const [selection, setSelection] = useState({ scope, page: 1 });
   const page = selection.scope === scope ? selection.page : 1;
-  const pageSize = selection.pageSize;
+  const pageSize = DEFAULT_PAGE_SIZE;
   const [version, setVersion] = useState(0);
   const requestKey = JSON.stringify([scope, page, pageSize, version]);
   const [state, setState] = useState({
@@ -88,12 +88,5 @@ export function usePagedRecords(
     refresh,
     setPage: (value: number) =>
       setSelection((previous) => ({ ...previous, scope, page: Math.max(1, value) })),
-    setPageSize: (value: number) =>
-      setSelection((previous) => ({
-        ...previous,
-        scope,
-        page: 1,
-        pageSize: (PAGE_SIZES as readonly number[]).includes(value) ? value : 5,
-      })),
   };
 }

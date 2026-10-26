@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/iga/NotificationsBell";
 import { LogoutButton } from "@/components/iga/LogoutButton";
 import { useAutoHideHeader } from "@/components/iga/useAutoHideHeader";
+import { useInboxUnread } from "@/components/iga/useInboxUnread";
 import {
   Sheet,
   SheetContent,
@@ -79,6 +80,7 @@ export function AppShell({
   const [mobile, setMobile] = useState(false);
   const [dark, setDark] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
+  const inboxUnread = useInboxUnread(modules.includes("inbox"));
   const path = useRouterState({ select: (s) => s.location.pathname });
   const headerRef = useRef<HTMLElement>(null);
   const header = useAutoHideHeader(headerRef, path, mobile);
@@ -183,13 +185,18 @@ export function AppShell({
                           <Link
                             to={to}
                             aria-current={path.startsWith(to) ? "page" : undefined}
+                            aria-label={
+                              to === "/inbox" && inboxUnread > 0
+                                ? `${label}, ${inboxUnread} ${inboxUnread === 1 ? "mensagem não lida" : "mensagens não lidas"}`
+                                : label
+                            }
                             onClick={() => setMobile(false)}
                             className={cn(
                               "nav-item",
                               path.startsWith(to)
                                 ? "nav-item-active"
                                 : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                              compact ? "justify-center px-0" : "ml-2",
+                              compact ? "nav-item-compact justify-center px-0" : "ml-2",
                             )}
                           >
                             <Icon className="size-4 shrink-0" />
@@ -197,6 +204,11 @@ export function AppShell({
                               <span className="sr-only">{label}</span>
                             ) : (
                               <span className="truncate">{label}</span>
+                            )}
+                            {to === "/inbox" && inboxUnread > 0 && (
+                              <span aria-hidden="true" className="inbox-unread-badge">
+                                {inboxUnread > 99 ? "99+" : inboxUnread}
+                              </span>
                             )}
                           </Link>
                         </TooltipTrigger>

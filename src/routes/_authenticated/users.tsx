@@ -79,7 +79,7 @@ function Users() {
   const { user, role, isPrimary } = Route.useRouteContext();
   const isAdmin = role === "admin";
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const pageSize = 5;
   const [total, setTotal] = useState(0);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState<string | null>(null);
@@ -549,13 +549,8 @@ function Users() {
             label="Usuários"
             total={total}
             page={page}
-            pageSize={pageSize}
             busy={usersLoading}
             onPage={setPage}
-            onPageSize={(size) => {
-              setPageSize(size);
-              setPage(1);
-            }}
           />
         )}
       </div>
