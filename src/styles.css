@@ -83,6 +83,14 @@
   --border: oklch(0.87 0.018 252);
   --input: oklch(0.65 0.03 252);
   --ring: var(--primary);
+  --list-selection: oklch(0.53 0.19 252);
+  --list-selection-foreground: oklch(0.99 0.002 250);
+  --record-active: oklch(0.4 0.12 155);
+  --record-active-surface: oklch(0.96 0.03 155);
+  --record-active-border: oklch(0.82 0.08 155);
+  --record-inactive: oklch(0.43 0.1 75);
+  --record-inactive-surface: oklch(0.97 0.035 85);
+  --record-inactive-border: oklch(0.84 0.08 85);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -118,6 +126,14 @@
   --border: oklch(0.35 0.025 252);
   --input: oklch(0.52 0.025 252);
   --ring: var(--primary);
+  --list-selection: oklch(0.56 0.22 256);
+  --list-selection-foreground: oklch(0.99 0.002 250);
+  --record-active: oklch(0.8 0.15 155);
+  --record-active-surface: oklch(0.27 0.04 160);
+  --record-active-border: oklch(0.4 0.065 155);
+  --record-inactive: oklch(0.84 0.15 85);
+  --record-inactive-surface: oklch(0.27 0.045 85);
+  --record-inactive-border: oklch(0.43 0.06 85);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -305,6 +321,126 @@
   background: var(--card);
   padding: 1rem;
 }
+.company-list-controls {
+  container-type: inline-size;
+}
+.company-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.625rem;
+}
+.company-category-filter {
+  height: 2.5rem;
+  min-width: 0;
+}
+@container (min-width: 32rem) {
+  .company-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .company-toolbar > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+@container (min-width: 44rem) {
+  .company-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 15rem) auto;
+  }
+  .company-toolbar > :first-child {
+    grid-column: auto;
+  }
+}
+.company-status-filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0.6rem 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 160ms,
+    border-color 160ms,
+    color 160ms;
+}
+.company-status-filter:hover {
+  border-color: var(--primary);
+  background: var(--accent);
+}
+.company-status-filter[aria-pressed="true"],
+.resource-create-action {
+  border-color: transparent;
+  background: var(--list-selection);
+  color: var(--list-selection-foreground);
+}
+.company-status-filter[aria-pressed="true"]:hover,
+.resource-create-action:hover {
+  background: color-mix(in oklab, var(--list-selection) 92%, oklch(0 0 0));
+}
+.company-status-filter:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.company-filter-count {
+  display: inline-grid;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--muted);
+  padding-inline: 0.4rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.company-status-filter[aria-pressed="true"] .company-filter-count {
+  background: color-mix(in oklab, oklch(0 0 0) 16%, transparent);
+}
+.record-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.record-status-active {
+  color: var(--record-active);
+  background: var(--record-active-surface);
+  border-color: var(--record-active-border);
+}
+.record-status-inactive {
+  color: var(--record-inactive);
+  background: var(--record-inactive-surface);
+  border-color: var(--record-inactive-border);
+}
+.record-state-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.record-state-active {
+  color: var(--record-active);
+}
+.record-state-inactive {
+  color: var(--record-inactive);
+}
+.company-status-filter[aria-pressed="true"] .record-state-dot {
+  color: inherit;
+}
 .resource-table {
   position: relative;
 }
@@ -315,6 +451,12 @@
 .resource-table table {
   min-width: 36rem;
 }
+.company-table table {
+  min-width: 48rem;
+}
+.company-table th:first-child {
+  width: 24%;
+}
 .resource-table th {
   font-size: 0.7rem;
   letter-spacing: 0.04em;
@@ -324,6 +466,9 @@
 }
 .resource-table td {
   padding-block: 1.15rem;
+}
+.resource-table td + td {
+  border-left: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
 }
 .resource-table tbody tr:hover {
   background: color-mix(in oklab, var(--primary) 3%, var(--card));

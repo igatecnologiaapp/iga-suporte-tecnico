@@ -20,6 +20,7 @@ export const database = {
   companies: [
     {
       id: "company-a",
+      created_at: "2026-01-02T12:00:00Z",
       legal_name: "Empresa Alfa Sintética Ltda",
       trade_name: "Alfa Sintética",
       tax_id: "00000000000100",
@@ -31,6 +32,7 @@ export const database = {
     },
     {
       id: "company-b",
+      created_at: "2026-01-03T12:00:00Z",
       legal_name: "Empresa Beta Sintética Ltda",
       trade_name: "Beta Sintética",
       tax_id: "00000000000200",
@@ -39,11 +41,21 @@ export const database = {
     },
     {
       id: "company-c",
+      created_at: "2026-01-01T12:00:00Z",
       legal_name: "Empresa Arquivada Sintética",
       trade_name: "Arquivo Sintético",
       tax_id: "00000000000300",
       domain: "HTTPS://WWW.ARQUIVO.EXAMPLE/path",
       status: "inactive",
+    },
+    {
+      id: "company-no-domain",
+      created_at: "2026-01-04T12:00:00Z",
+      legal_name: "Cliente sintético sem domínio",
+      trade_name: "Cliente sem domínio",
+      tax_id: "00000000000500",
+      domain: null,
+      status: "active",
     },
   ],
   ticket_categories: [
@@ -53,9 +65,24 @@ export const database = {
     { id: "sub-b", name: "Subcategoria Beta", status: "active", parent_id: "cat-a" },
   ],
   company_ticket_categories: [
-    { company_id: "company-a", category_id: "cat-a", is_default: true },
-    { company_id: "company-a", category_id: "cat-b", is_default: false },
-    { company_id: "company-a", category_id: "sub-a", is_default: false },
+    {
+      company_id: "company-a",
+      created_at: "2026-01-02T12:00:00Z",
+      category_id: "cat-a",
+      is_default: true,
+    },
+    {
+      company_id: "company-a",
+      created_at: "2026-01-02T12:00:00Z",
+      category_id: "cat-b",
+      is_default: false,
+    },
+    {
+      company_id: "company-a",
+      created_at: "2026-01-02T12:00:00Z",
+      category_id: "sub-a",
+      is_default: false,
+    },
   ],
   notifications: [],
 };

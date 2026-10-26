@@ -25,6 +25,8 @@ import { domainFromForm, normalizeDomain } from "@/lib/company-domain";
 import { isCompanyTaxIdConflict, companyTaxIdConflictMessage } from "@/lib/company-save-feedback";
 import { CompanyFields } from "./CompanyFields";
 import { CompanyOverview } from "./CompanyOverview";
+import { CompanyToolbar } from "./CompanyToolbar";
+import { buildCompanyList, type CompanyListFilters } from "@/lib/company-list";
 import { Empty, Page, LoadState } from "./Page";
 import { StatusBadge } from "./StatusBadge";
 import { ActionHint } from "./ActionHint";
@@ -93,7 +95,13 @@ export function ResourcePage({
   const [links, setLinks] = useState<any[]>([]);
   const [selCats, setSelCats] = useState<string[]>([]);
   const [defCat, setDefCat] = useState("");
-  const [catFilter, setCatFilter] = useState("");
+  const [companyFilters, setCompanyFilters] = useState<CompanyListFilters>({
+    search: "",
+    categoryId: "",
+    status: "active",
+    sort: "name_asc",
+    domain: "all",
+  });
   const canLinkCats = role === "admin" || role === "supervisor";
 
   async function load() {
@@ -169,16 +177,18 @@ export function ResourcePage({
   useEffect(() => {
     void load();
   }, [kind]);
+  const companyList = useMemo(
+    () => buildCompanyList(rows, links, companyFilters),
+    [rows, links, companyFilters],
+  );
   const filtered = useMemo(
     () =>
-      rows
-        .filter((row) => showArchived || row.status !== "inactive")
-        .filter(
-          (row) =>
-            !catFilter || links.some((l) => l.company_id === row.id && l.category_id === catFilter),
-        )
-        .filter((row) => JSON.stringify(row).toLowerCase().includes(q.toLowerCase())),
-    [rows, q, showArchived, catFilter, links],
+      kind === "companies"
+        ? companyList.rows
+        : rows
+            .filter((row) => showArchived || row.status !== "inactive")
+            .filter((row) => JSON.stringify(row).toLowerCase().includes(q.toLowerCase())),
+    [kind, companyList, rows, q, showArchived],
   );
   function companyCats(id: string) {
     return links
@@ -397,6 +407,7 @@ export function ResourcePage({
         canManage ? (
           <Button
             id={`new-${kind}`}
+            className={kind === "companies" ? "resource-create-action" : undefined}
             disabled={loading || !!loadError}
             onClick={() => openEditor(null)}
           >
@@ -616,45 +627,40 @@ export function ResourcePage({
       </Dialog>
 
       {kind === "companies" && !loadError && <CompanyOverview rows={rows} loading={loading} />}
-      <div className="resource-toolbar flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-[1_1_16rem]">
-          <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            aria-label={
-              kind === "companies"
-                ? "Pesquisar empresas por nome, documento ou domínio"
-                : "Pesquisar cadastros"
-            }
-            placeholder={kind === "companies" ? "Nome, documento ou domínio..." : "Pesquisar..."}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+      {kind === "companies" ? (
+        <CompanyToolbar
+          filters={companyFilters}
+          counts={companyList.counts}
+          visibleCount={companyList.rows.length}
+          categories={allCats}
+          unavailable={loading || !!loadError}
+          onChange={setCompanyFilters}
+        />
+      ) : (
+        <div className="resource-toolbar flex flex-wrap items-center gap-3">
+          <div className="relative min-w-0 flex-[1_1_16rem]">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground"
+            />
+            <Input
+              className="pl-9"
+              aria-label="Pesquisar cadastros"
+              placeholder="Pesquisar..."
+              value={q}
+              onChange={(event) => setQ(event.target.value)}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(event) => setShowArchived(event.target.checked)}
+            />
+            Mostrar arquivados/inativos
+          </label>
         </div>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={showArchived}
-            onChange={(e) => setShowArchived(e.target.checked)}
-          />
-          Mostrar arquivados/inativos
-        </label>
-        {kind === "companies" && (
-          <select
-            aria-label="Filtrar por categoria"
-            className="form-control max-w-xs"
-            value={catFilter}
-            onChange={(e) => setCatFilter(e.target.value)}
-          >
-            <option value="">Categoria: todas</option>
-            {allCats.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      )}
 
       {loading ? (
         <LoadState loading />
@@ -663,12 +669,14 @@ export function ResourcePage({
       ) : filtered.length === 0 ? (
         <Empty>
           Nenhum cadastro encontrado.{" "}
-          {q || catFilter
-            ? "Altere a pesquisa ou os filtros para tentar novamente."
+          {kind === "companies" || q
+            ? "Altere a pesquisa, os filtros ou a situação para tentar novamente."
             : "Os cadastros aparecerão aqui."}
         </Empty>
       ) : (
-        <div className="resource-table overflow-hidden rounded-xl border bg-card">
+        <div
+          className={`resource-table overflow-hidden rounded-xl border bg-card ${kind === "companies" ? "company-table" : ""}`}
+        >
           <div
             className="overflow-x-auto"
             role="region"
@@ -683,12 +691,8 @@ export function ResourcePage({
                 <tr>
                   <th className="px-4 py-3">Nome</th>
                   <th className="px-4 py-3">Detalhe</th>
-                  <th className="px-4 py-3">Status</th>
-                  {canManage && (
-                    <th className="w-40 px-4 py-3">
-                      <span className="sr-only">Ações</span>
-                    </th>
-                  )}
+                  <th className="px-4 py-3 text-center">Status</th>
+                  {canManage && <th className="w-40 px-4 py-3 text-center">Ações</th>}
                 </tr>
               </thead>
               <tbody>
@@ -707,12 +711,16 @@ export function ResourcePage({
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge value={row.status} kind="record" />
+                    <td className="px-4 py-3 text-center">
+                      <StatusBadge
+                        value={row.status}
+                        kind="record"
+                        inactiveLabel="Inativo / Arquivado"
+                      />
                     </td>
                     {canManage && (
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center justify-center gap-1">
                           <ActionHint disabled={false} message="Editar cadastro">
                             <Button
                               size="icon"

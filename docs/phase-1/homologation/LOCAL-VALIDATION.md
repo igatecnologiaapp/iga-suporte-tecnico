@@ -144,3 +144,12 @@ implementados e verificados em ambiente isolado; conferência manual no WSL pend
 Detalhes em [COMPANIES-NAVIGATION-POLISH.md](COMPANIES-NAVIGATION-POLISH.md).
 Após esse lote, a próxima etapa combinada é modernizar visualmente Contatos.
 As seções anteriores preservam o histórico das respectivas rodadas.
+
+
+## Referência de listagem aplicada — 26/10/2026
+
+Operador aprovou as dicas dos ícones de cadastro e pediu organização de Empresas
+com filtros de situação, cores e painel de filtros adicionais nos dois temas.
+Aceitou Inativas/Arquivadas no mesmo filtro com rótulo combinado, sem distinguir
+novos estados no banco. Implementação e verificações isoladas registradas em
+[COMPANY-LIST-FILTERS.md](COMPANY-LIST-FILTERS.md); conferência no WSL pendente.

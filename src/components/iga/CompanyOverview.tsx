@@ -14,7 +14,7 @@ export function CompanyOverview({
       Icon: CheckCircle2,
     },
     {
-      label: "Arquivadas / inativas",
+      label: "Inativas / arquivadas",
       value: rows.filter((row) => row.status === "inactive").length,
       Icon: Archive,
     },

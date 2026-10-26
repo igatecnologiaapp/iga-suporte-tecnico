@@ -40,7 +40,7 @@ test("searches by domain and preserves normalized display links for archived rec
   await expect(page.getByRole("button", { name: "Editar Beta Sintética" })).toHaveCount(0);
   await search.fill("ARQUIVO.EXAMPLE");
   await expect(page.getByRole("status")).toContainText("Nenhum cadastro encontrado");
-  await page.getByLabel("Mostrar arquivados/inativos").check();
+  await page.getByRole("button", { name: /^Todas / }).click();
   await expect(
     page.getByRole("link", { name: "HTTPS://WWW.ARQUIVO.EXAMPLE/path" }),
   ).toHaveAttribute("href", "https://arquivo.example");
@@ -93,7 +93,7 @@ test("keeps free-text storage without applying link normalization during saving"
 });
 test("preserves raw URL when only another field is edited", async ({ page }) => {
   await page.goto("/companies");
-  await page.getByLabel("Mostrar arquivados/inativos").check();
+  await page.getByRole("button", { name: /^Todas / }).click();
   await page.getByRole("button", { name: "Editar Arquivo Sintético" }).click();
   await page.getByLabel("Nome Fantasia", { exact: true }).fill("Arquivo Atualizado");
   await page.getByRole("button", { name: "Salvar alterações", exact: true }).click();
@@ -187,6 +187,25 @@ for (const width of [360, 768, 1440])
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       );
+      await page.getByRole("button", { name: /^Todas / }).click();
+      await page.screenshot({
+        path: `/tmp/iga-company-list-${width}-${theme}.png`,
+        fullPage: true,
+        animations: "disabled",
+      });
+      await page.getByRole("button", { name: /^Mais filtros/ }).click();
+      const panel = page.getByRole("dialog", { name: "Mais filtros de empresas" });
+      await expect(panel).toBeVisible();
+      const panelBox = await panel.boundingBox();
+      expect(panelBox!.x).toBeGreaterThanOrEqual(0);
+      expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(width + 1);
+      await page.screenshot({
+        path: `/tmp/iga-company-filters-${width}-${theme}.png`,
+        fullPage: true,
+        animations: "disabled",
+      });
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("button", { name: /^Mais filtros/ })).toBeFocused();
       await mkdir(screenshots, { recursive: true });
       await page.screenshot({
         path: `${screenshots}/companies-${width}-${theme}.png`,
@@ -386,4 +405,100 @@ test("logout failure stays on the page with an explanation and allows retry", as
   await page.getByRole("alertdialog").getByRole("button", { name: "Sair", exact: true }).click();
   await expect(page.getByText("Login sintético", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.testSignOutCalls)).toBe(2);
+});
+
+test("status counts and listing share search/category scope without changing records", async ({
+  page,
+}) => {
+  await page.goto("/companies");
+  const group = page.getByRole("group", { name: "Filtrar empresas por situação" });
+  await expect(group.getByRole("button", { name: "Ativas 3", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(group.getByRole("button", { name: "Todas 4", exact: true })).toBeVisible();
+  await group.getByRole("button", { name: "Inativas / Arquivadas 1", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Editar Arquivo Sintético", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Editar Alfa Sintética", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator("tbody")).toContainText("Inativo / Arquivado");
+  await page.getByRole("button", { name: /^Todas / }).click();
+  await page
+    .getByRole("textbox", { name: "Pesquisar empresas por nome, documento ou domínio" })
+    .fill("alfa");
+  await page.getByRole("combobox", { name: "Filtrar por categoria" }).selectOption("sub-a");
+  await expect(group.getByRole("button", { name: "Todas 1", exact: true })).toBeVisible();
+  await expect(group.getByRole("button", { name: "Ativas 1", exact: true })).toBeVisible();
+  await expect(
+    group.getByRole("button", { name: "Inativas / Arquivadas 0", exact: true }),
+  ).toBeVisible();
+  await group.getByRole("button", { name: "Inativas / Arquivadas 0", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Nenhum cadastro encontrado");
+  await page.getByRole("button", { name: "Limpar filtros", exact: true }).click();
+  await expect(group.getByRole("button", { name: "Ativas 3", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("combobox", { name: "Filtrar por categoria" })).toHaveValue("");
+  expect(await page.evaluate(() => window.testWrites.length)).toBe(0);
+});
+
+test("advanced domain filters combine with status and restore natural name ordering", async ({
+  page,
+}) => {
+  await page.goto("/companies");
+  await page.getByRole("button", { name: /^Todas / }).click();
+  await page.getByRole("button", { name: /^Mais filtros/ }).click();
+  const panel = page.getByRole("dialog", { name: "Mais filtros de empresas" });
+  await panel.getByLabel("Domínio", { exact: true }).selectOption("missing");
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator("tbody")).toContainText("Cliente sem domínio");
+  await panel.getByLabel("Domínio", { exact: true }).selectOption("present");
+  await panel.getByLabel("Ordenar por").selectOption("name_desc");
+  await panel.getByRole("button", { name: "Concluir", exact: true }).click();
+  await expect(page.locator("tbody tr td:first-child")).toHaveText([
+    "Beta Sintética",
+    "Arquivo Sintético",
+    "Alfa Sintética",
+  ]);
+  await expect(page.getByRole("button", { name: /^Mais filtros/ })).toContainText("2");
+  await page.getByRole("button", { name: "Limpar filtros", exact: true }).click();
+  await expect(page.locator("tbody tr td:first-child")).toHaveText([
+    "Alfa Sintética",
+    "Beta Sintética",
+    "Cliente sem domínio",
+  ]);
+  expect(await page.evaluate(() => window.testDatabase.companies[1]!.domain)).toBe(
+    "Sem site / interno",
+  );
+  expect(await page.evaluate(() => window.testWrites.length)).toBe(0);
+});
+
+test("creation-date sorting and viewer filters never grant editing access", async ({ page }) => {
+  await page.goto("/companies?viewer");
+  await page.getByRole("button", { name: /^Todas / }).click();
+  await page.getByRole("button", { name: /^Mais filtros/ }).click();
+  await page.getByLabel("Ordenar por").selectOption("newest");
+  await expect(page.locator("tbody tr td:first-child")).toHaveText([
+    "Cliente sem domínio",
+    "Beta Sintética",
+    "Alfa Sintética",
+    "Arquivo Sintético",
+  ]);
+  await page.getByLabel("Ordenar por").selectOption("oldest");
+  await expect(page.locator("tbody tr td:first-child")).toHaveText([
+    "Arquivo Sintético",
+    "Alfa Sintética",
+    "Beta Sintética",
+    "Cliente sem domínio",
+  ]);
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: /^Editar |^Excluir |^Arquivar |^Restaurar / }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Novo cadastro", exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => window.testWrites.length)).toBe(0);
 });
