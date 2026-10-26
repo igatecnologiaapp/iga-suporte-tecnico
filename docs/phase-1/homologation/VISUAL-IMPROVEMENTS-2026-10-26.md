@@ -1,7 +1,7 @@
 # Melhorias de interface — 26/10/2026
 
 Implementadas na ordem autorizada pelo operador após a revalidação local de
-recuperação e convites. Revisão na aplicação WSL ainda pendente; sem publicação.
+recuperação e convites. Revisão manual na aplicação WSL concluída; sem publicação.
 
 ## Comportamento
 
@@ -47,6 +47,16 @@ isolada: `src/components/iga/AdminAudit.tsx`, `ActionHint.tsx`,
 `src/lib/admin-user-creation.ts`, `src/routes/_authenticated/users.tsx` e
 `src/styles.css`. Reiniciar pelo launcher privado existente. Não requer migration.
 
-Conferir auditoria com alteração nova, foco/hover dos botões protegidos e temas.
-Mensagens específicas de senha repetida e conta confirmada têm cobertura isolada;
-a confirmação manual dessas mensagens na aplicação do operador fica pendente.
+## Conferência manual concluída — 26/10/2026
+
+Após atualizar a aplicação isolada, operador aprovou os ajustes visuais de
+Usuários, incluindo destaque da auditoria e explicações dos botões. Na recuperação,
+confirmou a mensagem “A nova senha deve ser diferente da senha atual. Escolha
+outra senha e tente novamente.” ao repetir a senha recém-definida; captura do
+aviso apresentada, sem senha ou token. Ao reenviar convite de conta já confirmada,
+captura mostrou aviso informativo azul de e-mail confirmado, ausência de novo
+convite enviado e orientação de recuperação na lista de usuários.
+
+Conferência manual dos cinco ajustes concluída por relatos e capturas do operador.
+A ausência de novo e-mail nesta última tentativa não foi medida separadamente
+no Mailpit; a captura confirma o aviso exibido. Sem acesso ou publicação em produção.
