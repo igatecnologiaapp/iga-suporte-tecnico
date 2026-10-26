@@ -169,3 +169,10 @@ no menu recolhido, selo de não lidas na Caixa de Entrada e cinco registros fixo
 por página. Detalhes e comandos em
 [SIDEBAR-COUNTERS-FIXED-PAGES.md](SIDEBAR-COUNTERS-FIXED-PAGES.md).
 Não exige nova migration; conferência manual no Ubuntu pendente.
+
+## Encerramento das pendências manuais de CNPJ e saída
+
+Operador confirmou o aviso de documento duplicado e o funcionamento de Sair
+com confirmação e com cancelamento no Ubuntu. Registro complementar em
+[COMPANIES-NAVIGATION-POLISH.md](COMPANIES-NAVIGATION-POLISH.md).
+A próxima etapa visual combinada permanece Contatos.

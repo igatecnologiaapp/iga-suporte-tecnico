@@ -74,3 +74,11 @@ Seis regressões de foco de edição, destaque destrutivo nos dois temas/tamanho
 e dicas de botão desabilitado passaram. TypeScript e lint do ActionHint aprovados.
 Não exige alteração de permissões,
 serviços, dados ou migrations. Confirmação visual pelo operador ainda pendente.
+
+## Conferência manual informada pelo operador
+
+O operador confirmou no Ubuntu que o aviso de CNPJ/CPF duplicado aparece junto
+ao campo, com a orientação esperada. Confirmou também funcionamento normal de
+Sair com confirmação e de Sair com cancelamento. Essas pendências manuais deste
+lote ficam encerradas. Não houve relato explícito sobre a tentativa de novo login
+nesta confirmação; nenhuma credencial foi enviada ou registrada.
