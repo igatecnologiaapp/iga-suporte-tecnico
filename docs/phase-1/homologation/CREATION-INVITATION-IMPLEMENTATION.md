@@ -279,3 +279,18 @@ Defeito de fallback para sessão existente foi identificado e corrigido; detalhe
 limites e recuperação da fixture estão em
 [SECURITY-RESET-SESSION-ISOLATION.md](SECURITY-RESET-SESSION-ISOLATION.md).
 Não declarar fluxo integral aprovado até aplicar e revalidar essa correção no WSL.
+
+
+## Reenvio e isolamento revalidados — 26/10/2026
+
+A pendência descrita em 24/10 foi atendida em conferência manual local. Com conta
+nova de Visualização e somente Chamados (“Homologação reenvio novo 26-10”), o
+operador recebeu dois convites e confirmou recusa do anterior e aceite do mais
+recente para o destinatário correto. Definição de senha e login concluídos;
+captura mostrou acesso somente a Chamados. A sessão principal foi preservada
+após recarregar a janela normal, conforme confirmação explícita do operador.
+
+Recuperação também foi revalidada com principal conectado e login separado na
+conta recuperada. Os detalhes e limites da evidência estão em
+[SECURITY-RESET-SESSION-ISOLATION.md](SECURITY-RESET-SESSION-ISOLATION.md).
+Nenhuma credencial ou link foi registrado. Sem publicação ou acesso à produção.

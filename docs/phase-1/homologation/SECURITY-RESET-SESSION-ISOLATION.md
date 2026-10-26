@@ -93,3 +93,41 @@ terminal não interativo e escrita concorrente. Execução real ainda depende do
 
 No momento deste registro, cópia do novo fluxo, conferência da fixture e repetição
 desses casos reais permanecem pendentes. Sem acesso à produção ou publicação.
+
+
+## Revalidação manual local — 26/10/2026
+
+Resultados relatados pelo operador e capturas de tela, exclusivamente no WSL,
+Supabase local e Mailpit. A conferência privada do login do principal foi
+aprovada; a senha atual foi sincronizada somente na fixture privada, sem alterar
+senha no Auth e sem expor credenciais. O comportamento observado confirma a
+instalação da página com sessão isolada.
+
+Com primary conectado, acesso direto a `/reset-password` foi recusado sem campo
+de senha e preservou o login original após recarregar. Recovery novo exibiu o
+destinatário correto. Uma tentativa com a mesma senha falhou com aviso genérico;
+o operador confirmou a repetição acidental e concluiu com senha diferente. Login
+em janela anônima com a nova senha abriu somente Chamados. A sessão primary
+permaneceu na janela normal. O mesmo link original de e-mail, aberto novamente em
+contexto anônimo limpo, foi recusado sem formulário.
+
+Primeiras tentativas de reenvio usaram conta já confirmada e com login anterior,
+conforme consulta somente de leitura ao Auth. Os dois e-mails conferidos tinham
+tokens diferentes e URLs locais corretas, mas horários muito anteriores à
+consulta; essas tentativas não são prova de invalidação pelo reenvio. O aviso
+genérico também não distingue expiração de outras causas de recusa.
+
+O teste foi repetido com conta nova “Homologação reenvio novo 26-10”, Visualização
+ativa e somente Chamados. Operador recebeu A, foi orientado a aguardar pelo menos
+65 segundos e solicitou B sem abrir A. Relatou A recusado e B aberto; capturas
+confirmam ausência de formulário no A e destinatário correto no B. Após definir
+senha e entrar, a conta abriu Chamados com menu restrito. Operador confirmou
+primary preservado após recarregar a janela normal.
+
+Esses cenários locais de isolamento e reenvio estão aprovados por evidência manual.
+As pendências da seção anterior foram atendidas para os casos descritos. Nenhum
+token, senha ou link de ação foi incluído neste registro. Testes automatizados
+citados acima são históricos da implementação; não foram repetidos nesta atualização
+de documentação. Não representa validação de produção nem de todos os cenários
+de autenticação. Mensagens de erro para senha repetida e confirmação de conta já
+ativada merecem revisão de clareza posterior.

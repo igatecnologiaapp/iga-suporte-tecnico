@@ -1,7 +1,7 @@
 {
   "date": "2026-10-20",
   "scope": "administrative-user-creation-and-invitation",
-  "status": "session-isolation-followup-implemented-local-validation-pending",
+  "status": "session-isolation-local-manual-validation-passed",
   "migration": "0021_admin_user_creation_operations.sql",
   "migration_sha256": "02e2289b8a6142b2c2ed9e1a521248fe6b6c2ddbcd014fc5cf44a40f9bdc100f",
   "automated": {
@@ -38,16 +38,11 @@
     "account_inactive_without_modules": true
   },
   "wsl_migration_0021_applied": true,
-  "full_new_flow_mailpit_verified": false,
+  "full_new_flow_mailpit_verified": true,
   "production_access": false,
   "historical_migrations_modified": false,
-  "pending": [
-    "verify-and-sync-private-primary-password-if-needed",
-    "install-isolated-reset-session-code",
-    "real-old-invite-refusal-and-latest-invite-first-access",
-    "real-recovery-with-primary-already-signed-in"
-  ],
-  "last_update": "2026-10-24",
+  "pending": [],
+  "last_update": "2026-10-26",
   "wsl_application_code_installed": true,
   "wsl_migration_0022_applied": true,
   "auth_initialization_fix": {
@@ -98,7 +93,7 @@
     "ordinary_admin_four_endpoints_denied": "passed-operator-script-output",
     "ordinary_admin_no_account_reservation_or_mail": "passed-three-second-observation",
     "explicit_invitation_resend_delivery_before_activation": "two-mails-and-acceptance-audit-observed",
-    "old_and_latest_invitation_link_test": "inconclusive-session-confusion"
+    "old_and_latest_invitation_link_test": "historical-inconclusive-attempt-superseded-by-fresh-pair-on-2026-10-26"
   },
   "duplicate_email_feedback_fix": {
     "status": "installed-and-verified-in-WSL",
@@ -110,15 +105,32 @@
   },
   "session_isolation_followup": {
     "report": "SECURITY-RESET-SESSION-ISOLATION.md",
-    "status": "implemented-isolated-tests-passed",
+    "status": "local-manual-validation-passed",
     "main_session_fallback_identified": true,
     "primary_password_may_have_changed": true,
     "operator_kept_entered_password": true,
-    "private_primary_password_verification": "pending",
+    "private_primary_password_verification": "passed-operator-reported-private-sync-no-auth-password-change",
     "unit_passed": 38,
     "interface_passed": 40,
     "server_regressions_passed": 92,
-    "private_fixture_sync_simulated_tests_passed": 8
+    "private_fixture_sync_simulated_tests_passed": 8,
+    "local_installation": "verified-by-operator-observed-reset-page",
+    "manual_local_validation": {
+      "date": "2026-10-26",
+      "source": "operator-reports-and-screenshots",
+      "environment": "WSL Supabase local and Mailpit only",
+      "bare_reset_with_primary_signed_in": "rejected-without-password-form-primary-preserved",
+      "recovery_password_update_and_separate_login": "passed",
+      "used_recovery_email_link": "rejected-without-password-form-in-clean-incognito",
+      "fresh_unactivated_invitation_account": "Homologação reenvio novo 26-10",
+      "fresh_pair_resend_interval": "operator-instructed-at-least-65-seconds",
+      "older_invitation_A": "rejected-without-password-form-after-B-was-sent",
+      "latest_invitation_B": "accepted-form-displayed-correct-recipient",
+      "new_password_and_login": "passed-tickets-only-viewer",
+      "primary_session_after_invitation_login": "preserved-after-reload-confirmed-by-operator",
+      "credentials_or_tokens_recorded": false,
+      "scope_limit": "Manual evidence covers these local cases, not production or every lifecycle scenario."
+    }
   },
   "historical_creation_and_first_access_verified_before_session_isolation": true
 }
