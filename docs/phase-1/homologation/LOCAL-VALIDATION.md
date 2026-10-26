@@ -132,3 +132,15 @@ Recomenda-se corrigir o formulário antes de disponibilizar o sistema a usuário
 A revisão estática sobre atualização parcial de usuários permanece sem
 reprodução experimental. Melhorias visuais e confirmação ao sair continuam
 pendentes de autorização. Sem publicação, merge ou início da Fase 2.
+
+
+## Atualização de interface — 26/10/2026
+
+Bordas/contraste, auditoria recente e descrições de recuperação foram implementados
+e aprovados manualmente no lote registrado em
+[VISUAL-IMPROVEMENTS-2026-10-26.md](VISUAL-IMPROVEMENTS-2026-10-26.md).
+Destaque de Excluir, mensagem de CNPJ/CPF duplicado e confirmação ao sair estão
+implementados e verificados em ambiente isolado; conferência manual no WSL pendente.
+Detalhes em [COMPANIES-NAVIGATION-POLISH.md](COMPANIES-NAVIGATION-POLISH.md).
+Após esse lote, a próxima etapa combinada é modernizar visualmente Contatos.
+As seções anteriores preservam o histórico das respectivas rodadas.

@@ -22,6 +22,7 @@ import {
   type RecordEntity,
 } from "@/lib/records-admin.functions";
 import { domainFromForm, normalizeDomain } from "@/lib/company-domain";
+import { isCompanyTaxIdConflict, companyTaxIdConflictMessage } from "@/lib/company-save-feedback";
 import { CompanyFields } from "./CompanyFields";
 import { CompanyOverview } from "./CompanyOverview";
 import { Empty, Page, LoadState } from "./Page";
@@ -78,6 +79,7 @@ export function ResourcePage({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [taxIdError, setTaxIdError] = useState<string | null>(null);
   const [action, setAction] = useState<{
     kind: "archive" | "delete";
     row: any;
@@ -191,6 +193,7 @@ export function ResourcePage({
       .sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
   }
   function openEditor(row: any) {
+    setTaxIdError(null);
     editorTrigger.current = row ? `edit-${kind}-${row.id}` : `new-${kind}`;
     setEditing(row);
     const own = row ? links.filter((l) => l.company_id === row.id) : [];
@@ -230,6 +233,8 @@ export function ResourcePage({
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
+    setTaxIdError(null);
     setSaving(true);
     const fd = new FormData(event.currentTarget);
     let payload: any = {};
@@ -299,7 +304,15 @@ export function ResourcePage({
     const { data: saved, error } = await query;
     if (error) {
       setSaving(false);
-      toast.error(errorMessage(error));
+      if (kind === "companies" && isCompanyTaxIdConflict(error)) {
+        setTaxIdError(companyTaxIdConflictMessage);
+        document.getElementById("tax_id")?.focus();
+      } else
+        toast.error(
+          kind === "companies"
+            ? "Não foi possível salvar a empresa. Confira os dados e tente novamente."
+            : errorMessage(error),
+        );
       return;
     }
     if (kind === "companies" && canLinkCats) {
@@ -407,7 +420,11 @@ export function ResourcePage({
           <form key={editing?.id ?? "new"} onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
             {kind === "companies" && (
               <>
-                <CompanyFields company={editing} />
+                <CompanyFields
+                  company={editing}
+                  taxIdError={taxIdError}
+                  onTaxIdChange={() => setTaxIdError(null)}
+                />
                 <fieldset className="rounded-md border p-3 sm:col-span-2">
                   <legend className="px-1 text-sm font-medium">Categorias de Chamados</legend>
                   {!canLinkCats ? (
@@ -727,6 +744,7 @@ export function ResourcePage({
                             <Button
                               size="icon"
                               variant="ghost"
+                              className="hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive"
                               onClick={() => void startAction("delete", row)}
                               aria-label={`Excluir ${row[c.name]}`}
                             >
@@ -782,7 +800,11 @@ export function ResourcePage({
             <Button variant="outline" onClick={() => setAction(null)}>
               Cancelar
             </Button>
-            <Button disabled={saving || !reason.trim()} onClick={() => void confirmAction()}>
+            <Button
+              variant={action?.kind === "delete" && action.canDelete ? "destructive" : "default"}
+              disabled={saving || !reason.trim()}
+              onClick={() => void confirmAction()}
+            >
               Confirmar
             </Button>
           </div>

@@ -35,7 +35,15 @@ const sections = [
   },
 ] as const;
 
-export function CompanyFields({ company }: { company: Partial<Tables<"companies">> | null }) {
+export function CompanyFields({
+  company,
+  taxIdError,
+  onTaxIdChange,
+}: {
+  company: Partial<Tables<"companies">> | null;
+  taxIdError?: string | null;
+  onTaxIdChange?: () => void;
+}) {
   return (
     <>
       {sections.map((section) => (
@@ -51,8 +59,21 @@ export function CompanyFields({ company }: { company: Partial<Tables<"companies"
                   type={name === "email" ? "email" : "text"}
                   required={required}
                   defaultValue={company?.[name] ?? ""}
-                  aria-describedby={name === "domain" ? "domain-help" : undefined}
+                  aria-invalid={name === "tax_id" && taxIdError ? true : undefined}
+                  aria-describedby={
+                    name === "domain"
+                      ? "domain-help"
+                      : name === "tax_id" && taxIdError
+                        ? "tax-id-error"
+                        : undefined
+                  }
+                  onChange={name === "tax_id" ? onTaxIdChange : undefined}
                 />
+                {name === "tax_id" && taxIdError && (
+                  <p id="tax-id-error" role="alert" className="text-sm text-destructive">
+                    {taxIdError}
+                  </p>
+                )}
                 {name === "domain" && (
                   <p id="domain-help" className="text-xs leading-relaxed text-muted-foreground">
                     Informação opcional. Um endereço válido será exibido como link; outros textos

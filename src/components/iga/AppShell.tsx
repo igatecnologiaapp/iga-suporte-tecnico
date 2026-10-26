@@ -7,7 +7,6 @@ import {
   ClipboardList,
   Contact,
   Inbox,
-  LogOut,
   Menu,
   Moon,
   PlugZap,
@@ -24,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/iga/NotificationsBell";
+import { LogoutButton } from "@/components/iga/LogoutButton";
 import {
   Sheet,
   SheetContent,
@@ -124,8 +124,9 @@ export function AppShell({
     document.documentElement.classList.toggle("dark", next);
   }
   async function logout() {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    await navigate({ to: "/auth", replace: true });
   }
 
   const currentModule = MODULES.find((module) => module.key === moduleForPath(path));
@@ -222,15 +223,7 @@ export function AppShell({
               </div>
             )}
           </div>
-          <Button
-            variant="ghost"
-            className={cn("w-full", compact ? "px-0" : "justify-start")}
-            onClick={logout}
-            aria-label="Sair da conta"
-          >
-            <LogOut />
-            {!compact && "Sair"}
-          </Button>
+          <LogoutButton compact={compact} onConfirm={logout} />
         </div>
       </>
     );

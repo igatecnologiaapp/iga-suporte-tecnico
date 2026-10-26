@@ -1,6 +1,6 @@
 // Synthetic in-memory services. No credentials, production client or network calls.
 type Row = Record<string, unknown>;
-type Result = { data: Row[] | null; error: Error | null };
+type Result = { data: Row[] | null; error: Error | { code: string; message: string } | null };
 interface Query {
   then(resolve: (value: Result) => void): Promise<void>;
   select(): Query;
@@ -121,6 +121,25 @@ function query(table: string) {
       const rows = store[table] ?? [];
       const selected = rows.filter((row) => filters.every((filter) => filter(row)));
       if (operation !== "select") writes.push({ table, operation, payload });
+      if (table === "companies" && (operation === "insert" || operation === "update")) {
+        const candidate = (payload as Row)["tax_id"];
+        const duplicate = rows.some(
+          (row) =>
+            row["tax_id"] === candidate && (operation === "insert" || !selected.includes(row)),
+        );
+        if (duplicate || params.has("duplicate-tax-id") || params.has("other-unique")) {
+          resolve({
+            data: null,
+            error: {
+              code: "23505",
+              message: params.has("other-unique")
+                ? 'duplicate key violates unique constraint "unrelated_key"'
+                : 'duplicate key violates unique constraint "companies_tax_id_key"',
+            },
+          });
+          return;
+        }
+      }
       if (operation === "update") selected.forEach((row) => Object.assign(row, payload));
       if (operation === "delete") store[table] = rows.filter((row) => !selected.includes(row));
       if (operation === "insert") {
@@ -148,11 +167,23 @@ function query(table: string) {
 export const supabase = {
   from: query,
   rpc: async () => ({ data: [], error: null }),
-  auth: { signOut: async () => ({ error: null }) },
+  auth: {
+    signOut: async () => {
+      window.testSignOutCalls = (window.testSignOutCalls ?? 0) + 1;
+      if (params.has("logout-delay")) await new Promise((resolve) => setTimeout(resolve, 400));
+      return {
+        error:
+          params.has("logout-error") && window.testSignOutCalls === 1
+            ? new Error("Synthetic logout failure")
+            : null,
+      };
+    },
+  },
 };
 declare global {
   interface Window {
     testDatabase: typeof database;
     testWrites: typeof writes;
+    testSignOutCalls?: number;
   }
 }

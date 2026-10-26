@@ -248,3 +248,142 @@ test("new dialog returns focus without writing on cancel", async ({ page }) => {
   await expect(trigger).toBeFocused();
   expect(await page.evaluate(() => window.testWrites.length)).toBe(0);
 });
+
+for (const editing of [false, true])
+  test(`duplicate CNPJ/CPF keeps ${editing ? "edited" : "new"} form and category data intact`, async ({
+    page,
+  }) => {
+    await page.goto("/companies");
+    const original = await page.evaluate(() => JSON.stringify(window.testDatabase));
+    if (editing)
+      await page.getByRole("button", { name: "Editar Beta Sintética", exact: true }).click();
+    else await page.getByRole("button", { name: "Novo cadastro", exact: true }).click();
+    await page.getByLabel("Razão Social", { exact: true }).fill("Empresa em conferência");
+    await page.getByLabel("Nome Fantasia", { exact: true }).fill("Dados preservados");
+    // The archived company must also keep its unique document protected.
+    await page.getByLabel("CNPJ/CPF").fill("00000000000300");
+    await page
+      .getByRole("button", { name: editing ? "Salvar alterações" : "Salvar", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText("Este CNPJ/CPF já está cadastrado");
+    await expect(page.getByLabel("CNPJ/CPF")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByLabel("CNPJ/CPF")).toBeFocused();
+    await expect(page.getByLabel("Nome Fantasia", { exact: true })).toHaveValue(
+      "Dados preservados",
+    );
+    expect(await page.evaluate(() => JSON.stringify(window.testDatabase))).toBe(original);
+    expect(
+      await page.evaluate(() => window.testWrites.some((write) => write.table !== "companies")),
+    ).toBe(false);
+    await page.getByLabel("CNPJ/CPF").fill(editing ? "00000000000200" : "00000000000400");
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await page
+      .getByRole("button", { name: editing ? "Salvar alterações" : "Salvar", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+for (const conflict of ["duplicate-tax-id", "other-unique"])
+  test(`server conflict ${conflict} is specific only for the document constraint`, async ({
+    page,
+  }) => {
+    await page.goto(`/companies?${conflict}`);
+    await page.getByRole("button", { name: "Editar Alfa Sintética", exact: true }).click();
+    await page.getByRole("button", { name: "Salvar alterações", exact: true }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    if (conflict === "duplicate-tax-id")
+      await expect(page.getByRole("alert")).toContainText("Este CNPJ/CPF já está cadastrado");
+    else {
+      await expect(
+        page.getByText("Não foi possível salvar a empresa. Confira os dados e tente novamente."),
+      ).toBeVisible();
+      await expect(
+        page.getByText("Este CNPJ/CPF já está cadastrado", { exact: false }),
+      ).toHaveCount(0);
+    }
+    await expect(page.getByText(/companies_tax_id_key|unrelated_key/)).toHaveCount(0);
+  });
+
+for (const width of [360, 1440])
+  for (const theme of ["light", "dark"])
+    test(`delete hover and keyboard focus are red, confirmation fits ${width}px ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript((value) => localStorage.setItem("iga-theme", value), theme);
+      await page.goto("/companies?admin");
+      const button = page.getByRole("button", { name: "Excluir Alfa Sintética", exact: true });
+      const originalColor = await button.evaluate((element) => getComputedStyle(element).color);
+      await button.hover();
+      await expect(button).not.toHaveCSS("color", originalColor);
+      await page.mouse.move(0, 0);
+      await page.keyboard.press("Tab");
+      await button.focus();
+      expect(await button.evaluate((element) => element.matches(":focus-visible"))).toBe(true);
+      await expect(button).not.toHaveCSS("color", originalColor);
+      await button.click();
+      const dialog = page.getByRole("dialog", { name: "Excluir registro?" });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole("button", { name: "Confirmar", exact: true })).toBeDisabled();
+      await page.screenshot({
+        path: `/tmp/iga-delete-confirmation-${width}-${theme}.png`,
+        fullPage: true,
+        animations: "disabled",
+      });
+      await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+      expect(await page.evaluate(() => window.testWrites.length)).toBe(0);
+    });
+
+for (const width of [360, 1440])
+  for (const theme of ["light", "dark"])
+    test(`logout cancellation preserves the session and focus at ${width}px ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript((value) => localStorage.setItem("iga-theme", value), theme);
+      await page.goto("/companies");
+      if (width === 360)
+        await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
+      const trigger = page.getByRole("button", { name: "Sair da conta", exact: true });
+      await trigger.click();
+      const dialog = page.getByRole("alertdialog", { name: "Sair da conta?", exact: true });
+      await expect(dialog.getByRole("button", { name: "Cancelar", exact: true })).toBeFocused();
+      const box = await dialog.boundingBox();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
+      await page.screenshot({
+        path: `/tmp/iga-logout-confirmation-${width}-${theme}.png`,
+        fullPage: true,
+        animations: "disabled",
+      });
+      await page.keyboard.press("Escape");
+      await expect(dialog).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+      await trigger.click();
+      await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+      expect(await page.evaluate(() => window.testSignOutCalls ?? 0)).toBe(0);
+      await expect(page).toHaveURL(/\/companies$/);
+    });
+
+test("logout waits for explicit confirmation and blocks duplicate calls", async ({ page }) => {
+  await page.goto("/companies?logout-delay");
+  await page.getByRole("button", { name: "Sair da conta", exact: true }).click();
+  expect(await page.evaluate(() => window.testSignOutCalls ?? 0)).toBe(0);
+  await page.getByRole("alertdialog").getByRole("button", { name: "Sair", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Saindo…", exact: true })).toBeDisabled();
+  await expect(page.getByText("Login sintético", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.testSignOutCalls)).toBe(1);
+});
+
+test("logout failure stays on the page with an explanation and allows retry", async ({ page }) => {
+  await page.goto("/companies?logout-error");
+  await page.getByRole("button", { name: "Sair da conta", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Sair", exact: true }).click();
+  await expect(page.getByText("Não foi possível sair da conta. Tente novamente.")).toBeVisible();
+  await expect(page).toHaveURL(/\/companies\?logout-error$/);
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Sair", exact: true }).click();
+  await expect(page.getByText("Login sintético", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.testSignOutCalls)).toBe(2);
+});
