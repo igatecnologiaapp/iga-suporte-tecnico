@@ -1,21 +1,21 @@
 import { Archive, Building2, CheckCircle2 } from "lucide-react";
 export function CompanyOverview({
-  rows,
+  summary,
   loading,
 }: {
-  rows: { status: string }[];
+  summary: { all: number; active: number; inactive: number };
   loading: boolean;
 }) {
   const items = [
-    { label: "Total de empresas", value: rows.length, Icon: Building2 },
+    { label: "Total de empresas", value: summary.all, Icon: Building2 },
     {
       label: "Empresas ativas",
-      value: rows.filter((row) => row.status === "active").length,
+      value: summary.active,
       Icon: CheckCircle2,
     },
     {
       label: "Inativas / arquivadas",
-      value: rows.filter((row) => row.status === "inactive").length,
+      value: summary.inactive,
       Icon: Archive,
     },
   ];

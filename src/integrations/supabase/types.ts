@@ -1043,6 +1043,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      list_paged_records: {
+        Args: { _entity: string; _page?: number; _page_size?: number; _filters?: Json }
+        Returns: Json
+      }
       admin_delete_ticket: {
         Args: { _actor_id: string; _reason: string; _ticket_id: string }
         Returns: Json

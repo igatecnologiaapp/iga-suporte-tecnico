@@ -35,6 +35,7 @@ export function CompanyToolbar({
           <Input
             className="h-10 pl-10"
             aria-label="Pesquisar empresas por nome, documento ou domínio"
+            maxLength={300}
             placeholder="Nome, documento ou domínio..."
             value={filters.search}
             onChange={(event) => onChange({ ...filters, search: event.target.value })}

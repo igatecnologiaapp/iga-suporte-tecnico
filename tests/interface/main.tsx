@@ -8,10 +8,11 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { AppShell } from "../../src/components/iga/AppShell";
+import { TicketsPage } from "../../src/routes/_authenticated/tickets.index";
 import { ResourcePage } from "../../src/components/iga/ResourcePage";
 import "../../src/styles.css";
 const root = createRootRoute({ component: Harness });
-const routes = ["/companies", "/contacts", "/auth"].map((path) =>
+const routes = ["/companies", "/contacts", "/tickets", "/auth"].map((path) =>
   createRoute({ getParentRoute: () => root, path }),
 );
 const router = createRouter({ routeTree: root.addChildren(routes) });
@@ -25,14 +26,26 @@ export function Harness() {
       <AppShell
         userName="Pessoa de Teste"
         role={viewer ? "Visualização" : admin ? "Administrador" : "Supervisor"}
-        modules={["companies", "contacts"]}
+        modules={
+          path === "/tickets" ? ["tickets", "companies", "contacts"] : ["companies", "contacts"]
+        }
       >
-        <ResourcePage
-          kind={location.pathname === "/contacts" ? "contacts" : "companies"}
-          userId="synthetic-user"
-          canManage={!viewer}
-          role={viewer ? "viewer" : admin ? "admin" : "supervisor"}
-        />
+        {path === "/tickets" ? (
+          <TicketsPage
+            userId="synthetic-user"
+            role={viewer ? "viewer" : "supervisor"}
+            technicianId={
+              new URLSearchParams(location.search).has("technician") ? "tech-one" : null
+            }
+          />
+        ) : (
+          <ResourcePage
+            kind={location.pathname === "/contacts" ? "contacts" : "companies"}
+            userId="synthetic-user"
+            canManage={!viewer}
+            role={viewer ? "viewer" : admin ? "admin" : "supervisor"}
+          />
+        )}
       </AppShell>
       <Toaster />
     </>

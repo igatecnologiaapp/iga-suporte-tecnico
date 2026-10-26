@@ -57,6 +57,10 @@ export default defineConfig({
   ],
   resolve: {
     alias: [
+      {
+        find: "@/lib/sla-notifications.functions",
+        replacement: path("./sla-notifications.mock.ts"),
+      },
       { find: "@/integrations/supabase/client", replacement: path("./supabase.mock.ts") },
       { find: "@/lib/records-admin.functions", replacement: path("./records.mock.ts") },
       { find: "@", replacement: path("../../src") },

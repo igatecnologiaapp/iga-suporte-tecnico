@@ -153,3 +153,11 @@ com filtros de situação, cores e painel de filtros adicionais nos dois temas.
 Aceitou Inativas/Arquivadas no mesmo filtro com rótulo combinado, sem distinguir
 novos estados no banco. Implementação e verificações isoladas registradas em
 [COMPANY-LIST-FILTERS.md](COMPANY-LIST-FILTERS.md); conferência no WSL pendente.
+
+
+## Paginação no banco e navegação — 26/10/2026
+
+Operador escolheu explicitamente paginação também nas consultas ao banco.
+Implementação, verificações isoladas e comandos de instalação local estão em
+[PAGINATION-HEADER-ICONS.md](PAGINATION-HEADER-ICONS.md). Migration 0023 deve
+preceder a atualização da cópia da aplicação. Conferência manual no WSL pendente.

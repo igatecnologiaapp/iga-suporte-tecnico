@@ -309,6 +309,25 @@
 }
 .shell-header {
   background: color-mix(in oklab, var(--card) 92%, transparent);
+  transition: transform 180ms ease;
+}
+.shell-header[data-hidden="true"] {
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+.shell-header:has(:focus-visible) {
+  transform: none;
+  pointer-events: auto;
+}
+.record-name-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--primary) 12%, var(--card));
+  color: var(--primary);
 }
 .brand-monogram {
   display: grid;
@@ -551,4 +570,34 @@
   .resource-toolbar label {
     min-height: 2.75rem;
   }
+}
+
+.table-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 0.75rem 0.75rem;
+  background: var(--card);
+  padding: 0.75rem 1rem;
+}
+.paged-table > .resource-table,
+.paged-table > .rounded-md {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.table-page-number {
+  display: inline-grid;
+  min-width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: var(--list-selection);
+  color: var(--list-selection-foreground);
+  padding-inline: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }

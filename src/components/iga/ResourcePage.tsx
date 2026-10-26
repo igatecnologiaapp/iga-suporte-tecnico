@@ -26,10 +26,13 @@ import { isCompanyTaxIdConflict, companyTaxIdConflictMessage } from "@/lib/compa
 import { CompanyFields } from "./CompanyFields";
 import { CompanyOverview } from "./CompanyOverview";
 import { CompanyToolbar } from "./CompanyToolbar";
-import { buildCompanyList, type CompanyListFilters } from "@/lib/company-list";
+import type { CompanyListFilters } from "@/lib/company-list";
+import { usePagedRecords } from "./usePagedRecords";
+import { TablePager } from "./TablePager";
 import { Empty, Page, LoadState } from "./Page";
 import { StatusBadge } from "./StatusBadge";
 import { ActionHint } from "./ActionHint";
+import { RecordName } from "./RecordName";
 
 type Kind = RecordEntity;
 const config = {
@@ -72,10 +75,10 @@ export function ResourcePage({
 }) {
   const c = config[kind];
   const editorTrigger = useRef("");
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [optionsLoading, setLoading] = useState(true);
+  const optionsRequest = useRef(0);
+  const [optionsError, setLoadError] = useState<string | null>(null);
   const canDelete = role === "admin";
-  const [rows, setRows] = useState<any[]>([]);
   const [related, setRelated] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [showArchived, setShowArchived] = useState(false);
@@ -92,7 +95,6 @@ export function ResourcePage({
   } | null>(null);
   const [reason, setReason] = useState("");
   const [allCats, setAllCats] = useState<any[]>([]);
-  const [links, setLinks] = useState<any[]>([]);
   const [selCats, setSelCats] = useState<string[]>([]);
   const [defCat, setDefCat] = useState("");
   const [companyFilters, setCompanyFilters] = useState<CompanyListFilters>({
@@ -104,92 +106,65 @@ export function ResourcePage({
   });
   const canLinkCats = role === "admin" || role === "supervisor";
 
-  async function load() {
+  const pageFilters =
+    kind === "companies"
+      ? { ...companyFilters }
+      : { search: q, status: showArchived ? "all" : "active", sort: "name_asc" };
+  const paged = usePagedRecords(kind, pageFilters);
+  const rows = paged.data.rows as any[];
+  const filtered = rows;
+  const links = rows.flatMap((row) => row.category_links ?? []);
+  const loading = optionsLoading || paged.loading;
+  const loadError = optionsError || paged.error;
+
+  async function loadOptions() {
+    const request = ++optionsRequest.current;
     setLoading(true);
     setLoadError(null);
     try {
-      if (kind === "technicians") {
-        const [{ data, error }, { data: contacts }] = await Promise.all([
-          supabase
-            .from("technicians")
-            .select("id,name,user_id,specialty,status,created_at,updated_at")
-            .order("name"),
-          supabase.rpc("technician_contacts"),
-        ]);
-        const byId = new Map((contacts ?? []).map((x: any) => [x.id, x]));
-        if (error) throw error;
-        else
-          setRows(
-            (data ?? []).map((r: any) => ({
-              ...r,
-              phone: byId.get(r.id)?.phone ?? null,
-              email: byId.get(r.id)?.email ?? null,
-            })),
-          );
-      } else {
-        const { data, error } = await supabase.from(c.table).select("*").order(c.name);
-        if (error) throw error;
-        else setRows(data ?? []);
-      }
       if (kind === "companies") {
-        const [{ data: cs, error: catsError }, { data: ls, error: linksError }] = await Promise.all(
-          [
-            supabase.from("ticket_categories").select("id,name,parent_id,status").order("name"),
-            supabase.from("company_ticket_categories").select("company_id,category_id,is_default"),
-          ],
-        );
-        if (catsError) throw catsError;
-        if (linksError) throw linksError;
-        setAllCats(cs ?? []);
-        setLinks(ls ?? []);
+        const result = await supabase
+          .from("ticket_categories")
+          .select("id,name,parent_id,status")
+          .order("name");
+        if (result.error) throw result.error;
+        if (request === optionsRequest.current) setAllCats(result.data ?? []);
+      } else {
+        const result =
+          kind === "contacts"
+            ? await supabase
+                .from("companies")
+                .select("id,trade_name")
+                .eq("status", "active")
+                .order("trade_name")
+            : kind === "technicians"
+              ? await supabase.from("profiles").select("id,full_name").order("full_name")
+              : await supabase
+                  .from("ticket_categories")
+                  .select("id,name")
+                  .is("parent_id", null)
+                  .eq("status", "active")
+                  .order("name");
+        if (result.error) throw result.error;
+        if (request === optionsRequest.current) setRelated(result.data ?? []);
       }
-      if (kind === "contacts")
-        setRelated(
-          (
-            await supabase
-              .from("companies")
-              .select("id,trade_name")
-              .eq("status", "active")
-              .order("trade_name")
-          ).data ?? [],
-        );
-      if (kind === "technicians")
-        setRelated(
-          (await supabase.from("profiles").select("id,full_name").order("full_name")).data ?? [],
-        );
-      if (kind === "categories")
-        setRelated(
-          (
-            await supabase
-              .from("ticket_categories")
-              .select("id,name")
-              .is("parent_id", null)
-              .eq("status", "active")
-              .order("name")
-          ).data ?? [],
-        );
-    } catch (error) {
-      setLoadError(errorMessage(error));
+    } catch {
+      if (request === optionsRequest.current)
+        setLoadError("Não foi possível carregar as opções dos cadastros.");
     } finally {
-      setLoading(false);
+      if (request === optionsRequest.current) setLoading(false);
     }
   }
+  async function load() {
+    paged.refresh();
+    await loadOptions();
+  }
   useEffect(() => {
-    void load();
+    void loadOptions();
+    return () => {
+      optionsRequest.current++;
+    };
   }, [kind]);
-  const companyList = useMemo(
-    () => buildCompanyList(rows, links, companyFilters),
-    [rows, links, companyFilters],
-  );
-  const filtered = useMemo(
-    () =>
-      kind === "companies"
-        ? companyList.rows
-        : rows
-            .filter((row) => showArchived || row.status !== "inactive")
-            .filter((row) => JSON.stringify(row).toLowerCase().includes(q.toLowerCase())),
-    [kind, companyList, rows, q, showArchived],
-  );
   function companyCats(id: string) {
     return links
       .filter((l) => l.company_id === id)
@@ -252,7 +227,13 @@ export function ResourcePage({
     if (kind === "companies") {
       const domain = domainFromForm(fd, editing?.domain);
       if (domain) {
-        const other = rows.find((r) => r.id !== editing?.id && r.domain === domain);
+        // The matching company may be outside the current page or filters.
+        const { data: matches } = await supabase
+          .from("companies")
+          .select("id,trade_name")
+          .eq("domain", domain)
+          .limit(2);
+        const other = matches?.find((row) => row.id !== editing?.id);
         if (other)
           toast.info(`Atenção: o domínio ${domain} já está cadastrado em ${other.trade_name}.`);
       }
@@ -626,12 +607,14 @@ export function ResourcePage({
         </DialogContent>
       </Dialog>
 
-      {kind === "companies" && !loadError && <CompanyOverview rows={rows} loading={loading} />}
+      {kind === "companies" && !loadError && (
+        <CompanyOverview summary={paged.data.summary} loading={loading} />
+      )}
       {kind === "companies" ? (
         <CompanyToolbar
           filters={companyFilters}
-          counts={companyList.counts}
-          visibleCount={companyList.rows.length}
+          counts={paged.data.counts}
+          visibleCount={paged.data.total}
           categories={allCats}
           unavailable={loading || !!loadError}
           onChange={setCompanyFilters}
@@ -646,6 +629,7 @@ export function ResourcePage({
             <Input
               className="pl-9"
               aria-label="Pesquisar cadastros"
+              maxLength={300}
               placeholder="Pesquisar..."
               value={q}
               onChange={(event) => setQ(event.target.value)}
@@ -662,122 +646,146 @@ export function ResourcePage({
         </div>
       )}
 
-      {loading ? (
-        <LoadState loading />
-      ) : loadError ? (
-        <LoadState error={loadError} onRetry={() => void load()} />
-      ) : filtered.length === 0 ? (
-        <Empty>
-          Nenhum cadastro encontrado.{" "}
-          {kind === "companies" || q
-            ? "Altere a pesquisa, os filtros ou a situação para tentar novamente."
-            : "Os cadastros aparecerão aqui."}
-        </Empty>
-      ) : (
-        <div
-          className={`resource-table overflow-hidden rounded-xl border bg-card ${kind === "companies" ? "company-table" : ""}`}
-        >
+      <div className="paged-table" aria-busy={loading}>
+        {loading && !paged.hasRetainedRows ? (
+          <LoadState loading />
+        ) : loadError ? (
+          <LoadState error={loadError} onRetry={() => void load()} />
+        ) : filtered.length === 0 ? (
+          <Empty>
+            Nenhum cadastro encontrado.{" "}
+            {kind === "companies" || q
+              ? "Altere a pesquisa, os filtros ou a situação para tentar novamente."
+              : "Os cadastros aparecerão aqui."}
+          </Empty>
+        ) : (
           <div
-            className="overflow-x-auto"
-            role="region"
-            aria-label="Lista de cadastros"
-            tabIndex={0}
+            inert={loading || undefined}
+            className={`resource-table overflow-hidden rounded-xl border bg-card ${kind === "companies" ? "company-table" : ""}`}
           >
-            <table className="w-full text-sm">
-              <caption className="sr-only">
-                {c.title}: {filtered.length} registro(s)
-              </caption>
-              <thead className="bg-muted/60 text-left">
-                <tr>
-                  <th className="px-4 py-3">Nome</th>
-                  <th className="px-4 py-3">Detalhe</th>
-                  <th className="px-4 py-3 text-center">Status</th>
-                  {canManage && <th className="w-40 px-4 py-3 text-center">Ações</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => (
-                  <tr key={row.id} className="border-t">
-                    <td className="px-4 py-3 font-medium">{row[c.name]}</td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {row.legal_name ||
-                        row.email ||
-                        (row.parent_id ? "Subcategoria" : "Categoria") ||
-                        "—"}
-                      {kind === "companies" && row.domain && <DomainValue value={row.domain} />}
-                      {kind === "companies" && (
-                        <div className="mt-1">
-                          <CatChips cats={companyCats(row.id)} />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <StatusBadge
-                        value={row.status}
-                        kind="record"
-                        inactiveLabel="Inativo / Arquivado"
-                      />
-                    </td>
-                    {canManage && (
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-1">
-                          <ActionHint disabled={false} message="Editar cadastro">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => openEditor(row)}
-                              id={`edit-${kind}-${row.id}`}
-                              aria-label={`Editar ${row[c.name]}`}
-                            >
-                              <Pencil />
-                            </Button>
-                          </ActionHint>
-                          {row.status === "inactive" ? (
-                            <ActionHint disabled={false} message="Restaurar cadastro">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => void restore(row)}
-                                aria-label={`Restaurar ${row[c.name]}`}
-                              >
-                                <ArchiveRestore />
-                              </Button>
-                            </ActionHint>
-                          ) : (
-                            <ActionHint disabled={false} message="Arquivar cadastro">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => void startAction("archive", row)}
-                                aria-label={`Arquivar ${row[c.name]}`}
-                              >
-                                <Archive />
-                              </Button>
-                            </ActionHint>
-                          )}
-                          {canDelete && (
-                            <ActionHint disabled={false} message="Excluir cadastro">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive"
-                                onClick={() => void startAction("delete", row)}
-                                aria-label={`Excluir ${row[c.name]}`}
-                              >
-                                <Trash2 />
-                              </Button>
-                            </ActionHint>
-                          )}
-                        </div>
-                      </td>
-                    )}
+            <div
+              className="overflow-x-auto"
+              role="region"
+              aria-label="Lista de cadastros"
+              tabIndex={0}
+            >
+              <table className="w-full text-sm">
+                <caption className="sr-only">
+                  {c.title}: {filtered.length} registro(s)
+                </caption>
+                <thead className="bg-muted/60 text-left">
+                  <tr>
+                    <th className="px-4 py-3">Nome</th>
+                    <th className="px-4 py-3">Detalhe</th>
+                    <th className="px-4 py-3 text-center">Status</th>
+                    {canManage && <th className="w-40 px-4 py-3 text-center">Ações</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map((row) => (
+                    <tr key={row.id} className="border-t">
+                      <td className="px-4 py-3 font-medium">
+                        {kind === "companies" || kind === "contacts" ? (
+                          <RecordName
+                            kind={kind === "companies" ? "company" : "contact"}
+                            name={row[c.name]}
+                          />
+                        ) : (
+                          row[c.name]
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {row.legal_name ||
+                          row.email ||
+                          (row.parent_id ? "Subcategoria" : "Categoria") ||
+                          "—"}
+                        {kind === "companies" && row.domain && <DomainValue value={row.domain} />}
+                        {kind === "companies" && (
+                          <div className="mt-1">
+                            <CatChips cats={companyCats(row.id)} />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <StatusBadge
+                          value={row.status}
+                          kind="record"
+                          inactiveLabel="Inativo / Arquivado"
+                        />
+                      </td>
+                      {canManage && (
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-1">
+                            <ActionHint disabled={false} message="Editar cadastro">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => openEditor(row)}
+                                id={`edit-${kind}-${row.id}`}
+                                aria-label={`Editar ${row[c.name]}`}
+                              >
+                                <Pencil />
+                              </Button>
+                            </ActionHint>
+                            {row.status === "inactive" ? (
+                              <ActionHint disabled={false} message="Restaurar cadastro">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => void restore(row)}
+                                  aria-label={`Restaurar ${row[c.name]}`}
+                                >
+                                  <ArchiveRestore />
+                                </Button>
+                              </ActionHint>
+                            ) : (
+                              <ActionHint disabled={false} message="Arquivar cadastro">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => void startAction("archive", row)}
+                                  aria-label={`Arquivar ${row[c.name]}`}
+                                >
+                                  <Archive />
+                                </Button>
+                              </ActionHint>
+                            )}
+                            {canDelete && (
+                              <ActionHint disabled={false} message="Excluir cadastro">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive"
+                                  onClick={() => void startAction("delete", row)}
+                                  aria-label={`Excluir ${row[c.name]}`}
+                                >
+                                  <Trash2 />
+                                </Button>
+                              </ActionHint>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {!loadError && (
+          <TablePager
+            label={c.title}
+            total={paged.data.total}
+            page={paged.page}
+            pageSize={paged.pageSize}
+            busy={loading}
+            onPage={paged.setPage}
+            onPageSize={paged.setPageSize}
+          />
+        )}
+      </div>
 
       <Dialog
         open={action !== null}

@@ -117,6 +117,7 @@ function setup(options = {}) {
         };
       if (name === "./password-recovery")
         return require(resolve(repo, "src/lib/password-recovery.ts"));
+      if (name === "./list-pagination") return require(resolve(repo, "src/lib/list-pagination.ts"));
       if (name === "./admin-user-update") return helper;
       if (name === "@/integrations/supabase/auth-middleware") return { requireSupabaseAuth: {} };
       if (name === "@/integrations/supabase/client.server") return { supabaseAdmin: admin };

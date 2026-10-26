@@ -1,3 +1,5 @@
+import { buildCompanyList } from "../../src/lib/company-list";
+import { ticketQueues, matchesQueue } from "../../src/lib/iga";
 // Synthetic in-memory services. No credentials, production client or network calls.
 type Row = Record<string, unknown>;
 type Result = { data: Row[] | null; error: Error | { code: string; message: string } | null };
@@ -84,12 +86,57 @@ export const database = {
       is_default: false,
     },
   ],
+  contacts: Array.from({ length: 12 }, (_, index) => ({
+    id: `contact-${index + 1}`,
+    company_id: "company-a",
+    name: `Contato ${String(index + 1).padStart(2, "0")}`,
+    phone: "",
+    email: `contact${index + 1}@iga-test.example`,
+    status: index === 11 ? "inactive" : "active",
+    is_primary: index === 0,
+  })),
+  technicians: [
+    { id: "tech-one", user_id: "synthetic-user", name: "Técnico de teste", status: "active" },
+  ],
+  sla_policies: [],
+  tickets: Array.from({ length: 12 }, (_, index) => ({
+    id: `ticket-${index + 1}`,
+    number: `CH-${String(index + 1).padStart(6, "0")}`,
+    subject: `Chamado sintético ${index + 1}`,
+    status: index < 6 ? "new" : "resolved",
+    priority: "normal",
+    company_id: "company-a",
+    assigned_technician_id: index % 2 === 0 ? "tech-one" : null,
+    companies: { trade_name: "Alfa Sintética" },
+    technicians: index % 2 === 0 ? { name: "Técnico de teste" } : null,
+    opened_at: new Date(Date.UTC(2026, 0, 20 - index)).toISOString(),
+    last_activity_at: "2026-01-20T12:00:00Z",
+    resolved_at: index < 6 ? null : "2026-01-21T12:00:00Z",
+  })),
   notifications: [],
 };
+if (params.has("pagination")) {
+  for (let index = 1; index <= 9; index++)
+    database.companies.push({
+      id: `company-extra-${index}`,
+      created_at: new Date(Date.UTC(2026, 1, index)).toISOString(),
+      legal_name: `Empresa extra ${index}`,
+      trade_name: `Empresa ${String(index).padStart(2, "0")}`,
+      tax_id: `extra-${index}`,
+      domain: index % 2 ? "extra.example" : null,
+      status: "active",
+    });
+}
 if (params.has("empty")) database.companies = [];
 export const writes: { table: string; operation: string; payload: unknown }[] = [];
 let failOnce = params.has("error");
-Object.assign(window, { testDatabase: database, testWrites: writes });
+let failPageOnce = params.has("page-failure");
+Object.assign(window, {
+  testDatabase: database,
+  testWrites: writes,
+  testPageReads: [],
+  testPageResponses: [],
+});
 function query(table: string) {
   let operation = "select";
   let payload: Row | Row[] = {};
@@ -138,7 +185,7 @@ function query(table: string) {
       if (params.has("loading")) await new Promise((r) => setTimeout(r, 1200));
       if (
         failOnce &&
-        table === (params.has("category-error") ? "company_ticket_categories" : "companies")
+        table === (params.has("category-error") ? "ticket_categories" : "companies")
       ) {
         failOnce = false;
         resolve({ data: null, error: new Error("Falha sintética de carregamento") });
@@ -193,7 +240,104 @@ function query(table: string) {
 }
 export const supabase = {
   from: query,
-  rpc: async () => ({ data: [], error: null }),
+  rpc: async (name: string, args: Record<string, unknown> = {}) => {
+    if (name !== "list_paged_records") return { data: [], error: null };
+    window.testPageReads.push(args);
+    if (params.has("loading")) await new Promise((resolve) => setTimeout(resolve, 1200));
+    if (failOnce && !params.has("category-error")) {
+      failOnce = false;
+      return { data: null, error: new Error("Synthetic page failure") };
+    }
+    const entity = String(args["_entity"]);
+    const filters = args["_filters"] as Record<string, string>;
+    const size = Number(args["_page_size"] ?? 5);
+    const requested = Number(args["_page"] ?? 1);
+    if (requested === 2 && params.has("page-race"))
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    if (requested === 2 && failPageOnce) {
+      failPageOnce = false;
+      return { data: null, error: new Error("Synthetic page failure") };
+    }
+    let rows: Row[] = [];
+    let counts = { all: 0, active: 0, inactive: 0 };
+    let summary = counts;
+    const queues: Record<string, number> = {};
+    const source =
+      (database as unknown as Record<string, Row[]>)[
+        entity === "categories" ? "ticket_categories" : entity
+      ] ?? [];
+    summary = {
+      all: source.length,
+      active: source.filter((row) => row["status"] === "active").length,
+      inactive: source.filter((row) => row["status"] === "inactive").length,
+    };
+    if (entity === "companies") {
+      const view = buildCompanyList(
+        database.companies,
+        database.company_ticket_categories,
+        filters as never,
+      );
+      rows = view.rows.map((row) => ({
+        ...row,
+        category_links: database.company_ticket_categories.filter(
+          (link) => link.company_id === row.id,
+        ),
+      }));
+      counts = view.counts;
+    } else if (entity === "tickets") {
+      const base = database.tickets.filter(
+        (row) =>
+          JSON.stringify(row)
+            .toLowerCase()
+            .includes((filters["search"] ?? "").toLowerCase()) &&
+          (!filters["status"] || filters["status"] === "all" || row.status === filters["status"]) &&
+          (!filters["priority"] || row.priority === filters["priority"]) &&
+          (!filters["companyId"] || row.company_id === filters["companyId"]) &&
+          (!filters["technicianId"] || row.assigned_technician_id === filters["technicianId"]),
+      );
+      for (const queue of ticketQueues)
+        queues[queue.id] = base.filter((row) => matchesQueue(queue, row, "tech-one")).length;
+      const queue = ticketQueues.find((item) => item.id === filters["queue"])!;
+      rows = base
+        .filter((row) => matchesQueue(queue, row, "tech-one"))
+        .sort((a, b) => Date.parse(b.opened_at) - Date.parse(a.opened_at));
+      counts = { all: base.length, active: 0, inactive: 0 };
+    } else {
+      const base = source.filter((row) =>
+        JSON.stringify(row)
+          .toLowerCase()
+          .includes((filters["search"] ?? "").toLowerCase()),
+      );
+      counts = {
+        all: base.length,
+        active: base.filter((row) => row["status"] === "active").length,
+        inactive: base.filter((row) => row["status"] === "inactive").length,
+      };
+      rows = base
+        .filter((row) => filters["status"] === "all" || row["status"] === "active")
+        .sort((a, b) =>
+          String(a["name"]).localeCompare(String(b["name"]), "pt-BR", { numeric: true }),
+        );
+    }
+    const total = rows.length;
+    const page = Math.max(1, Math.min(requested, Math.ceil(total / size)));
+    window.testPageResponses.push({
+      ...args,
+      rowCount: rows.slice((page - 1) * size, page * size).length,
+    });
+    return {
+      data: {
+        rows: rows.slice((page - 1) * size, page * size),
+        total,
+        page,
+        pageSize: size,
+        counts,
+        summary,
+        queues,
+      },
+      error: null,
+    };
+  },
   auth: {
     signOut: async () => {
       window.testSignOutCalls = (window.testSignOutCalls ?? 0) + 1;
@@ -212,5 +356,7 @@ declare global {
     testDatabase: typeof database;
     testWrites: typeof writes;
     testSignOutCalls?: number;
+    testPageReads: Record<string, unknown>[];
+    testPageResponses: Record<string, unknown>[];
   }
 }

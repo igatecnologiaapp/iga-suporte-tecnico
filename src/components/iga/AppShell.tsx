@@ -17,13 +17,14 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/iga/NotificationsBell";
 import { LogoutButton } from "@/components/iga/LogoutButton";
+import { useAutoHideHeader } from "@/components/iga/useAutoHideHeader";
 import {
   Sheet,
   SheetContent,
@@ -79,6 +80,8 @@ export function AppShell({
   const [dark, setDark] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const headerRef = useRef<HTMLElement>(null);
+  const header = useAutoHideHeader(headerRef, path, mobile);
   const navigate = useNavigate();
   const visibleGroups = groups
     .map((g) => ({
@@ -243,7 +246,12 @@ export function AppShell({
           {navigation(collapsed)}
         </aside>
         <div className={cn("min-w-0 transition-[padding]", collapsed ? "md:pl-20" : "md:pl-64")}>
-          <header className="shell-header sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b px-4 backdrop-blur-xl md:h-20 md:px-7">
+          <header
+            ref={headerRef}
+            data-hidden={header.hidden}
+            onFocusCapture={header.reveal}
+            className="shell-header sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b px-4 backdrop-blur-xl md:h-20 md:px-7"
+          >
             <div className="flex min-w-0 items-center gap-3">
               <Sheet open={mobile} onOpenChange={setMobile}>
                 <SheetTrigger asChild>

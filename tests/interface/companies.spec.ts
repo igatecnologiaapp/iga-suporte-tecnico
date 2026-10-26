@@ -102,8 +102,13 @@ test("preserves raw URL when only another field is edited", async ({ page }) => 
     "HTTPS://WWW.ARQUIVO.EXAMPLE/path",
   );
 });
-test("duplicate domain remains an informational warning", async ({ page }) => {
-  await openCompany(page, "Beta Sintética");
+test("duplicate domain outside the filtered page remains an informational warning", async ({ page }) => {
+  await page.goto("/companies");
+  await page
+    .getByRole("textbox", { name: "Pesquisar empresas por nome, documento ou domínio" })
+    .fill("Beta");
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await page.getByRole("button", { name: "Editar Beta Sintética", exact: true }).click();
   await page.getByLabel(domainLabel).fill(" alfa.example ");
   await page.getByRole("button", { name: "Salvar alterações", exact: true }).click();
   await expect(
@@ -223,6 +228,7 @@ for (const width of [360, 768, 1440])
         animations: "disabled",
       });
       if (width === 360) {
+        await page.evaluate(() => window.scrollTo(0, 0));
         await page.getByRole("button", { name: "Abrir menu" }).click();
         await expect(page.getByRole("dialog", { name: "Menu IGA Service" })).toBeVisible();
         await page.keyboard.press("Escape");

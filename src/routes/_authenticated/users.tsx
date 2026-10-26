@@ -1,76 +1,212 @@
+import { TablePager } from "@/components/iga/TablePager";
 import { AdminAudit, type AdminAuditRecord } from "@/components/iga/AdminAudit";
 import { ActionHint } from "@/components/iga/ActionHint";
 import { AdminCreationOperations } from "@/components/iga/AdminCreationOperations";
-import { adminUserCreationSchema, creationFeedback, type CreationOperation, type CreationResult } from "@/lib/admin-user-creation";
+import {
+  adminUserCreationSchema,
+  creationFeedback,
+  type CreationOperation,
+  type CreationResult,
+} from "@/lib/admin-user-creation";
 import { canRequestPasswordRecovery } from "@/lib/password-recovery";
 import { UserTechnicianSelect } from "@/components/iga/UserTechnicianSelect";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { KeyRound, Pencil, Plus, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Empty, Page } from "@/components/iga/Page";
+import { Empty, Page, LoadState } from "@/components/iga/Page";
 import { StatusBadge } from "@/components/iga/StatusBadge";
 import { MODULES } from "@/lib/modules";
 import { errorMessage, formatDate, roleLabels } from "@/lib/iga";
-import { createAdminUser, listAdminUserCreations, resumeAdminUserCreation, resendAdminUserInvitation, listAdminAudit, listAdminUsers, listTechnicianOptions, sendPasswordReset, updateAdminUser } from "@/lib/admin-users.functions";
+import {
+  createAdminUser,
+  listAdminUserCreations,
+  resumeAdminUserCreation,
+  resendAdminUserInvitation,
+  listAdminAudit,
+  listAdminUsers,
+  listTechnicianOptions,
+  sendPasswordReset,
+  updateAdminUser,
+} from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/users")({
-  head: () => ({ meta: [
-    { title: "Usuários — IGA Service" },
-    { name: "description", content: "Criação e gestão de usuários, perfis de acesso e vínculos com técnicos." },
-    { property: "og:title", content: "Usuários — IGA Service" },
-    { property: "og:description", content: "Criação e gestão de usuários, perfis de acesso e vínculos com técnicos." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Usuários — IGA Service" },
+      {
+        name: "description",
+        content: "Criação e gestão de usuários, perfis de acesso e vínculos com técnicos.",
+      },
+      { property: "og:title", content: "Usuários — IGA Service" },
+      {
+        property: "og:description",
+        content: "Criação e gestão de usuários, perfis de acesso e vínculos com técnicos.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Users,
 });
 
-type AdminUser = { id: string; full_name: string; phone: string | null; status: string; created_at: string; email: string | null; last_sign_in_at: string | null; role: string; technician_id: string | null; technician_name: string | null; is_primary: boolean; modules: string[] };
+type AdminUser = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  status: string;
+  created_at: string;
+  email: string | null;
+  last_sign_in_at: string | null;
+  role: string;
+  technician_id: string | null;
+  technician_name: string | null;
+  is_primary: boolean;
+  modules: string[];
+};
 
 function Users() {
   const { user, role, isPrimary } = Route.useRouteContext();
   const isAdmin = role === "admin";
-  const [rows, setRows] = useState<AdminUser[]>([]); const [techs, setTechs] = useState<any[]>([]); const [audit, setAudit] = useState<AdminAuditRecord[]>([]);
-  const [open, setOpen] = useState(false); const [editing, setEditing] = useState<AdminUser | null>(null); const [busy, setBusy] = useState(false); const [newRole, setNewRole] = useState("viewer"); const [mods, setMods] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  const [total, setTotal] = useState(0);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState<string | null>(null);
+  const loadRequest = useRef(0);
+  const [rows, setRows] = useState<AdminUser[]>([]);
+  const [techs, setTechs] = useState<any[]>([]);
+  const [audit, setAudit] = useState<AdminAuditRecord[]>([]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<AdminUser | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [newRole, setNewRole] = useState("viewer");
+  const [mods, setMods] = useState<string[]>([]);
 
   const [creationId, setCreationId] = useState("");
   const [operations, setOperations] = useState<CreationOperation[]>([]);
   const [operationBusyId, setOperationBusyId] = useState<string | null>(null);
   const [resettingId, setResettingId] = useState<string | null>(null);
-  const canReset = (row: AdminUser) => canRequestPasswordRecovery({ id: user.id, role, isPrimary }, { id: row.id, role: row.role, isPrimary: row.is_primary });
+  const canReset = (row: AdminUser) =>
+    canRequestPasswordRecovery(
+      { id: user.id, role, isPrimary },
+      { id: row.id, role: row.role, isPrimary: row.is_primary },
+    );
 
   async function load() {
+    const request = ++loadRequest.current;
+    setUsersLoading(true);
+    setUsersError(null);
     try {
-      const [users, technicians, logs, creations] = await Promise.all([listAdminUsers(), listTechnicianOptions(), listAdminAudit(), isPrimary ? listAdminUserCreations() : Promise.resolve([])]);
-      setRows(users as AdminUser[]); setTechs(technicians as any[]); setAudit(logs as AdminAuditRecord[]); setOperations(creations);
-    } catch (error) { toast.error(errorMessage(error)); }
+      const [users, technicians, logs, creations] = await Promise.all([
+        listAdminUsers({ data: { page, pageSize } }),
+        listTechnicianOptions(),
+        listAdminAudit(),
+        isPrimary ? listAdminUserCreations() : Promise.resolve([]),
+      ]);
+      if (request !== loadRequest.current) return;
+      setRows(users.rows as AdminUser[]);
+      setTotal(users.total);
+      if (users.page !== page) setPage(users.page);
+      setTechs(technicians as any[]);
+      setAudit(logs as AdminAuditRecord[]);
+      setOperations(creations);
+    } catch {
+      if (request === loadRequest.current) {
+        setRows([]);
+        setUsersError("Não foi possível carregar esta página de usuários.");
+      }
+    } finally {
+      if (request === loadRequest.current) setUsersLoading(false);
+    }
   }
-  useEffect(() => { if (isAdmin) void load(); }, [isAdmin, isPrimary]);
+  useEffect(() => {
+    if (isAdmin) void load();
+    return () => {
+      loadRequest.current++;
+    };
+  }, [isAdmin, isPrimary, page, pageSize]);
 
-  if (!isAdmin) return <Page title="Usuários" description="Consulta de perfis de acesso."><Empty><ShieldAlert className="mx-auto mb-2 size-5" />Apenas administradores podem gerenciar usuários.</Empty></Page>;
+  if (!isAdmin)
+    return (
+      <Page title="Usuários" description="Consulta de perfis de acesso.">
+        <Empty>
+          <ShieldAlert className="mx-auto mb-2 size-5" />
+          Apenas administradores podem gerenciar usuários.
+        </Empty>
+      </Page>
+    );
 
-  function startCreate() { setCreationId(crypto.randomUUID()); setEditing(null); setNewRole("viewer"); setMods(["tickets"]); setOpen(true); }
-  function startEdit(row: AdminUser) { setEditing(row); setNewRole(row.role); setMods(row.modules); setOpen(true); }
+  function startCreate() {
+    setCreationId(crypto.randomUUID());
+    setEditing(null);
+    setNewRole("viewer");
+    setMods(["tickets"]);
+    setOpen(true);
+  }
+  function startEdit(row: AdminUser) {
+    setEditing(row);
+    setNewRole(row.role);
+    setMods(row.modules);
+    setOpen(true);
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy) return; const f = new FormData(event.currentTarget); setBusy(true);
+    event.preventDefault();
+    if (busy) return;
+    const f = new FormData(event.currentTarget);
+    setBusy(true);
     try {
       const technicianField = String(f.get("technician_id") || "");
       if (editing) {
-        await updateAdminUser({ data: { userId: editing.id, fullName: String(f.get("full_name")), phone: String(f.get("phone") || ""), role: newRole, status: String(f.get("status")), technicianId: newRole === "technician" ? (technicianField || null) : null, ...(isPrimary && !editing.is_primary ? { modules: mods } : {}) } });
+        await updateAdminUser({
+          data: {
+            userId: editing.id,
+            fullName: String(f.get("full_name")),
+            phone: String(f.get("phone") || ""),
+            role: newRole,
+            status: String(f.get("status")),
+            technicianId: newRole === "technician" ? technicianField || null : null,
+            ...(isPrimary && !editing.is_primary ? { modules: mods } : {}),
+          },
+        });
         toast.success("Usuário atualizado.");
       } else {
-        const request = adminUserCreationSchema.safeParse({ operationId: creationId, fullName: String(f.get("full_name")), email: String(f.get("email")), phone: String(f.get("phone") || ""), role: newRole, status: String(f.get("status")), technicianId: technicianField === "new" ? null : technicianField || null, createTechnician: technicianField === "new", modules: mods });
-        if (!request.success) { toast.error("Confira nome, e-mail, perfil, módulos e vínculo de técnico."); return; }
+        const request = adminUserCreationSchema.safeParse({
+          operationId: creationId,
+          fullName: String(f.get("full_name")),
+          email: String(f.get("email")),
+          phone: String(f.get("phone") || ""),
+          role: newRole,
+          status: String(f.get("status")),
+          technicianId: technicianField === "new" ? null : technicianField || null,
+          createTechnician: technicianField === "new",
+          modules: mods,
+        });
+        if (!request.success) {
+          toast.error("Confira nome, e-mail, perfil, módulos e vínculo de técnico.");
+          return;
+        }
         notifyCreation(await createAdminUser({ data: request.data }));
       }
-      setOpen(false); await load();
-    } catch (error) { toast.error(errorMessage(error)); await load(); } finally { setBusy(false); }
+      setOpen(false);
+      await load();
+    } catch (error) {
+      toast.error(errorMessage(error));
+      await load();
+    } finally {
+      setBusy(false);
+    }
   }
 
   function notifyCreation(result: CreationResult) {
@@ -79,83 +215,351 @@ function Users() {
   }
   async function continueCreation(operationId: string, resend: boolean) {
     if (operationBusyId || busy) return;
-    if (resend && !window.confirm("Reenviar o convite pode substituir o link anterior. Confira o e-mail do titular antes de continuar. Deseja reenviar?")) return;
+    if (
+      resend &&
+      !window.confirm(
+        "Reenviar o convite pode substituir o link anterior. Confira o e-mail do titular antes de continuar. Deseja reenviar?",
+      )
+    )
+      return;
     setOperationBusyId(operationId);
     try {
-      const result = await (resend ? resendAdminUserInvitation : resumeAdminUserCreation)({ data: { operationId } });
+      const result = await (resend ? resendAdminUserInvitation : resumeAdminUserCreation)({
+        data: { operationId },
+      });
       notifyCreation(result);
-    } catch (error) { toast.error(errorMessage(error)); }
-    finally { await load(); setOperationBusyId(null); }
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      await load();
+      setOperationBusyId(null);
+    }
   }
 
   async function toggleStatus(row: AdminUser) {
-    try { await updateAdminUser({ data: { userId: row.id, status: row.status === "active" ? "inactive" : "active" } }); toast.success(row.status === "active" ? "Usuário desativado." : "Usuário reativado."); await load(); }
-    catch (error) { toast.error(errorMessage(error)); }
+    try {
+      await updateAdminUser({
+        data: { userId: row.id, status: row.status === "active" ? "inactive" : "active" },
+      });
+      toast.success(row.status === "active" ? "Usuário desativado." : "Usuário reativado.");
+      await load();
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
   }
   async function resetPassword(row: AdminUser) {
     if (resettingId || !canReset(row)) return;
     setResettingId(row.id);
     try {
       const result = await sendPasswordReset({ data: { userId: row.id } });
-      if (result.status === "failed") toast.error("O envio não foi confirmado. Consulte a auditoria antes de repetir.");
-      else if (result.audit === "pending") toast.warning("Solicitação aceita; registro de conclusão pendente. Não repita o envio.");
+      if (result.status === "failed")
+        toast.error("O envio não foi confirmado. Consulte a auditoria antes de repetir.");
+      else if (result.audit === "pending")
+        toast.warning("Solicitação aceita; registro de conclusão pendente. Não repita o envio.");
       else toast.success("Instruções de recuperação solicitadas para o e-mail do usuário.");
       await load();
-    } catch (error) { toast.error(errorMessage(error)); }
-    finally { setResettingId(null); }
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setResettingId(null);
+    }
   }
 
-  return <Page title="Usuários" description="Crie usuários, defina perfis de acesso e acompanhe a auditoria administrativa." action={isPrimary ? <Button onClick={startCreate}><Plus />Novo usuário</Button> : undefined}>
-    <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl"><DialogHeader><DialogTitle>{editing ? "Editar usuário" : "Novo usuário"}</DialogTitle><DialogDescription>{editing ? "Atualize dados, perfil de acesso e vínculos." : "O usuário recebe um convite seguro e define a própria senha no primeiro acesso."}</DialogDescription></DialogHeader>
-      <form method="post" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2"><Label htmlFor="full_name">Nome</Label><Input id="full_name" name="full_name" defaultValue={editing?.full_name ?? ""} required /></div>
-        <div><Label htmlFor="email">E-mail</Label><Input id="email" name="email" type="email" defaultValue={editing?.email ?? ""} disabled={Boolean(editing)} required={!editing} /></div>
-        <div><Label htmlFor="phone">Telefone</Label><Input id="phone" name="phone" defaultValue={editing?.phone ?? ""} /></div>
-        <div><Label htmlFor="role">Perfil de acesso</Label><select id="role" className="form-control" value={newRole} onChange={e => setNewRole(e.target.value)} disabled={editing?.id === user.id || !isPrimary}>{Object.entries(roleLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>{editing?.id === user.id && <p className="mt-1 text-xs text-muted-foreground">Você não pode alterar o seu próprio perfil.</p>}</div>
-        <div><Label htmlFor="status">Status</Label><select id="status" name="status" className="form-control" defaultValue={editing?.status ?? "active"}><option value="active">Ativo</option><option value="inactive">Inativo</option></select></div>
-        {newRole === "technician" && <UserTechnicianSelect editing={editing} technicians={techs} />}
-        <fieldset className="sm:col-span-2"><legend className="text-sm font-medium">Módulos permitidos</legend>{editing?.is_primary ? <p className="mt-1 text-xs text-muted-foreground">Administrador Principal: acesso integral a todos os módulos.</p> : <div className="mt-2 grid gap-2 sm:grid-cols-2">{MODULES.map(m => <label key={m.key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mods.includes(m.key)} disabled={!isPrimary} onChange={e => setMods(e.target.checked ? [...mods, m.key] : mods.filter(x => x !== m.key))} />{m.label}</label>)}</div>}{!isPrimary && <p className="mt-1 text-xs text-muted-foreground">Somente o Administrador Principal altera perfis e módulos.</p>}</fieldset>
-        <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" disabled={busy} onClick={() => setOpen(false)}>Cancelar</Button><Button disabled={busy}>{editing ? "Salvar" : "Criar Usuário"}</Button></div>
-      </form>
-    </DialogContent></Dialog>
+  return (
+    <Page
+      title="Usuários"
+      description="Crie usuários, defina perfis de acesso e acompanhe a auditoria administrativa."
+      action={
+        isPrimary ? (
+          <Button onClick={startCreate}>
+            <Plus />
+            Novo usuário
+          </Button>
+        ) : undefined
+      }
+    >
+      <Dialog
+        open={open}
+        onOpenChange={(value) => {
+          if (!busy) setOpen(value);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Editar usuário" : "Novo usuário"}</DialogTitle>
+            <DialogDescription>
+              {editing
+                ? "Atualize dados, perfil de acesso e vínculos."
+                : "O usuário recebe um convite seguro e define a própria senha no primeiro acesso."}
+            </DialogDescription>
+          </DialogHeader>
+          <form method="post" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Label htmlFor="full_name">Nome</Label>
+              <Input
+                id="full_name"
+                name="full_name"
+                defaultValue={editing?.full_name ?? ""}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                defaultValue={editing?.email ?? ""}
+                disabled={Boolean(editing)}
+                required={!editing}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Telefone</Label>
+              <Input id="phone" name="phone" defaultValue={editing?.phone ?? ""} />
+            </div>
+            <div>
+              <Label htmlFor="role">Perfil de acesso</Label>
+              <select
+                id="role"
+                className="form-control"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                disabled={editing?.id === user.id || !isPrimary}
+              >
+                {Object.entries(roleLabels).map(([v, l]) => (
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+              {editing?.id === user.id && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Você não pode alterar o seu próprio perfil.
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                name="status"
+                className="form-control"
+                defaultValue={editing?.status ?? "active"}
+              >
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+              </select>
+            </div>
+            {newRole === "technician" && (
+              <UserTechnicianSelect editing={editing} technicians={techs} />
+            )}
+            <fieldset className="sm:col-span-2">
+              <legend className="text-sm font-medium">Módulos permitidos</legend>
+              {editing?.is_primary ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Administrador Principal: acesso integral a todos os módulos.
+                </p>
+              ) : (
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  {MODULES.map((m) => (
+                    <label key={m.key} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={mods.includes(m.key)}
+                        disabled={!isPrimary}
+                        onChange={(e) =>
+                          setMods(
+                            e.target.checked ? [...mods, m.key] : mods.filter((x) => x !== m.key),
+                          )
+                        }
+                      />
+                      {m.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+              {!isPrimary && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Somente o Administrador Principal altera perfis e módulos.
+                </p>
+              )}
+            </fieldset>
+            <div className="flex justify-end gap-2 sm:col-span-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={() => setOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button disabled={busy}>{editing ? "Salvar" : "Criar Usuário"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-    {isPrimary && <AdminCreationOperations operations={operations} busyId={operationBusyId} onResume={id => void continueCreation(id, false)} onResend={id => void continueCreation(id, true)} />}
+      {isPrimary && (
+        <AdminCreationOperations
+          operations={operations}
+          busyId={operationBusyId}
+          onResume={(id) => void continueCreation(id, false)}
+          onResend={(id) => void continueCreation(id, true)}
+        />
+      )}
 
-    {rows.length === 0 ? <Empty>Nenhum usuário encontrado.</Empty> : <div className="overflow-hidden rounded-md border bg-card"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/60 text-left"><tr><th className="px-4 py-3">Nome</th><th className="px-4 py-3">E-mail</th><th className="px-4 py-3">Perfil</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Técnico vinculado</th><th className="px-4 py-3">Último acesso</th><th className="px-4 py-3">Criado em</th><th className="px-4 py-3 text-right">Ações</th></tr></thead><tbody>
-      {rows.map(r => {
-        const pending = operations.some(op => op.userId === r.id && op.stage === "reserved");
-        const resetDisabled = resettingId !== null || !canReset(r);
-        const resetHint = r.id === user.id
-          ? "A recuperação por esta ação é destinada a outra conta, não à sua própria."
-          : !canReset(r)
-            ? "Somente o Administrador Principal pode solicitar recuperação para esta conta administrativa."
-            : resettingId !== null
-              ? "Aguarde a solicitação de recuperação em andamento terminar."
-              : "Enviar instruções de recuperação para o e-mail deste usuário.";
-        const statusDisabled = r.id === user.id || r.is_primary;
-        const statusHint = r.is_primary ? "O Administrador Principal não pode ser desativado." : r.id === user.id ? "Você não pode desativar sua própria conta." : r.status === "active" ? "Bloquear o acesso deste usuário à aplicação." : "Permitir novamente o acesso deste usuário à aplicação.";
-        return <tr key={r.id} className="border-t">
-        <td className="px-4 py-3 font-medium">{r.full_name || "Sem nome"}{r.phone && <span className="block text-xs text-muted-foreground">{r.phone}</span>}</td>
-        <td className="px-4 py-3 text-muted-foreground">{r.email || "—"}</td>
-        <td className="px-4 py-3">{r.is_primary ? "Administrador Principal" : (roleLabels[r.role] ?? r.role)}<span className="block text-xs text-muted-foreground">{r.is_primary ? "Todos os módulos" : `${r.modules.length} módulo(s)`}</span></td>
-        <td className="px-4 py-3"><StatusBadge value={r.status} kind="record" /></td>
-        <td className="px-4 py-3 text-muted-foreground">{r.technician_name || "—"}</td>
-        <td className="px-4 py-3 text-muted-foreground">{formatDate(r.last_sign_in_at)}</td>
-        <td className="px-4 py-3 text-muted-foreground">{formatDate(r.created_at)}</td>
-        <td className="px-4 py-3"><div className="flex justify-end gap-1">
-          <ActionHint disabled={pending} message={pending ? "Retome o cadastro pendente antes de editar este usuário." : "Editar os dados deste usuário."}>
-            <Button size="sm" variant="ghost" disabled={pending} onClick={() => startEdit(r)}><Pencil />Editar</Button>
-          </ActionHint>
-          <ActionHint disabled={resetDisabled} message={resetHint}>
-            <Button size="sm" variant="ghost" onClick={() => void resetPassword(r)} disabled={resetDisabled} aria-label={`Recuperar senha de ${r.full_name || "usuário"}`}><KeyRound />Recuperar senha</Button>
-          </ActionHint>
-          <ActionHint disabled={statusDisabled} message={statusHint}>
-            <Button size="sm" variant="ghost" className={r.status === "active" ? "hover:bg-destructive/10 hover:text-destructive" : undefined} onClick={() => void toggleStatus(r)} disabled={statusDisabled}>{r.status === "active" ? "Desativar" : "Reativar"}</Button>
-          </ActionHint>
-        </div></td>
-      </tr>; })}
-    </tbody></table></div></div>}
+      <div className="paged-table">
+        {usersLoading && rows.length === 0 ? (
+          <LoadState loading />
+        ) : usersError ? (
+          <LoadState error={usersError} onRetry={() => void load()} />
+        ) : rows.length === 0 ? (
+          <Empty>Nenhum usuário encontrado.</Empty>
+        ) : (
+          <div
+            inert={usersLoading || undefined}
+            className="overflow-hidden rounded-md border bg-card"
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/60 text-left">
+                  <tr>
+                    <th className="px-4 py-3">Nome</th>
+                    <th className="px-4 py-3">E-mail</th>
+                    <th className="px-4 py-3">Perfil</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Técnico vinculado</th>
+                    <th className="px-4 py-3">Último acesso</th>
+                    <th className="px-4 py-3">Criado em</th>
+                    <th className="px-4 py-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => {
+                    const pending = operations.some(
+                      (op) => op.userId === r.id && op.stage === "reserved",
+                    );
+                    const resetDisabled = resettingId !== null || !canReset(r);
+                    const resetHint =
+                      r.id === user.id
+                        ? "A recuperação por esta ação é destinada a outra conta, não à sua própria."
+                        : !canReset(r)
+                          ? "Somente o Administrador Principal pode solicitar recuperação para esta conta administrativa."
+                          : resettingId !== null
+                            ? "Aguarde a solicitação de recuperação em andamento terminar."
+                            : "Enviar instruções de recuperação para o e-mail deste usuário.";
+                    const statusDisabled = r.id === user.id || r.is_primary;
+                    const statusHint = r.is_primary
+                      ? "O Administrador Principal não pode ser desativado."
+                      : r.id === user.id
+                        ? "Você não pode desativar sua própria conta."
+                        : r.status === "active"
+                          ? "Bloquear o acesso deste usuário à aplicação."
+                          : "Permitir novamente o acesso deste usuário à aplicação.";
+                    return (
+                      <tr key={r.id} className="border-t">
+                        <td className="px-4 py-3 font-medium">
+                          {r.full_name || "Sem nome"}
+                          {r.phone && (
+                            <span className="block text-xs text-muted-foreground">{r.phone}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{r.email || "—"}</td>
+                        <td className="px-4 py-3">
+                          {r.is_primary
+                            ? "Administrador Principal"
+                            : (roleLabels[r.role] ?? r.role)}
+                          <span className="block text-xs text-muted-foreground">
+                            {r.is_primary ? "Todos os módulos" : `${r.modules.length} módulo(s)`}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge value={r.status} kind="record" />
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {r.technician_name || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {formatDate(r.last_sign_in_at)}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {formatDate(r.created_at)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1">
+                            <ActionHint
+                              disabled={pending}
+                              message={
+                                pending
+                                  ? "Retome o cadastro pendente antes de editar este usuário."
+                                  : "Editar os dados deste usuário."
+                              }
+                            >
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={pending}
+                                onClick={() => startEdit(r)}
+                              >
+                                <Pencil />
+                                Editar
+                              </Button>
+                            </ActionHint>
+                            <ActionHint disabled={resetDisabled} message={resetHint}>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => void resetPassword(r)}
+                                disabled={resetDisabled}
+                                aria-label={`Recuperar senha de ${r.full_name || "usuário"}`}
+                              >
+                                <KeyRound />
+                                Recuperar senha
+                              </Button>
+                            </ActionHint>
+                            <ActionHint disabled={statusDisabled} message={statusHint}>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className={
+                                  r.status === "active"
+                                    ? "hover:bg-destructive/10 hover:text-destructive"
+                                    : undefined
+                                }
+                                onClick={() => void toggleStatus(r)}
+                                disabled={statusDisabled}
+                              >
+                                {r.status === "active" ? "Desativar" : "Reativar"}
+                              </Button>
+                            </ActionHint>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-    <AdminAudit records={audit} />
-  </Page>;
+        {!usersError && (
+          <TablePager
+            label="Usuários"
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            busy={usersLoading}
+            onPage={setPage}
+            onPageSize={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
+        )}
+      </div>
+      <AdminAudit records={audit} />
+    </Page>
+  );
 }

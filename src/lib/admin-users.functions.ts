@@ -5,6 +5,7 @@ import { adminUserUpdateSchema, planAdminUserUpdate } from "./admin-user-update"
 
 import { adminUserCreationSchema, adminCreationOperationIdSchema } from "./admin-user-creation";
 import { passwordRecoveryRequestSchema } from "./password-recovery";
+import { listPageSchema } from "./list-pagination";
 
 type AdminContext = { supabase: any; userId: string };
 
@@ -13,14 +14,19 @@ async function assertAdmin(context: AdminContext) {
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
     context.supabase.rpc("has_module", { _user_id: context.userId, _module: "users" }),
   ]);
-  if (error || moduleError || !data || !hasUsers) throw new Error("Apenas administradores podem gerenciar usuários.");
+  if (error || moduleError || !data || !hasUsers)
+    throw new Error("Apenas administradores podem gerenciar usuários.");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
 
 // Ponto único de autorização para ações administrativas sensíveis.
 // Hoje: exclusivas do Administrador Principal. Futuro: delegar por ação sem reconstruir o RBAC.
-async function assertPrimary(admin: any, actorId: string, _action: "create_user" | "change_role" | "change_modules") {
+async function assertPrimary(
+  admin: any,
+  actorId: string,
+  _action: "create_user" | "change_role" | "change_modules",
+) {
   const { data, error } = await admin.rpc("is_primary_admin", { _user_id: actorId });
   if (error || !data) throw new Error("Somente o Administrador Principal pode realizar esta ação.");
 }
@@ -32,29 +38,51 @@ async function primaryId(admin: any): Promise<string | null> {
 
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) => listPageSchema.parse(input ?? {}))
+  .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as AdminContext);
-    const [{ data: profiles }, { data: roles }, { data: technicians }, authUsers, { data: mods }, primary] = await Promise.all([
-      admin.from("profiles").select("id,full_name,phone,status,created_at").order("full_name"),
-      admin.from("user_roles").select("user_id,role"),
-      admin.from("technicians").select("id,name,user_id,status"),
-      admin.auth.admin.listUsers({ page: 1, perPage: 200 }),
-      admin.from("user_modules").select("user_id,module"),
+    const countResult = await admin.from("profiles").select("id", { count: "exact", head: true });
+    if (countResult.error) throw new Error("Não foi possível consultar os usuários.");
+    const total = countResult.count ?? 0;
+    const page = Math.max(1, Math.min(data.page, Math.ceil(total / data.pageSize)));
+    const profilesResult = await admin
+      .from("profiles")
+      .select("id,full_name,phone,status,created_at")
+      .order("full_name")
+      .order("id")
+      .range((page - 1) * data.pageSize, page * data.pageSize - 1);
+    if (profilesResult.error)
+      throw new Error("Não foi possível consultar esta página de usuários.");
+    const profiles = profilesResult.data ?? [];
+    const ids = profiles.map((profile) => profile.id);
+    if (!ids.length) return { rows: [], total, page, pageSize: data.pageSize };
+    const [roles, technicians, mods, primary, authUsers] = await Promise.all([
+      admin.from("user_roles").select("user_id,role").in("user_id", ids),
+      admin.from("technicians").select("id,name,user_id,status").in("user_id", ids),
+      admin.from("user_modules").select("user_id,module").in("user_id", ids),
       primaryId(admin),
+      Promise.all(ids.map((id) => admin.auth.admin.getUserById(id))),
     ]);
-    const byId = new Map((authUsers.data?.users ?? []).map((u: any) => [u.id, u]));
-    return (profiles ?? []).map((p: any) => {
-      const authUser: any = byId.get(p.id);
-      const technician = (technicians ?? []).find((t: any) => t.user_id === p.id);
+    if (roles.error || technicians.error || mods.error || authUsers.some((result) => result.error))
+      throw new Error("Não foi possível conferir os dados desta página de usuários.");
+    const rows = profiles.map((profile, index) => {
+      const authUser = authUsers[index]?.data.user;
+      const technician = technicians.data?.find((item) => item.user_id === profile.id);
       return {
-        id: p.id, full_name: p.full_name, phone: p.phone, status: p.status, created_at: p.created_at,
-        email: authUser?.email ?? null, last_sign_in_at: authUser?.last_sign_in_at ?? null,
-        role: (roles ?? []).find((r: any) => r.user_id === p.id)?.role ?? "viewer",
-        technician_id: technician?.id ?? null, technician_name: technician?.name ?? null,
-        is_primary: p.id === primary,
-        modules: (mods ?? []).filter((m: any) => m.user_id === p.id).map((m: any) => m.module).sort(),
+        ...profile,
+        email: authUser?.email ?? null,
+        last_sign_in_at: authUser?.last_sign_in_at ?? null,
+        role: roles.data?.find((item) => item.user_id === profile.id)?.role ?? "viewer",
+        technician_id: technician?.id ?? null,
+        technician_name: technician?.name ?? null,
+        is_primary: profile.id === primary,
+        modules: (mods.data ?? [])
+          .filter((item) => item.user_id === profile.id)
+          .map((item) => item.module)
+          .sort(),
       };
     });
+    return { rows, total, page, pageSize: data.pageSize };
   });
 
 export const listTechnicianOptions = createServerFn({ method: "POST" })
@@ -96,7 +124,13 @@ export const resendAdminUserInvitation = createServerFn({ method: "POST" })
     const admin = await assertAdmin(context as AdminContext);
     await assertPrimary(admin, context.userId, "create_user");
     const { deliverCreationInvitation } = await import("./admin-user-creation.server");
-    return deliverCreationInvitation(context.supabase, admin, data.operationId, creationConfig(), true);
+    return deliverCreationInvitation(
+      context.supabase,
+      admin,
+      data.operationId,
+      creationConfig(),
+      true,
+    );
   });
 
 export const listAdminUserCreations = createServerFn({ method: "POST" })
@@ -167,9 +201,21 @@ export const listAdminAudit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await assertAdmin(context as AdminContext);
-    const { data } = await admin.from("admin_audit_logs").select("id,action,old_value,new_value,created_at,actor_id,target_user_id").order("created_at", { ascending: false }).limit(50);
-    const ids = Array.from(new Set((data ?? []).flatMap((r: any) => [r.actor_id, r.target_user_id]).filter(Boolean)));
-    const names = ids.length ? (await admin.from("profiles").select("id,full_name").in("id", ids)).data ?? [] : [];
+    const { data } = await admin
+      .from("admin_audit_logs")
+      .select("id,action,old_value,new_value,created_at,actor_id,target_user_id")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const ids = Array.from(
+      new Set((data ?? []).flatMap((r: any) => [r.actor_id, r.target_user_id]).filter(Boolean)),
+    );
+    const names = ids.length
+      ? ((await admin.from("profiles").select("id,full_name").in("id", ids)).data ?? [])
+      : [];
     const nameOf = (id: string | null) => names.find((p: any) => p.id === id)?.full_name ?? "—";
-    return (data ?? []).map((r: any) => ({ ...r, actor_name: nameOf(r.actor_id), target_name: nameOf(r.target_user_id) }));
+    return (data ?? []).map((r: any) => ({
+      ...r,
+      actor_name: nameOf(r.actor_id),
+      target_name: nameOf(r.target_user_id),
+    }));
   });
