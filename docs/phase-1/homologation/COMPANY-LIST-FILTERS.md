@@ -2,7 +2,8 @@
 
 Implementação autorizada a partir das referências clara e escura fornecidas pelo
 operador. Escopo inicial: Empresas; padrão de status compartilhado nos cadastros.
-Aplicação e conferência manual no WSL pendentes. Sem publicação.
+Primeira versão aprovada pelo operador no WSL; adendos finais de CSS aguardam
+conferência manual. Sem publicação.
 
 ## Interface e comportamento
 
@@ -28,7 +29,8 @@ Aplicação e conferência manual no WSL pendentes. Sem publicação.
   e situação de chamados não foram alteradas.
 - Seleção e Novo cadastro usam azul com texto claro nos dois temas. Novos tons
   são locais aos componentes de listagem; navegação e demais ações mantêm os
-  tokens anteriores. Divisórias e alinhamento reforçam as colunas da tabela.
+  tokens anteriores. Alinhamento reforça as colunas da tabela. As divisórias verticais da primeira
+  versão foram removidas a pedido do operador.
 - Barra se adapta à largura disponível (inclusive com menu lateral aberto).
   No celular os controles empilham, filtros de situação quebram linha, popover
   fica dentro da tela e a tabela mantém rolagem horizontal com colunas legíveis.
@@ -67,3 +69,36 @@ Sem migration. Conferir Todas/Ativas/Inativas, contadores combinados com busca e
 categoria, ordenação, painel móvel e alternância dos temas. A modernização completa
 de Contatos e seus filtros específicos continua sendo a próxima etapa, após
 observar este primeiro resultado em Empresas.
+
+
+## Adendos visuais pedidos pelo operador — 26/10/2026
+
+Operador confirmou que gostou da organização e pediu três ajustes:
+
+- Removidas as divisórias verticais entre células nos cadastros. Separação
+  horizontal de registros e borda externa preservadas.
+- Removida a regra que deixava branca a bolinha do filtro selecionado. Verde e
+  âmbar agora permanecem iguais antes/depois da seleção, nos dois temas.
+- Scrollbars nativas com cores semânticas por tema em todo o documento: trilho
+  claro/azulado no claro e azul profundo no escuro, puxador azul acinzentado,
+  arredondado e com destaque de hover. Chromium/Safari usam pseudo-elementos
+  WebKit de 10px (puxador de 6px dentro do trilho); Firefox recebe propriedades
+  padrão de cor/largura fina. `color-scheme` acompanha o tema. Modo de cores
+  forçadas mantém a apresentação nativa do sistema. Sem substituir a rolagem por JS.
+
+Seis verificações responsivas existentes passaram novamente em 360/768/1440,
+nos dois temas. Conferência adicional em Chromium confirmou cores das bolinhas
+iguais antes/depois de selecionar, borda esquerda de célula com 0px, cores de
+rolagem em tabela/formulário e fallback auto em cores forçadas. Rolagem por
+teclado continuou funcionando. Nenhuma gravação nos serviços sintéticos.
+
+Capturas com scrollbars nativas visíveis (flag padrão de ocultação do Playwright
+removida somente para esta inspeção): `../screenshots/scrollbar-{table,dialog}-{light,dark}.png`.
+Verificação real de Firefox/Safari não executada. Não foram repetidos testes de
+servidor/SQL/build neste adendo exclusivamente CSS; a folha foi compilada e
+renderizada pelo Vite das verificações de interface. As capturas anteriores do
+lote preservam o histórico da primeira versão.
+
+Para aplicar apenas estes adendos: atualizar Git, copiar `src/styles.css` para a
+aplicação isolada e reiniciar Vite pelo launcher privado. Sem migration. Conferência
+manual do operador ainda pendente para as barras e demais adendos.
