@@ -35,7 +35,7 @@ function run(options = {}) {
   const collation = {
     icu: true,
     deterministic: false,
-    locale: options.badCollation ? "wrong-locale" : "pt-u-kn-true-ks-level1",
+    locale: options.locale ?? (options.badCollation ? "wrong-locale" : "pt-u-kn-true-ks-level1"),
   };
   try {
     vm.runInNewContext(source, {
@@ -155,6 +155,13 @@ test("pagination migration recognizes the exact installed function without apply
   assert.equal(r.applied, 0);
   assert.equal(r.evidence, 1);
 });
+for (const present of [false, true])
+  test(`pagination migration accepts ICU canonical boolean locale with installed=${present}`, () => {
+    const r = run({ apply: true, present, locale: "pt-u-kn-ks-level1" });
+    assert.equal(r.error, null);
+    assert.equal(r.applied, present ? 0 : 1);
+    assert.equal(r.evidence, 1);
+  });
 for (const options of [
   { remote: true },
   { exposed: true },
@@ -162,6 +169,9 @@ for (const options of [
   { present: true, drift: true },
   { present: true, anon: true },
   { badCollation: true },
+  { present: true, locale: "pt-u-kn-false-ks-level1" },
+  { present: true, locale: "pt-u-ks-level1" },
+  { present: true, locale: "pt-u-kn-ks-level2" },
 ])
   test(`pagination migration refuses unsafe preconditions ${JSON.stringify(options)}`, () => {
     const r = run({ ...options, apply: true });

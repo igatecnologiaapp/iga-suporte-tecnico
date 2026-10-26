@@ -66,6 +66,16 @@ function checkFunction(fn) {
   assert.equal(fn.service, false);
   assert.ok(fn.config.includes("search_path=pg_catalog, public"));
 }
+function checkCollation(collation) {
+  assert.equal(collation.icu, true);
+  assert.equal(collation.deterministic, false);
+  // ICU may canonicalize the Unicode boolean keyword kn-true to kn.
+  // Accept only these two spellings of the same numeric ordering locale.
+  assert.ok(
+    ["pt-u-kn-true-ks-level1", "pt-u-kn-ks-level1"].includes(collation.locale),
+    "Idioma de ordenação diferente do esperado.",
+  );
+}
 const prerequisites = JSON.parse(
   sql(
     `SELECT json_build_object('database',current_database(),'creation_guard',to_regprocedure('public.guard_admin_creation_auth_identity()') IS NOT NULL,'contact_rpc',to_regprocedure('public.technician_contacts()') IS NOT NULL,'modules',to_regprocedure('public.has_module(uuid,text)') IS NOT NULL,'icu',EXISTS(SELECT 1 FROM pg_collation WHERE collprovider='i'));`,
@@ -85,9 +95,7 @@ const previousCollation = JSON.parse(
 );
 if (previousCollation.length) {
   assert.equal(previousCollation.length, 1);
-  assert.equal(previousCollation[0].icu, true);
-  assert.equal(previousCollation[0].deterministic, false);
-  assert.equal(previousCollation[0].locale, "pt-u-kn-true-ks-level1");
+  checkCollation(previousCollation[0]);
 }
 const existing = definition();
 assert.ok(existing.length <= 1);
@@ -104,9 +112,7 @@ const collation = JSON.parse(
     `SELECT json_build_object('icu',c.collprovider='i','deterministic',c.collisdeterministic,'locale',coalesce(to_jsonb(c)->>'colllocale',to_jsonb(c)->>'colliculocale')) FROM pg_collation c JOIN pg_namespace n ON n.oid=c.collnamespace WHERE n.nspname='public' AND c.collname='iga_list_pt_natural';`,
   ),
 );
-assert.equal(collation.icu, true);
-assert.equal(collation.deterministic, false);
-assert.equal(collation.locale, "pt-u-kn-true-ks-level1");
+checkCollation(collation);
 writeFileSync(
   resolve(folder, "pagination-migration.json"),
   JSON.stringify(

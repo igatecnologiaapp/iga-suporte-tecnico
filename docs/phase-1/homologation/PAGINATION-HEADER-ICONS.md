@@ -88,3 +88,13 @@ ao arquivar um cadastro fictício, sem executar exclusão definitiva.
 Aplicação e conferência no WSL permanecem pendentes do operador. Não há merge,
 publicação ou mudança de fase. A modernização completa de Contatos continua como
 próxima etapa visual, além dos ícones/paginação já compartilhados nesta rodada.
+
+## Compatibilidade ICU no aplicador — correção posterior
+
+No WSL, a conferência recusou `pt-u-kn-ks-level1`, representação canônica
+que omite o valor booleano `true` de `kn`. O aplicador passou a aceitar exatamente
+as duas grafias equivalentes, mantendo as verificações de provider ICU,
+não determinismo, definição da função e permissões. A migration publicada não
+foi alterada. Se já aplicada, a retomada apenas confere a instalação.
+Os 14 testes do aplicador passaram, incluindo instalação/retomada com a grafia
+canônica e recusa de idioma sem ordenação numérica ou com força diferente.
