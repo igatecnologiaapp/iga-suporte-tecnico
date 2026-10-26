@@ -44,7 +44,7 @@ export function LogoutButton({
       <AlertDialogTrigger asChild>
         <Button
           variant="ghost"
-          className={`w-full ${compact ? "px-0" : "justify-start"}`}
+          className={`w-full hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:ring-destructive ${compact ? "px-0" : "justify-start"}`}
           aria-label="Sair da conta"
         >
           <LogOut />

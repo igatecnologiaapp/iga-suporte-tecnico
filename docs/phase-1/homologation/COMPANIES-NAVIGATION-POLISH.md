@@ -17,6 +17,8 @@ na ordem combinada; aplicação e conferência manual no WSL ainda pendentes.
   `companies_tax_id_key`. Outras falhas de Empresas recebem mensagem genérica,
   sem detalhes SQL. Não muda normalização, validação ou unicidade do banco;
   não exige migration. Cadastros arquivados também continuam sujeitos à constraint.
+- A pedido do operador, Sair também recebe destaque vermelho no hover e foco
+  de teclado, como Excluir, mantendo a confirmação já implementada.
 - Sair abre confirmação com Cancelar em foco. Escape/Cancelar preservam a sessão
   e devolvem o foco ao botão, inclusive no menu móvel. Apenas confirmação solicita
   signOut; durante a espera bloqueia repetição e cancelamento. Falha exibe aviso
