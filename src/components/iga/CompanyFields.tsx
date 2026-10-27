@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Tables } from "@/integrations/supabase/types";
 import { PhoneInput } from "./PhoneInput";
+import { CompanyAddressFields } from "./CompanyAddressFields";
 
 const sections = [
   {
@@ -23,18 +24,6 @@ const sections = [
       ["email", "E-mail", false],
     ],
   },
-  {
-    title: "Endereço",
-    fields: [
-      ["postal_code", "CEP", false],
-      ["address", "Endereço", false],
-      ["address_number", "Número", false],
-      ["complement", "Complemento", false],
-      ["district", "Bairro", false],
-      ["city", "Cidade", false],
-      ["state", "UF", false],
-    ],
-  },
 ] as const;
 
 /** Agrupa os campos da empresa e associa o conflito de documento ao campo correspondente. */
@@ -42,10 +31,12 @@ export function CompanyFields({
   company,
   taxIdError,
   onTaxIdChange,
+  onAddressLookupPending,
 }: {
   company: Partial<Tables<"companies">> | null;
   taxIdError?: string | null;
   onTaxIdChange?: () => void;
+  onAddressLookupPending?: (pending: boolean) => void;
 }) {
   return (
     <>
@@ -100,6 +91,7 @@ export function CompanyFields({
           </div>
         </fieldset>
       ))}
+      <CompanyAddressFields company={company} onLookupPending={onAddressLookupPending} />
       <div className="space-y-1.5 sm:col-span-2">
         <Label htmlFor="notes">Observações</Label>
         <Textarea id="notes" name="notes" defaultValue={company?.notes ?? ""} />

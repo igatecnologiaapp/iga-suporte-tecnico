@@ -14,6 +14,7 @@ junto da implementação. A orientação para continuar esse padrão está no
 | Saída | [LogoutButton](../../src/components/iga/LogoutButton.tsx), `confirm` | Confirmação, cancelamento e proteção contra repetição |
 | Cadastros compartilhados | [ResourcePage](../../src/components/iga/ResourcePage.tsx), `openEditor`, `submit`, `startAction`, `confirmAction`, `restore` | Formulários, vínculos, persistência e ações conforme o perfil |
 | Campos de empresa | [CompanyFields](../../src/components/iga/CompanyFields.tsx) | Identificação, CNPJ/CPF, domínio, canais e endereço |
+| Endereço por CEP | [CompanyAddressFields](../../src/components/iga/CompanyAddressFields.tsx), [postal-code](../../src/lib/postal-code.ts) | Consulta pública de CEP, proteção das edições manuais e opção Sem número |
 | Listagem de empresas | [CompanyToolbar](../../src/components/iga/CompanyToolbar.tsx), [CompanyOverview](../../src/components/iga/CompanyOverview.tsx) | Filtros, situação e totais |
 | Listagem de contatos | [ContactToolbar](../../src/components/iga/ContactToolbar.tsx), [ContactOverview](../../src/components/iga/ContactOverview.tsx) | Empresa vinculada, nome A–Z/Z–A e totais |
 | Número prioritário | [preferredContactPhone](../../src/lib/contact-phone.ts), `ContactPhone` em ResourcePage | Principal marcado prefere WhatsApp; demais preferem Telefone; alternativa quando vazio |

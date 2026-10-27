@@ -209,3 +209,10 @@ internos nos módulos e funções. Implementação e comandos em
 [PRINCIPAL-REQUIRED-COMMENTS.md](PRINCIPAL-REQUIRED-COMMENTS.md).
 Mapa de manutenção em [CODE-MAP.md](../CODE-MAP.md); orientação futura no AGENTS.md.
 Sem migration nova; conferência manual desta rodada no Ubuntu pendente.
+
+## Empresas / Clientes — CEP e Sem número — 27/10/2026
+
+Implementados preenchimento automático por CEP, Complemento (Opcional) e opção
+Sem número usando S/N no campo existente. Detalhes e comandos em
+[COMPANY-ADDRESS-CEP.md](COMPANY-ADDRESS-CEP.md). Sem migration; consulta real e
+conferência manual no navegador do operador pendentes.

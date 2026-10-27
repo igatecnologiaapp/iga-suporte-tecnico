@@ -101,6 +101,8 @@ export function ResourcePage({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  // Aguarda a consulta de CEP para não salvar o endereço antes do preenchimento automático.
+  const [addressLookupPending, setAddressLookupPending] = useState(false);
   const [taxIdError, setTaxIdError] = useState<string | null>(null);
   const [action, setAction] = useState<{
     kind: "archive" | "delete";
@@ -245,7 +247,7 @@ export function ResourcePage({
   /** Monta os dados do cadastro, trata documento duplicado e sincroniza categorias após salvar. */
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (saving) return;
+    if (saving || addressLookupPending) return;
     setTaxIdError(null);
     setSaving(true);
     const fd = new FormData(event.currentTarget);
@@ -446,6 +448,7 @@ export function ResourcePage({
             {kind === "companies" && (
               <>
                 <CompanyFields
+                  onAddressLookupPending={setAddressLookupPending}
                   company={editing}
                   taxIdError={taxIdError}
                   onTaxIdChange={() => setTaxIdError(null)}
@@ -633,7 +636,7 @@ export function ResourcePage({
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
-              <Button disabled={saving || loading || !!loadError}>
+              <Button disabled={saving || loading || !!loadError || addressLookupPending}>
                 {saving ? "Salvando..." : editing ? "Salvar alterações" : "Salvar"}
               </Button>
             </div>
