@@ -1,3 +1,4 @@
+/** Área: Aplicador local da consulta de Contatos, com conferência de destino e definição SQL. */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, realpathSync } from "node:fs";
@@ -23,6 +24,7 @@ assert.ok(
   ports?.length &&
     ports.every((port) => ["127.0.0.1", "::1"].includes(port.HostIp) && port.HostPort === "55422"),
 );
+/** Executa SQL somente no container previamente conferido, interrompendo a transação em caso de falha. */
 function sql(input) {
   return execFileSync(
     "docker",
@@ -50,6 +52,7 @@ const migration = readFileSync(resolve(repo, "drizzle/migrations", name), "utf8"
 const body = migration.match(/AS \$\$([\s\S]*?)\$\$;/)?.[1];
 assert.ok(body);
 const signature = "public.list_paged_contacts(integer,integer,jsonb)";
+/** Consulta a definição instalada da função para conferir compatibilidade sem sobrescrevê-la. */
 function definition() {
   return JSON.parse(
     sql(
@@ -57,6 +60,7 @@ function definition() {
     ),
   );
 }
+/** Confere corpo, modo de execução e permissões da função instalada. */
 function checkFunction(fn) {
   assert.equal(fn.body, body);
   assert.equal(fn.definer, false);
@@ -66,6 +70,7 @@ function checkFunction(fn) {
   assert.equal(fn.service, false);
   assert.ok(fn.config.includes("search_path=pg_catalog, public"));
 }
+/** Confere a ordenação ICU, aceitando apenas as duas grafias equivalentes esperadas. */
 function checkCollation(collation) {
   assert.equal(collation.icu, true);
   assert.equal(collation.deterministic, false);

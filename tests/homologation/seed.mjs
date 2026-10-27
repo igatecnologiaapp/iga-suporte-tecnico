@@ -1,3 +1,4 @@
+/** Área: Preparação de dados fictícios na instância local de homologação. */
 import { randomBytes } from "node:crypto";
 import { admin, userClient, savePrivate, requireOk } from "./local-support.mjs";
 const profiles = {

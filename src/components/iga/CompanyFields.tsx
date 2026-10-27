@@ -1,3 +1,4 @@
+/** Área: Campos cadastrais de empresas, documentos, canais de contato e endereço. */
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +37,7 @@ const sections = [
   },
 ] as const;
 
+/** Agrupa os campos da empresa e associa o conflito de documento ao campo correspondente. */
 export function CompanyFields({
   company,
   taxIdError,
@@ -53,7 +55,9 @@ export function CompanyFields({
           <div className="grid gap-4 sm:grid-cols-2">
             {section.fields.map(([name, label, required]) => (
               <div key={name} className="min-w-0 space-y-1.5">
-                <Label htmlFor={name}>{label}</Label>
+                <Label required={required} htmlFor={name}>
+                  {label}
+                </Label>
                 {name === "phone" || name === "whatsapp" ? (
                   <PhoneInput
                     kind={name}

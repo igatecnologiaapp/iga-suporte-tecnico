@@ -1,3 +1,4 @@
+/** Área: Estrutura compartilhada de navegação, temas, notificações e saída da sessão. */
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Building2,
@@ -65,6 +66,7 @@ const groups = [
 
 const OPEN_KEY = "iga-menu-groups";
 
+/** Monta os menus disponíveis ao usuário, o cabeçalho e a área da página. */
 export function AppShell({
   children,
   userName,
@@ -115,6 +117,7 @@ export function AppShell({
     setOpenGroups(current && !stored.includes(current) ? [...stored, current] : stored);
   }, [path]);
 
+  /** Alterna a abertura do grupo de navegação e guarda a preferência local. */
   function toggleGroup(label: string) {
     setOpenGroups((prev) => {
       const next = prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label];
@@ -122,12 +125,14 @@ export function AppShell({
       return next;
     });
   }
+  /** Alterna o tema e persiste a escolha de aparência no navegador. */
   function toggleTheme() {
     const next = !dark;
     setDark(next);
     localStorage.setItem("iga-theme", next ? "dark" : "light");
     document.documentElement.classList.toggle("dark", next);
   }
+  /** Encerra a sessão autenticada e encaminha ao login após confirmação. */
   async function logout() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -135,6 +140,7 @@ export function AppShell({
   }
 
   const currentModule = MODULES.find((module) => module.key === moduleForPath(path));
+  /** Renderiza o mesmo menu no formato aberto, recolhido ou móvel. */
   function navigation(compact: boolean) {
     return (
       <>

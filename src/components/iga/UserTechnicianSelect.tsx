@@ -1,7 +1,9 @@
+/** Área: Vínculo entre usuário e técnico, distinguindo criação de edição. */
 import { Label } from "../ui/label";
 
 type Technician = { id: string; name: string; user_id: string | null };
 
+/** Oferece vínculos permitidos sem confundir ausência de técnico com criação. */
 export function UserTechnicianSelect({
   editing,
   technicians,

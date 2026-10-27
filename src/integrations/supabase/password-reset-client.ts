@@ -1,3 +1,4 @@
+/** Área: Cliente Supabase exclusivo do link de senha, separado da sessão já aberta. */
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { createSupabaseFetch } from "./client";

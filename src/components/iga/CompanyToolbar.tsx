@@ -1,3 +1,4 @@
+/** Área: Pesquisa e filtros combinados da listagem de empresas. */
 import { useState } from "react";
 import { ChevronDown, Filter, LayoutGrid, Search, X } from "lucide-react";
 import { Button } from "../ui/button";
@@ -6,6 +7,7 @@ import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import type { CompanyListFilters, CompanySort, CompanyDomainFilter } from "../../lib/company-list";
 
+/** Combina pesquisa, categoria, situação e opções adicionais de empresas. */
 export function CompanyToolbar({
   filters,
   counts,

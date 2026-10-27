@@ -1,9 +1,11 @@
+/** Área: Verificações das permissões e políticas com identidades fictícias locais. */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import assert from "node:assert/strict";
 import { admin, userClient, privateDir, repo, requireOk } from "./local-support.mjs";
 const fixtures = JSON.parse(readFileSync(resolve(privateDir, "fixtures.json"), "utf8"));
 const results = [];
+/** Executa o cenário e registra seu resultado de forma identificável. */
 async function check(id, fn) {
   try {
     await fn();

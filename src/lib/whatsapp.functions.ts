@@ -1,9 +1,11 @@
+/** Área: Consulta administrativa da integração e reprocessamento autorizado de mídias. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { listPageSchema } from "./list-pagination";
 
 type Ctx = { supabase: any; userId: string };
+/** Confere a autorização administrativa exigida antes de acessar os recursos protegidos. */
 async function assertAdmin(ctx: Ctx) {
   const { data } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
   if (!data) throw new Error("Apenas Administrador pode acessar as integrações.");
@@ -18,6 +20,7 @@ export const getWhatsAppStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
     await assertAdmin(ctx);
+    /** Informa apenas a presença de configuração necessária ao painel da integração. */
     const env = (k: string) => Boolean(process.env[k]);
     const secrets = {
       WHATSAPP_ACCESS_TOKEN: env("WHATSAPP_ACCESS_TOKEN"),
@@ -137,6 +140,7 @@ export const getWhatsAppStatus = createServerFn({ method: "POST" })
     };
   });
 
+/** Reprocessa mídias pendentes após conferir autorização operacional. */
 export const retryWhatsAppMedia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

@@ -1,3 +1,4 @@
+/** Área: Catálogo de módulos e resolução de permissão pela rota. */
 export const MODULES = [
   { key: "inbox", label: "Caixa de Entrada / WhatsApp", path: "/inbox" },
   { key: "tickets", label: "Chamados", path: "/tickets" },
@@ -14,6 +15,7 @@ export const MODULES = [
 export type ModuleKey = (typeof MODULES)[number]["key"];
 export const MODULE_KEYS = MODULES.map(m => m.key) as ModuleKey[];
 
+/** Resolve qual módulo controla o acesso ao caminho da aplicação. */
 export function moduleForPath(pathname: string): ModuleKey | null {
   return MODULES.find(m => pathname === m.path || pathname.startsWith(m.path + "/"))?.key ?? null;
 }

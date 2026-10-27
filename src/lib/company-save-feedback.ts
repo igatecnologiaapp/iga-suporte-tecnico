@@ -1,3 +1,4 @@
+/** Área: Reconhecimento do conflito específico de CNPJ/CPF para orientação junto ao campo. */
 /** Match only the existing document constraint, never another unique field. */
 export function isCompanyTaxIdConflict(error: unknown) {
   if (!error || typeof error !== "object") return false;

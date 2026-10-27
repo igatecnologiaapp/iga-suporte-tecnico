@@ -1,3 +1,4 @@
+/** Área: Validação e planejamento de alterações parciais de usuários e permissões. */
 import { z } from "zod";
 
 export const userModules = [

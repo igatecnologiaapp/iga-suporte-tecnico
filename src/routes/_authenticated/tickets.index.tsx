@@ -1,3 +1,4 @@
+/** Área: Listagem de chamados, filas operacionais e abertura manual. */
 import { usePagedRecords } from "@/components/iga/usePagedRecords";
 import { TablePager } from "@/components/iga/TablePager";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -54,10 +55,12 @@ export const Route = createFileRoute("/_authenticated/tickets/")({
   component: Tickets,
 });
 
+/** Obtém o contexto autenticado da rota e prepara a listagem de chamados. */
 function Tickets() {
   const { user, role, technicianId } = Route.useRouteContext();
   return <TicketsPage userId={user.id} role={role} technicianId={technicianId} />;
 }
+/** Combina filas, filtros e página de chamados com a abertura manual. */
 export function TicketsPage({
   userId,
   role,
@@ -95,6 +98,7 @@ export function TicketsPage({
   });
   const filtered = paged.data.rows as any[];
   const queues = ticketQueues.filter((item) => !item.mine || technicianId);
+  /** Carrega catálogos usados na criação e nos filtros dos chamados. */
   async function loadOptions() {
     const [{ data: c }, { data: co }, { data: ca }, { data: te }, { data: sla }, { data: lk }] =
       await Promise.all([
@@ -124,6 +128,7 @@ export function TicketsPage({
     setTechnicians(te ?? []);
     setPolicies((sla ?? []) as SlaPolicy[]);
   }
+  /** Atualiza a página de chamados depois de uma alteração operacional. */
   async function load() {
     paged.refresh();
     await loadOptions();
@@ -133,6 +138,7 @@ export function TicketsPage({
     void syncSlaNotifications().catch(() => undefined);
   }, []);
 
+  /** Cria o chamado manual com os dados obrigatórios do formulário. */
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -182,7 +188,9 @@ export function TicketsPage({
           </DialogHeader>
           <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="company_id">Empresa / Cliente</Label>
+              <Label required htmlFor="company_id">
+                Empresa / Cliente
+              </Label>
               <select
                 id="company_id"
                 className="form-control"
@@ -203,7 +211,9 @@ export function TicketsPage({
               </select>
             </div>
             <div>
-              <Label htmlFor="contact_id">Contato solicitante</Label>
+              <Label required htmlFor="contact_id">
+                Contato solicitante
+              </Label>
               <select
                 id="contact_id"
                 key={company}
@@ -258,7 +268,9 @@ export function TicketsPage({
               </select>
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="subject">Assunto</Label>
+              <Label required htmlFor="subject">
+                Assunto
+              </Label>
               <Input id="subject" name="subject" required />
             </div>
             <div>
@@ -276,7 +288,9 @@ export function TicketsPage({
               <Input id="channel" value="Manual" disabled />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label required htmlFor="description">
+                Descrição
+              </Label>
               <Textarea id="description" name="description" required rows={5} />
             </div>
             <div className="flex justify-end gap-2 sm:col-span-2">
@@ -443,6 +457,7 @@ export function TicketsPage({
   );
 }
 
+/** Renderiza um seletor de filtro com opções e valor atual. */
 function Filter({
   label,
   value,

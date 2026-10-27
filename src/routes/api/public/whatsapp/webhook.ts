@@ -1,3 +1,4 @@
+/** Área: Recepção pública dos eventos assinados de integração do WhatsApp. */
 import { createFileRoute } from "@tanstack/react-router";
 
 // Endpoint público exclusivo do webhook oficial da Meta (WhatsApp Cloud API).

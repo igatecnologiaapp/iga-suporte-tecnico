@@ -1,3 +1,4 @@
+/** Área: Consulta de modelos aprovados e preparação de suas variáveis. */
 // Modelos (templates) aprovados da Meta — somente servidor. Nenhum token sai daqui.
 import { GRAPH_BASE, graphVersion } from "./whatsapp.server";
 
@@ -10,6 +11,7 @@ export type ApprovedTemplate = {
 
 const VAR_RE = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g;
 
+/** Extrai os identificadores de variáveis exigidas pelos componentes do modelo. */
 function varsOf(text: string) {
   const seen: string[] = [];
   for (const m of text.matchAll(VAR_RE)) { const k = m[1] ?? ""; if (k && !seen.includes(k)) seen.push(k); }
@@ -59,7 +61,9 @@ export async function fetchApprovedTemplates(): Promise<{ ok: true; templates: A
   return { ok: true, templates, skipped };
 }
 
+/** Prepara a apresentação de um modelo com os valores informados. */
 export function renderTemplate(t: ApprovedTemplate, values: Record<string, string>) {
+  /** Substitui as variáveis do texto pelos valores associados a cada posição. */
   const fill = (s: string) => s.replace(VAR_RE, (_, k) => values[k] ?? `{{${k}}}`);
   return [t.header, fill(t.body), t.footer].filter(Boolean).join("\n\n");
 }

@@ -1,3 +1,4 @@
+/** Área: Contratos de página, contadores e intervalos exibidos nos rodapés. */
 import { z } from "zod";
 export const DEFAULT_PAGE_SIZE = 5;
 export const PAGE_SIZES = [5, 10, 20, 50] as const;
@@ -23,6 +24,7 @@ export const pagedRecordsSchema = z
     queues: z.record(z.number().int().nonnegative()),
   })
   .refine((value) => value.rows.length <= value.pageSize && value.rows.length <= value.total);
+/** Calcula limites e posição válida de uma página, inclusive quando a lista está vazia. */
 export function pageRange(total: number, page: number, pageSize: number) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   const current = Math.max(1, Math.min(page, pages));

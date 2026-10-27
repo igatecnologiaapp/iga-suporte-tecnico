@@ -1,3 +1,4 @@
+/** Área: Aplicador local da transação administrativa de alteração de usuários. */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -26,6 +27,7 @@ assert.ok(
   "Refusing non-loopback or unexpected database port bindings",
 );
 
+/** Executa SQL somente no container previamente conferido, interrompendo a transação em caso de falha. */
 function sql(input) {
   return execFileSync(
     "docker",

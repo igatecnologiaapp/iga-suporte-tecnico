@@ -1,7 +1,9 @@
+/** Área: Contagem compartilhada de mensagens não lidas sem consultar conteúdo de mensagens. */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { INBOX_UNREAD_CHANGED } from "@/lib/inbox-unread";
 
+/** Soma metadados de não lidas em lotes e atualiza o selo enquanto a aba está visível. */
 export function useInboxUnread(enabled: boolean) {
   const [total, setTotal] = useState(0);
   useEffect(() => {
@@ -10,6 +12,7 @@ export function useInboxUnread(enabled: boolean) {
     let active = true;
     let running = false;
     let refreshAgain = false;
+    /** Atualiza a soma autorizada de não lidas e agrupa solicitações concorrentes. */
     async function refresh() {
       if (!active || document.visibilityState !== "visible") return;
       if (running) {
@@ -44,6 +47,7 @@ export function useInboxUnread(enabled: boolean) {
         }
       }
     }
+    /** Dispara a atualização do contador após foco, leitura ou intervalo. */
     const onRefresh = () => void refresh();
     void refresh();
     const timer = window.setInterval(onRefresh, 10_000);

@@ -1,3 +1,4 @@
+/** Área: Verificações isoladas da hidratação e do envio seguro das credenciais. */
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -17,6 +18,7 @@ const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
 });
 
+/** Executa o cenário e registra seu resultado de forma identificável. */
 async function check(id, run) {
   try {
     await run();

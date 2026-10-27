@@ -1,9 +1,11 @@
+/** Área: Entrada da nova senha após validação de convite ou recuperação. */
 import { useState, type FormEvent } from "react";
 import { AuthForm } from "./AuthForm";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 
+/** Coleta a senha e encaminha a atualização ao fluxo de recuperação validado. */
 export function NewPasswordForm({
   submitPassword,
   onFailure,
@@ -12,6 +14,7 @@ export function NewPasswordForm({
   onFailure: (error: unknown) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  /** Envia a nova senha pelo fluxo isolado validado e libera o formulário ao terminar. */
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -29,7 +32,9 @@ export function NewPasswordForm({
     <AuthForm onSubmit={submit} busy={busy}>
       <h1 className="text-xl font-semibold">Defina uma nova senha</h1>
       <div>
-        <Label htmlFor="new-password">Nova senha</Label>
+        <Label required htmlFor="new-password">
+          Nova senha
+        </Label>
         <Input
           id="new-password"
           name="password"

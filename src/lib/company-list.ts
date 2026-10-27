@@ -1,3 +1,4 @@
+/** Área: Regras de combinação de filtros e ordenação da referência de listagem de empresas. */
 export type CompanyStatusFilter = "all" | "active" | "inactive";
 export type CompanySort = "name_asc" | "name_desc" | "newest" | "oldest";
 export type CompanyDomainFilter = "all" | "present" | "missing";
@@ -42,8 +43,10 @@ export function buildCompanyList<T extends CompanyListRow>(
   const visible = matching.filter(
     (row) => filters.status === "all" || row.status === filters.status,
   );
+  /** Aplica ordenação natural de nomes com desempate estável por identificador. */
   const nameOrder = (a: T, b: T) =>
     collator.compare(a.trade_name ?? "", b.trade_name ?? "") || collator.compare(a.id, b.id);
+  /** Converte a data de cadastro em valor ordenável, tolerando ausência de data. */
   const timestamp = (row: T) => {
     const value = Date.parse(row.created_at ?? "");
     return Number.isFinite(value) ? value : 0;

@@ -1,3 +1,4 @@
+/** Área: Aplicação controlada das migrations na instância local de testes. */
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -8,6 +9,7 @@ const name = execFileSync("docker", ["inspect", "--format", "{{.Name}}", contain
   encoding: "utf8",
 }).trim();
 if (name !== `/${container}`) throw new Error("Refusing an unexpected container");
+/** Executa SQL somente no container previamente conferido, interrompendo a transação em caso de falha. */
 function sql(input) {
   return spawnSync(
     "docker",

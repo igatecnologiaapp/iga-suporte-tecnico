@@ -1,18 +1,23 @@
+/** Área: Processamento de eventos e mídias da integração oficial do WhatsApp. */
 // Adaptador da WhatsApp Cloud API. Apenas traduz eventos da Meta e delega
 // toda a regra de conversas para `ingestInboundMessage` (mesma camada do simulador).
 import { ingestInboundMessage } from "./messaging.server";
 import type { ParsedEvent, ParsedInbound } from "./whatsapp-parser";
 
 export const GRAPH_BASE = "https://graph.facebook.com";
+/** Obtém a versão da API Graph configurada para os pedidos da integração. */
 export function graphVersion() { return process.env["WHATSAPP_GRAPH_API_VERSION"] || "v21.0"; }
 
+/** Disponibiliza o cliente de servidor para persistir eventos da integração. */
 async function admin(): Promise<any> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
 
+/** Prepara a descrição de falha utilizada nos registros técnicos da integração. */
 const safeError = (e: unknown) => String(e instanceof Error ? e.message : e).replace(/Bearer\s+\S+/gi, "Bearer ***").slice(0, 500);
 
+/** Registra o resultado de uma etapa da integração para consulta administrativa. */
 export async function logIntegrationEvent(eventType: string, result: "processed" | "ignored" | "duplicate" | "error", externalId: string | null = null, error: string | null = null) {
   try { await (await admin()).from("integration_events").insert({ provider: "whatsapp", event_type: eventType.slice(0, 80), external_id: externalId, result, error_message: error ? error.slice(0, 500) : null }); }
   catch (e) { console.error("[whatsapp] falha ao registrar log", safeError(e)); }
@@ -49,9 +54,12 @@ export async function processEvents(events: ParsedEvent[]) {
   return pendingMedia;
 }
 
+/** Converte o estado recebido da API para o vocabulário utilizado pelo aplicativo. */
 function mapStatus(s: string) { return ["sent", "delivered", "read", "failed"].includes(s) ? s : "sent"; }
 
+/** Escolhe a extensão de arquivo correspondente ao tipo de mídia informado. */
 const extFromMime = (mime: string | null) => (mime?.split("/")[1]?.split(";")[0] ?? "bin").replace(/[^a-z0-9]/gi, "").slice(0, 10) || "bin";
+/** Prepara um nome de arquivo apropriado ao armazenamento da mídia. */
 const safeName = (n: string) => n.normalize("NFKD").replace(/[^\w.\-]+/g, "_").slice(0, 120);
 
 /** Baixa mídia pela API oficial e grava no bucket privado. Nunca torna o arquivo público. */

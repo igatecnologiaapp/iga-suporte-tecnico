@@ -1,3 +1,4 @@
+/** Área: Inspeção, arquivamento, restauração e exclusão autorizada de cadastros. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -14,6 +15,7 @@ const entityLabels: Record<RecordEntity, string> = {
   companies: "Empresa / Cliente", contacts: "Contato", technicians: "Técnico", categories: "Categoria",
 };
 
+/** Confere o perfil e o módulo necessários à ação sobre o cadastro. */
 async function assertManager(context: Ctx, requireAdmin = false) {
   const [{ data: isAdmin }, { data: isSupervisor }] = await Promise.all([
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
@@ -26,6 +28,7 @@ async function assertManager(context: Ctx, requireAdmin = false) {
   return supabaseAdmin as any;
 }
 
+/** Consulta a quantidade de vínculos do registro na tabela relacionada. */
 async function count(admin: any, table: string, column: string, value: string, extra?: { column: string; value: string }) {
   let query = admin.from(table).select("id", { count: "exact", head: true }).eq(column, value);
   if (extra) query = query.eq(extra.column, extra.value);
@@ -33,6 +36,7 @@ async function count(admin: any, table: string, column: string, value: string, e
   return total ?? 0;
 }
 
+/** Reúne as referências que orientam a escolha entre arquivar e excluir. */
 async function references(admin: any, entity: RecordEntity, id: string) {
   const items: { label: string; total: number }[] = [];
   if (entity === "companies") {
@@ -56,6 +60,7 @@ async function references(admin: any, entity: RecordEntity, id: string) {
   return items.filter(item => item.total > 0);
 }
 
+/** Conta chamados ativos vinculados ao técnico antes da mudança cadastral. */
 async function activeTickets(admin: any, entity: RecordEntity, id: string) {
   if (entity !== "technicians") return 0;
   const { count: total } = await admin.from("tickets").select("id", { count: "exact", head: true })
@@ -63,6 +68,7 @@ async function activeTickets(admin: any, entity: RecordEntity, id: string) {
   return total ?? 0;
 }
 
+/** Registra ator, alvo, ação e motivo da alteração de cadastro. */
 async function logAudit(admin: any, actorId: string, entity: RecordEntity, id: string, action: string, reason: string | null, oldValue: unknown, newValue: unknown) {
   await admin.from("admin_audit_logs").insert({
     actor_id: actorId, entity, entity_id: id, action, reason: reason || null,
@@ -70,6 +76,7 @@ async function logAudit(admin: any, actorId: string, entity: RecordEntity, id: s
   } as never);
 }
 
+/** Consulta referências e permissões antes de apresentar a ação ao operador. */
 export const inspectRecord = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { entity: RecordEntity; id: string }) => input)
@@ -84,6 +91,7 @@ export const inspectRecord = createServerFn({ method: "POST" })
     };
   });
 
+/** Arquiva o registro autorizado com motivo e preservação do histórico. */
 export const archiveRecord = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { entity: RecordEntity; id: string; reason: string }) => input)
@@ -100,6 +108,7 @@ export const archiveRecord = createServerFn({ method: "POST" })
     return { ok: true, pendingTickets: await activeTickets(admin, data.entity, data.id) };
   });
 
+/** Restaura o cadastro autorizado e registra a ação administrativa. */
 export const restoreRecord = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { entity: RecordEntity; id: string }) => input)
@@ -113,6 +122,7 @@ export const restoreRecord = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Exclui o cadastro quando permitido ou aplica a proteção prevista para referências. */
 export const deleteRecord = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { entity: RecordEntity; id: string; reason: string }) => input)

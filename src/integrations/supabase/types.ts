@@ -1,3 +1,4 @@
+// Contratos de tabelas e RPCs do Supabase: usados na tipagem, sem executar regras de negócio.
 export type Json =
   | string
   | number

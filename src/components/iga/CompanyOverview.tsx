@@ -1,4 +1,6 @@
+/** Área: Totais gerais de empresas autorizadas, independentes da página atual. */
 import { Archive, Building2, CheckCircle2 } from "lucide-react";
+/** Apresenta os totais autorizados de empresas sem limitar os cartões à página. */
 export function CompanyOverview({
   summary,
   loading,

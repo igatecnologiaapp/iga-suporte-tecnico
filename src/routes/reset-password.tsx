@@ -1,3 +1,4 @@
+/** Área: Rota pública que recebe convites e links de recuperação de senha. */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PasswordResetPage } from "@/components/iga/PasswordResetPage";
 
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/reset-password")({
   }),
   component: Page,
 });
+/** Conecta a rota pública ao componente que valida o link de senha isolado. */
 function Page() {
   const navigate = useNavigate();
   return <PasswordResetPage onComplete={() => navigate({ to: "/auth" })} />;

@@ -1,5 +1,7 @@
+/** Área: Cores e rótulos compartilhados para estados operacionais e cadastrais. */
 import { Badge } from "@/components/ui/badge";
 import { priorityLabels, statusLabels } from "@/lib/iga";
+/** Aplica rótulo e tratamento visual conforme o tipo de estado. */
 export function StatusBadge({
   value,
   kind = "status",

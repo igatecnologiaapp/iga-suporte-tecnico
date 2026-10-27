@@ -1,8 +1,10 @@
+/** Área: Preparação de conta fictícia dedicada à recuperação de senha. */
 // Dedicated local fixture; deliberately independent of npm and existing fixtures.
 import { readFileSync, writeFileSync, chmodSync, realpathSync } from "node:fs";
 import { resolve, relative, isAbsolute } from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
 
+/** Coordena as pré-condições locais e as etapas do cenário de homologação. */
 async function main() {
   if (!process.env.IGA_HOMO_PRIVATE) throw new Error("Defina IGA_HOMO_PRIVATE.");
   const directory = realpathSync(process.env.IGA_HOMO_PRIVATE);
@@ -25,6 +27,7 @@ async function main() {
     throw new Error("Destino recusado: somente Supabase HTTP local na porta 55421.");
   const key = config.SERVICE_ROLE_KEY ?? config.service_role_key;
   if (!key) throw new Error("Chave do Supabase local ausente.");
+  /** Faz a requisição ao destino local conferido e trata falhas de resposta. */
   async function request(path, method = "GET", body) {
     const response = await fetch(new URL(path, url), {
       method,

@@ -1,2 +1,3 @@
+/** Área: Encaminhamento da entrada do aplicativo para a área apropriada. */
 import { createFileRoute, redirect } from "@tanstack/react-router";
 export const Route=createFileRoute("/")({beforeLoad:()=>{throw redirect({to:"/tickets"})},head:()=>({meta:[{title:"IGA Service — Gestão de Atendimento Técnico"},{name:"description",content:"Sistema de gestão de chamados técnicos da IGA Tecnologia."},{property:"og:title",content:"IGA Service — Gestão de Atendimento Técnico"},{property:"og:description",content:"Sistema de gestão de chamados técnicos da IGA Tecnologia."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]})});

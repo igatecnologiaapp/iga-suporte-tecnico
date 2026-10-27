@@ -1,3 +1,4 @@
+/** Área: Entradas autenticadas das operações administrativas de usuários e auditoria. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -9,6 +10,7 @@ import { listPageSchema } from "./list-pagination";
 
 type AdminContext = { supabase: any; userId: string };
 
+/** Confere a autorização administrativa exigida antes de acessar os recursos protegidos. */
 async function assertAdmin(context: AdminContext) {
   const [{ data, error }, { data: hasUsers, error: moduleError }] = await Promise.all([
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
@@ -22,6 +24,7 @@ async function assertAdmin(context: AdminContext) {
 
 // Ponto único de autorização para ações administrativas sensíveis.
 // Hoje: exclusivas do Administrador Principal. Futuro: delegar por ação sem reconstruir o RBAC.
+/** Restringe criação e mudanças sensíveis ao Administrador Principal. */
 async function assertPrimary(
   admin: any,
   actorId: string,
@@ -31,11 +34,13 @@ async function assertPrimary(
   if (error || !data) throw new Error("Somente o Administrador Principal pode realizar esta ação.");
 }
 
+/** Consulta o identificador do administrador principal para proteger sua conta. */
 async function primaryId(admin: any): Promise<string | null> {
   const { data } = await admin.from("primary_admin").select("user_id").maybeSingle();
   return data?.user_id ?? null;
 }
 
+/** Consulta os usuários da página e enriquece somente esses IDs com dados de acesso. */
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => listPageSchema.parse(input ?? {}))
@@ -85,6 +90,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     return { rows, total, page, pageSize: data.pageSize };
   });
 
+/** Lista os técnicos disponíveis para vincular no formulário administrativo. */
 export const listTechnicianOptions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -93,10 +99,12 @@ export const listTechnicianOptions = createServerFn({ method: "POST" })
     return data ?? [];
   });
 
+/** Lê a configuração do servidor necessária à criação e ao redirecionamento de convites. */
 function creationConfig() {
   return { siteUrl: process.env["APP_SITE_URL"], supabaseUrl: process.env["SUPABASE_URL"] };
 }
 
+/** Valida o pedido e encaminha a criação ao fluxo administrativo autorizado. */
 export const createAdminUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => adminUserCreationSchema.parse(input))
@@ -107,6 +115,7 @@ export const createAdminUser = createServerFn({ method: "POST" })
     return createAdministrativeUser(context.supabase, admin, data, creationConfig());
   });
 
+/** Autoriza e solicita a retomada de uma operação de criação. */
 export const resumeAdminUserCreation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => adminCreationOperationIdSchema.parse(input))
@@ -117,6 +126,7 @@ export const resumeAdminUserCreation = createServerFn({ method: "POST" })
     return resumeAdministrativeUser(context.supabase, admin, data.operationId, creationConfig());
   });
 
+/** Autoriza o reenvio associado à operação de criação já existente. */
 export const resendAdminUserInvitation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => adminCreationOperationIdSchema.parse(input))
@@ -133,6 +143,7 @@ export const resendAdminUserInvitation = createServerFn({ method: "POST" })
     );
   });
 
+/** Retorna as etapas administrativas de criação para a tela de acompanhamento. */
 export const listAdminUserCreations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -142,6 +153,7 @@ export const listAdminUserCreations = createServerFn({ method: "POST" })
     return listAdministrativeCreations(context.supabase);
   });
 
+/** Valida a alteração parcial e chama a transação autenticada de atualização e auditoria. */
 export const updateAdminUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => adminUserUpdateSchema.parse(input))
@@ -185,6 +197,7 @@ export const updateAdminUser = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Autoriza a recuperação do usuário-alvo e delega o envio ao serviço administrativo. */
 export const sendPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => passwordRecoveryRequestSchema.parse(input))
@@ -197,6 +210,7 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     });
   });
 
+/** Consulta a auditoria e resolve os nomes dos responsáveis e usuários afetados. */
 export const listAdminAudit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -212,6 +226,7 @@ export const listAdminAudit = createServerFn({ method: "POST" })
     const names = ids.length
       ? ((await admin.from("profiles").select("id,full_name").in("id", ids)).data ?? [])
       : [];
+    /** Resolve o nome do usuário citado na auditoria, com alternativa para ausência. */
     const nameOf = (id: string | null) => names.find((p: any) => p.id === id)?.full_name ?? "—";
     return (data ?? []).map((r: any) => ({
       ...r,

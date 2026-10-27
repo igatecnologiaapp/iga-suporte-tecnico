@@ -1,6 +1,8 @@
+/** Área: Rodapé acessível de navegação entre páginas de cinco registros. */
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { DEFAULT_PAGE_SIZE, pageRange } from "../../lib/list-pagination";
+/** Calcula o intervalo atual e controla os botões anterior e próximo. */
 export function TablePager({
   total,
   page,

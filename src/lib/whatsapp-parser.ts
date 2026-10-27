@@ -1,3 +1,4 @@
+/** Área: Interpretação e conferência de assinatura dos eventos recebidos da Meta. */
 // Interpretação pura (sem acesso a rede/banco) do payload oficial do webhook
 // da WhatsApp Cloud API. Mantida isolada para ser testável sem credenciais.
 
@@ -22,12 +23,16 @@ export type ParsedStatus = { kind: "status"; externalId: string; status: string 
 export type ParsedOther = { kind: "other"; eventType: string };
 export type ParsedEvent = ParsedInbound | ParsedStatus | ParsedOther;
 
+/** Obtém um valor textual do evento sem presumir o tipo recebido. */
 const str = (v: unknown, max = 4096): string | null => (typeof v === "string" && v.length > 0 ? v.slice(0, max) : null);
+/** Restringe o valor recebido a um objeto antes de consultar suas propriedades. */
 const obj = (v: unknown): any => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+/** Restringe o valor recebido a uma lista antes de percorrer seus elementos. */
 const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
 
 const mediaKinds: Record<string, WaKind> = { image: "image", document: "document", audio: "audio", video: "video", sticker: "image" };
 
+/** Interpreta o corpo do webhook e extrai os eventos reconhecidos. */
 export function parseWebhookPayload(body: unknown): ParsedEvent[] {
   const root = obj(body);
   if (root.object !== "whatsapp_business_account") return [{ kind: "other", eventType: `object:${str(root.object, 60) ?? "desconhecido"}` }];
@@ -65,6 +70,7 @@ export function parseWebhookPayload(body: unknown): ParsedEvent[] {
   return events;
 }
 
+/** Verifica a assinatura do corpo recebido usando o segredo configurado no servidor. */
 export async function verifyMetaSignature(rawBody: string, header: string | null, appSecret: string): Promise<boolean> {
   if (!header || !header.startsWith("sha256=")) return false;
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(appSecret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);

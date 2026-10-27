@@ -1,3 +1,4 @@
+/** Área: Consultas paginadas, pesquisa com espera curta e descarte de respostas antigas. */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_PAGE_SIZE, pagedRecordsSchema } from "../../lib/list-pagination";
@@ -10,6 +11,7 @@ const empty = pagedRecordsSchema.parse({
   summary: { all: 0, active: 0, inactive: 0 },
   queues: {},
 });
+/** Busca somente a página solicitada e protege a tela de respostas obsoletas. */
 export function usePagedRecords(
   entity: "companies" | "contacts" | "technicians" | "categories" | "tickets",
   filters: Record<string, string>,

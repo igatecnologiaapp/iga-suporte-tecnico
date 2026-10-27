@@ -1,8 +1,10 @@
+/** Área: Inspeção de referências e exclusão administrativa de chamados. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Ctx = { supabase: any; userId: string };
 
+/** Confere o papel administrativo exigido para operações sensíveis com chamados. */
 async function assertAdmin(context: Ctx) {
   const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
   if (!isAdmin) throw new Error("Apenas administradores podem excluir chamados.");
@@ -10,6 +12,7 @@ async function assertAdmin(context: Ctx) {
   return supabaseAdmin as any;
 }
 
+/** Consulta a quantidade de referências utilizadas na inspeção da exclusão. */
 async function total(admin: any, table: string, column: string, value: string) {
   const { count } = await admin.from(table).select("id", { count: "exact", head: true }).eq(column, value);
   return count ?? 0;

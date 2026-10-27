@@ -1,5 +1,7 @@
+/** Área: Totais gerais de contatos autorizados e sua situação cadastral. */
 import { Archive, CheckCircle2, Users } from "lucide-react";
 
+/** Apresenta os totais de contatos ativos e inativos autorizados. */
 export function ContactOverview({
   summary,
   loading,

@@ -1,8 +1,10 @@
+/** Área: Operações autenticadas de conversas, mensagens e chamados relacionados. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Ctx = { supabase: any; userId: string };
 
+/** Confere a permissão operacional antes de alterar conversas ou mensagens. */
 async function assertOperations(context: Ctx) {
   const { data, error } = await context.supabase.rpc("can_manage_operations", { _user_id: context.userId });
   if (error || !data) throw new Error("Seu perfil não permite operar a caixa de entrada.");
@@ -27,6 +29,7 @@ export const simulateInboundMessage = createServerFn({ method: "POST" })
     });
   });
 
+/** Confirma a leitura compartilhada da conversa zerando sua contagem de não lidas. */
 export const markConversationRead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { conversationId: string }) => input)
@@ -38,6 +41,7 @@ export const markConversationRead = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Exige identificação do cliente, cria o chamado e vincula a conversa à solicitação. */
 export const createTicketFromConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { conversationId: string; subject: string; description: string; priority: string; categoryId?: string | null; subcategoryId?: string | null }) => input)
@@ -68,6 +72,7 @@ export const createTicketFromConversation = createServerFn({ method: "POST" })
     return { ticketId: ticket.id as string, number: ticket.number as string };
   });
 
+/** Confere os registros e vincula a conversa ao chamado escolhido. */
 export const linkConversationToTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { conversationId: string; ticketId: string }) => input)
@@ -87,6 +92,7 @@ export const linkConversationToTicket = createServerFn({ method: "POST" })
     return { number: ticket.number as string };
   });
 
+/** Altera a situação da conversa conforme a autorização operacional do ator. */
 export const setConversationStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { conversationId: string; status: string }) => input)
@@ -98,6 +104,7 @@ export const setConversationStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Associa contato existente ou cria o cadastro informado e atualiza o vínculo da conversa. */
 export const identifyConversationContact = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { conversationId: string; contactId?: string | null; newContact?: { name: string; companyId: string; phone: string } }) => input)
@@ -207,6 +214,7 @@ export const startConversation = createServerFn({ method: "POST" })
     const db: any = supabaseAdmin;
     const { data: normalized } = await db.rpc("normalize_phone", { value: data.phone });
     if (!normalized) throw new Error("Telefone inválido.");
+    /** Procura uma conversa aberta correspondente ao canal e ao telefone normalizado. */
     const findOpen = async () => (await db.from("conversations").select("id").eq("channel", "whatsapp").eq("phone_normalized", normalized).neq("status", "finished").maybeSingle()).data;
     const existing = await findOpen();
     if (existing) return { conversationId: existing.id as string, existing: true };

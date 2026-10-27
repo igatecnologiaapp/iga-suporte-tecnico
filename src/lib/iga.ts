@@ -1,3 +1,4 @@
+/** Área: Vocabulário de estados, permissões operacionais e regras compartilhadas de atendimento. */
 export const priorities = [
   ["low", "Baixa"], ["normal", "Normal"], ["high", "Alta"], ["urgent", "Urgente"],
 ] as const;
@@ -21,10 +22,15 @@ export const ticketTransitions: Record<string, readonly string[]> = {
   closed: ["reopened"],
   reopened: ["in_progress"],
 };
+/** Identifica os perfis que podem conduzir operações de atendimento. */
 export function canOperate(role: string) { return role === "admin" || role === "supervisor" || role === "technician"; }
+/** Identifica os perfis que podem gerenciar os cadastros operacionais. */
 export function canManageCatalogs(role: string) { return role === "admin" || role === "supervisor"; }
+/** Formata datas para a apresentação local, com alternativa para valor ausente. */
 export function formatDate(value?: string | null) { return value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)) : "—"; }
+/** Extrai uma mensagem compreensível da falha recebida. */
 export function errorMessage(error: unknown) { return error instanceof Error ? error.message : "Não foi possível concluir a operação."; }
+/** Transforma duração em texto resumido para exibição operacional. */
 export function formatDuration(from?: string | null, to: number = Date.now()) {
   if (!from) return "—";
   const minutes = Math.max(0, Math.round((to - new Date(from).getTime()) / 60000));
@@ -46,6 +52,7 @@ export const ticketQueues: readonly TicketQueue[] = [
   { id: "scheduled", label: "Agendados", statuses: ["scheduled"] },
   { id: "resolved", label: "Resolvidos", statuses: ["resolved", "closed"] },
 ];
+/** Aplica a regra da fila ao chamado, incluindo a fila do técnico atual. */
 export function matchesQueue(queue: TicketQueue, row: { status: string; assigned_technician_id?: string | null }, myTechnicianId?: string | null) {
   if (queue.unassigned) return !row.assigned_technician_id && !["closed", "cancelled", "duplicate"].includes(row.status);
   if (queue.mine) return Boolean(myTechnicianId) && row.assigned_technician_id === myTechnicianId;
@@ -81,6 +88,7 @@ export function companyCategoryOptions<T extends { id: string; parent_id: string
 
 // Subcategorias disponíveis para uma empresa dentro da categoria principal selecionada:
 // se a empresa tem subcategorias associadas para esse pai, só elas aparecem; senão, todas as ativas do pai.
+/** Monta as subcategorias disponíveis conforme empresa e categoria selecionadas. */
 export function companySubcategoryOptions<T extends { id: string; parent_id: string | null; status?: string }>(cats: T[], links: CompanyCategoryLink[], companyId: string | null | undefined, parentId: string) {
   const all = cats.filter(c => c.parent_id === parentId && (!c.status || c.status === "active"));
   if (!companyId) return { options: all, defaultId: "" };

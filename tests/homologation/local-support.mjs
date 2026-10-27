@@ -1,3 +1,4 @@
+/** Área: Utilitários locais de clientes autenticados e armazenamento privado de evidências. */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,14 +19,17 @@ if (!anonKey || !adminKey) throw new Error("Missing keys of the local Supabase i
 export const admin = createClient(apiUrl, adminKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+/** Cria cliente de teste sem persistir sessão compartilhada. */
 export function userClient() {
   return createClient(apiUrl, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+/** Salva a evidência em arquivo privado fora do repositório. */
 export function savePrivate(name, value) {
   writeFileSync(resolve(privateDir, name), JSON.stringify(value, null, 2), { mode: 0o600 });
 }
+/** Interrompe o cenário quando a operação Supabase retorna erro. */
 export function requireOk(result, label) {
   if (result.error) throw new Error(`${label}: ${result.error.code ?? ""} ${result.error.message}`);
   return result.data;

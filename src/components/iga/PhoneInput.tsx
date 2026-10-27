@@ -1,3 +1,4 @@
+/** Área: Máscaras nacionais distintas e limites de dígitos de Telefone e WhatsApp. */
 import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 import { Input } from "../ui/input";
 import {
@@ -16,6 +17,7 @@ type Props = Omit<
   kind: PhoneKind;
 };
 
+/** Formata o campo por tipo e impede entrada excessiva sem cortar números antigos. */
 export function PhoneInput({ defaultValue, kind, ...props }: Props) {
   const initial = formatPhoneField(defaultValue ?? "", kind);
   const last = useRef(initial);
@@ -26,6 +28,7 @@ export function PhoneInput({ defaultValue, kind, ...props }: Props) {
     const input = inputRef.current;
     if (input) input.setCustomValidity(phoneFieldError(input.value, kind) ?? "");
   }, [initial, kind]);
+  /** Mantém o último valor aceito, atualiza a máscara e reposiciona o cursor. */
   function applyFormat(input: HTMLInputElement, caret: number) {
     const raw = input.value;
     const count = raw.replace(/\D/g, "").length;

@@ -1,3 +1,4 @@
+/** Área: Comportamento do cabeçalho conforme a direção da rolagem e o foco. */
 import { useCallback, useEffect, useState, type RefObject } from "react";
 
 /** Only page scrolling hides the header; nested tables/dialogs keep native scrolling. */
@@ -14,6 +15,7 @@ export function useAutoHideHeader(
     let anchor = lastY;
     let direction = 0;
     let frame: number | null = null;
+    /** Avalia direção, distância e foco antes de atualizar a visibilidade do cabeçalho. */
     const update = () => {
       frame = null;
       const maximum = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
@@ -39,9 +41,11 @@ export function useAutoHideHeader(
       }
       lastY = y;
     };
+    /** Agrupa os eventos de rolagem no próximo quadro de renderização. */
     const onScroll = () => {
       if (frame === null) frame = window.requestAnimationFrame(update);
     };
+    /** Revela o cabeçalho e reinicia a referência de rolagem após redimensionamento. */
     const onResize = () => {
       lastY = Math.max(0, window.scrollY);
       anchor = lastY;

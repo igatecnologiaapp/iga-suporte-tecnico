@@ -1,3 +1,4 @@
+/** Área: Indicador de prazo e situação do SLA no atendimento. */
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { SlaInfo } from "@/lib/sla";
@@ -12,6 +13,7 @@ const tone: Record<string, string> = {
   none: "text-muted-foreground",
 };
 
+/** Exibe o indicador e a explicação resumida do prazo calculado. */
 export function SlaBadge({ sla }: { sla: SlaInfo }) {
   return <Tooltip><TooltipTrigger asChild><Badge variant="outline" className={cn("font-medium", tone[sla.state])}>{sla.label}</Badge></TooltipTrigger><TooltipContent>{sla.detail}</TooltipContent></Tooltip>;
 }

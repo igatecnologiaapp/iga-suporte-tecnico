@@ -1,3 +1,4 @@
+/** Área: Dicas acessíveis das ações de cadastro, inclusive ações indisponíveis. */
 import type { ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 

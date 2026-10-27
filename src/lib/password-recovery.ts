@@ -1,7 +1,9 @@
+/** Área: Autorização de recuperação e consumo isolado dos links de senha. */
 import { z } from "zod";
 
 export const passwordRecoveryRequestSchema = z.object({ userId: z.string().uuid() }).strict();
 
+/** Aplica as restrições de quem pode solicitar recuperação de cada conta. */
 export function canRequestPasswordRecovery(
   actor: { id: string; role: string; isPrimary: boolean },
   target: { id: string; role: string; isPrimary: boolean },
@@ -40,6 +42,7 @@ export function passwordRecoveryRedirect(siteUrl?: string, supabaseUrl?: string)
   return new URL("/reset-password", url).href;
 }
 
+/** Impede que o cliente compartilhado consuma callbacks da rota de senha. */
 export function shouldDetectSharedAuthCallback(pathname: string) {
   return pathname.replace(/\/+$/, "") !== "/reset-password";
 }

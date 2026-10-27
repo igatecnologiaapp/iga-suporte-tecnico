@@ -1,3 +1,4 @@
+/** Área: Proteção das rotas internas e distribuição do contexto de acesso. */
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,7 @@ import { MODULES, moduleForPath } from "@/lib/modules";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
+  // Confere sessão, perfil e módulo antes de disponibilizar o contexto às telas internas.
   beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
@@ -44,6 +46,7 @@ export const Route = createFileRoute("/_authenticated")({
   component: Layout,
 });
 
+/** Monta a navegação com o contexto já validado pela proteção da rota. */
 function Layout() {
   const { user, profile, role, modules } = Route.useRouteContext();
   return <AppShell userName={profile?.full_name || user.email || "Usuário"} role={roleLabels[role] || role} modules={modules}><Outlet /></AppShell>;

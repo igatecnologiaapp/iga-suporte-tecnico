@@ -1,3 +1,4 @@
+/** Área: Confirmação acessível de saída e proteção contra solicitações repetidas. */
 import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ import {
   AlertDialogCancel,
 } from "../ui/alert-dialog";
 
+/** Exibe a confirmação de saída e preserva o foco ao cancelar. */
 export function LogoutButton({
   compact,
   onConfirm,
@@ -22,6 +24,7 @@ export function LogoutButton({
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Executa a saída confirmada, bloqueando repetição e tratando falhas. */
   async function confirm() {
     if (busy) return;
     setBusy(true);

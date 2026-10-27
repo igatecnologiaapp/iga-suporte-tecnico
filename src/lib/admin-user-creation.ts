@@ -1,3 +1,4 @@
+/** Área: Contratos de criação administrativa e mensagens das etapas de provisionamento. */
 import { z } from "zod";
 import { userModules } from "./admin-user-update.ts";
 
@@ -29,6 +30,7 @@ const basePayload = z
   })
   .strict();
 
+/** Confere a coerência entre perfil técnico, vínculo existente e pedido de criação. */
 function validateTechnician(value: z.infer<typeof basePayload>, context: z.RefinementCtx) {
   if (value.technicianId && value.createTechnician)
     context.addIssue({
@@ -69,6 +71,7 @@ export type CreationOperation = {
   deliveryState: InvitationState;
 };
 
+/** Traduz o estado da criação em orientação compreensível ao administrador. */
 export function creationFeedback(result: CreationResult) {
   if (result.status === "pending")
     return {

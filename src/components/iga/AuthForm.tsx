@@ -1,3 +1,4 @@
+/** Área: Proteção do envio de credenciais durante a inicialização do JavaScript. */
 import { useEffect, useState, type FormEventHandler, type ReactNode } from "react";
 
 /** Keep credential controls inert until React can intercept submission. */

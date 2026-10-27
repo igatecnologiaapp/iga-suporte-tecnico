@@ -1,8 +1,10 @@
+/** Área: Entradas autenticadas para consultar e enviar modelos de mensagem. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Ctx = { supabase: any; userId: string };
 
+/** Confere as permissões operacionais necessárias para atuar na Caixa de Entrada. */
 async function assertInbox(ctx: Ctx) {
   const [{ data: ops }, { data: inbox }] = await Promise.all([
     ctx.supabase.rpc("can_manage_operations", { _user_id: ctx.userId }),
@@ -20,6 +22,7 @@ export const listApprovedTemplates = createServerFn({ method: "POST" })
     return fetchApprovedTemplates();
   });
 
+/** Valida o modelo e as variáveis e executa o envio autorizado pela integração. */
 export const sendTemplateMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { conversationId: string; name: string; language: string; values: Record<string, string> }) => {

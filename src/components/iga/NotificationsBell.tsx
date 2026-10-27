@@ -1,3 +1,4 @@
+/** Área: Notificações do usuário e confirmação de leitura. */
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
@@ -8,14 +9,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Notification = { id: string; title: string; body: string | null; event_type: string; read_at: string | null; created_at: string };
 
+/** Lista notificações do usuário e oferece confirmação individual ou em lote. */
 export function NotificationsBell() {
   const [rows, setRows] = useState<Notification[]>([]);
+  /** Carrega as notificações recentes do usuário autenticado. */
   async function load() {
     const { data } = await supabase.from("notifications").select("id,title,body,event_type,read_at,created_at").order("created_at", { ascending: false }).limit(30);
     setRows((data ?? []) as Notification[]);
   }
   useEffect(() => { void load(); const timer = setInterval(() => void load(), 60_000); return () => clearInterval(timer); }, []);
   const unread = rows.filter(r => !r.read_at).length;
+  /** Confirma a leitura das notificações selecionadas e atualiza o contador. */
   async function markRead(ids: string[]) {
     if (ids.length === 0) return;
     const { error } = await supabase.from("notifications").update({ read_at: new Date().toISOString() } as never).in("id", ids);

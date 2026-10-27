@@ -1,3 +1,4 @@
+/** Área: Conferência local de recuperação para usuário inexistente, sem vazamento de identidade. */
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -22,6 +23,7 @@ try {
     .admin;
   assert.equal(credentials.email, "admin@iga-homologation.example");
   assert.ok(credentials.id && credentials.password);
+  /** Consulta o recurso local necessário à verificação, sem alterar os registros. */
   async function read(path) {
     const response = await fetch(new URL(path, api), {
       redirect: "error",
@@ -45,6 +47,7 @@ try {
     headers: { apikey: key, Authorization: `Bearer ${key}` },
   });
   assert.equal(account.status, 404);
+  /** Consulta somente os identificadores de mensagens necessários para conferir se houve envio. */
   async function mailIds() {
     const response = await fetch("http://127.0.0.1:55424/api/v1/messages", { redirect: "error" });
     assert.ok(response.ok);

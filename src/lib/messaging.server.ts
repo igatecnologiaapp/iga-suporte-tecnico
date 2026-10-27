@@ -1,3 +1,4 @@
+/** Área: Identificação e registro das mensagens recebidas em suas conversas. */
 // Camada de serviço de mensagens.
 // `ingestInboundMessage` é o ponto único de entrada de mensagens recebidas.
 // Hoje é usada apenas pela simulação de desenvolvimento; quando a integração
@@ -23,6 +24,7 @@ export type InboundMessage = {
 
 export type IngestResult = { conversationId: string; messageId: string; identified: boolean; ticketId: string | null; duplicate: boolean };
 
+/** Identifica contato e conversa e registra uma mensagem recebida de forma consistente. */
 export async function ingestInboundMessage(payload: InboundMessage): Promise<IngestResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin: any = supabaseAdmin;
@@ -40,6 +42,7 @@ export async function ingestInboundMessage(payload: InboundMessage): Promise<Ing
   const { data: normalized } = await admin.rpc("normalize_phone", { value: rawPhone });
   const phoneNormalized: string | null = normalized ?? null;
 
+  /** Procura uma conversa aberta correspondente ao canal e ao telefone normalizado. */
   const findOpen = async () => {
     if (!phoneNormalized) return null;
     const { data } = await admin.from("conversations").select("*").eq("channel", channel).eq("phone_normalized", phoneNormalized).neq("status", "finished").maybeSingle();

@@ -1,3 +1,4 @@
+/** Área: Cadastro, edição, filtros e ciclo de vida de empresas, contatos, técnicos e categorias. */
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArchiveRestore,
@@ -46,6 +47,7 @@ import { ActionHint } from "./ActionHint";
 import { RecordName } from "./RecordName";
 import { PhoneInput } from "./PhoneInput";
 import { formatPhone } from "@/lib/phone-format";
+import { preferredContactPhone } from "@/lib/contact-phone";
 
 type Kind = RecordEntity;
 const config = {
@@ -75,6 +77,7 @@ const config = {
   },
 } as const;
 
+/** Coordena formulários, dados paginados e ações autorizadas do tipo de cadastro. */
 export function ResourcePage({
   kind,
   userId,
@@ -138,6 +141,7 @@ export function ResourcePage({
   const loading = optionsLoading || paged.loading;
   const loadError = optionsError || paged.error;
 
+  /** Busca somente os catálogos de vínculos necessários ao tipo de cadastro. */
   async function loadOptions() {
     const request = ++optionsRequest.current;
     setLoading(true);
@@ -172,6 +176,7 @@ export function ResourcePage({
       if (request === optionsRequest.current) setLoading(false);
     }
   }
+  /** Atualiza a página de registros e os catálogos necessários ao editor. */
   async function load() {
     paged.refresh();
     await loadOptions();
@@ -182,6 +187,7 @@ export function ResourcePage({
       optionsRequest.current++;
     };
   }, [kind]);
+  /** Resolve os nomes e a categoria padrão vinculados à empresa da página atual. */
   function companyCats(id: string) {
     return links
       .filter((l) => l.company_id === id)
@@ -195,6 +201,7 @@ export function ResourcePage({
       })
       .sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
   }
+  /** Prepara o formulário e seus vínculos para incluir ou editar o cadastro. */
   function openEditor(row: any) {
     setTaxIdError(null);
     editorTrigger.current = row ? `edit-${kind}-${row.id}` : `new-${kind}`;
@@ -204,6 +211,7 @@ export function ResourcePage({
     setDefCat(own.find((l) => l.is_default)?.category_id ?? "");
     setOpen(true);
   }
+  /** Sincroniza os vínculos de categorias da empresa e sua categoria padrão. */
   async function syncCompanyCats(companyId: string) {
     const del = supabase.from("company_ticket_categories").delete().eq("company_id", companyId);
     const r1 = selCats.length
@@ -234,6 +242,7 @@ export function ResourcePage({
     return null;
   }
 
+  /** Monta os dados do cadastro, trata documento duplicado e sincroniza categorias após salvar. */
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
@@ -342,11 +351,13 @@ export function ResourcePage({
     setEditing(null);
     await load();
   }
+  /** Fecha o editor e restaura o foco no controle que o abriu. */
   function close(next: boolean) {
     setOpen(next);
     if (!next) setEditing(null);
   }
 
+  /** Consulta referências do registro antes de oferecer arquivamento ou exclusão. */
   async function startAction(kindOfAction: "archive" | "delete", row: any) {
     try {
       const info = await inspectRecord({ data: { entity: kind, id: row.id } });
@@ -362,6 +373,7 @@ export function ResourcePage({
       toast.error(errorMessage(error));
     }
   }
+  /** Executa a ação confirmada com motivo e atualiza os dados da listagem. */
   async function confirmAction() {
     if (!action) return;
     setSaving(true);
@@ -387,6 +399,7 @@ export function ResourcePage({
       setSaving(false);
     }
   }
+  /** Solicita a restauração do registro e recarrega os dados autorizados. */
   async function restore(row: any) {
     try {
       await restoreRecord({ data: { entity: kind, id: row.id } });
@@ -756,20 +769,7 @@ export function ResourcePage({
                             {row.job_title?.trim() || "—"}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {row.phone || row.whatsapp ? (
-                              <span className="flex items-center gap-2 whitespace-nowrap">
-                                <Phone
-                                  aria-hidden="true"
-                                  className="size-4 shrink-0 text-primary"
-                                />
-                                <span>
-                                  {formatPhone(row.phone || row.whatsapp)}
-                                  {!row.phone && <small className="block">WhatsApp</small>}
-                                </span>
-                              </span>
-                            ) : (
-                              "—"
-                            )}
+                            <ContactPhone contact={row} />
                           </td>
                         </>
                       ) : (
@@ -891,7 +891,9 @@ export function ResourcePage({
             </p>
           ) : null}
           <div>
-            <Label htmlFor="action-reason">Motivo</Label>
+            <Label required htmlFor="action-reason">
+              Motivo
+            </Label>
             <Textarea
               id="action-reason"
               rows={3}
@@ -916,6 +918,21 @@ export function ResourcePage({
     </Page>
   );
 }
+/** Renderiza o canal preferido de cada contato usando a mesma regra de alternativa da listagem. */
+function ContactPhone({ contact }: { contact: Parameters<typeof preferredContactPhone>[0] }) {
+  const preferred = preferredContactPhone(contact);
+  if (!preferred) return <>—</>;
+  return (
+    <span className="flex items-center gap-2 whitespace-nowrap">
+      <Phone aria-hidden="true" className="size-4 shrink-0 text-primary" />
+      <span>
+        {formatPhone(preferred.value)}
+        {preferred.channel === "whatsapp" && <small className="block">WhatsApp</small>}
+      </span>
+    </span>
+  );
+}
+/** Exibe o domínio e cria link externo apenas quando a normalização é válida. */
 function DomainValue({ value }: { value: string }) {
   if (!value.trim()) return null;
   const href = normalizeDomain(value);
@@ -937,6 +954,7 @@ function DomainValue({ value }: { value: string }) {
     </div>
   );
 }
+/** Renderiza um campo cadastral e escolhe a máscara adequada para telefone. */
 function Field({
   n,
   l,
@@ -952,7 +970,9 @@ function Field({
 }) {
   return (
     <div>
-      <Label htmlFor={n}>{l}</Label>
+      <Label required={req} htmlFor={n}>
+        {l}
+      </Label>
       {n === "phone" || n === "whatsapp" ? (
         <PhoneInput
           kind={n === "whatsapp" ? "whatsapp" : "phone"}
@@ -973,6 +993,7 @@ function Field({
     </div>
   );
 }
+/** Monta a seleção de vínculo e identifica sua obrigatoriedade. */
 function SelectField({
   n,
   l,
@@ -988,7 +1009,9 @@ function SelectField({
 }) {
   return (
     <div>
-      <Label htmlFor={n}>{l}</Label>
+      <Label required={!optional} htmlFor={n}>
+        {l}
+      </Label>
       <select
         id={n}
         name={n}
@@ -1007,6 +1030,7 @@ function SelectField({
   );
 }
 
+/** Apresenta os vínculos de categorias, destacando a categoria padrão. */
 function CatChips({
   cats,
 }: {

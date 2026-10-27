@@ -1,3 +1,4 @@
+/** Área: Preparação e conferência local do fluxo de convite de uma conta fictícia. */
 // Local-only capability check. No migration and no existing account changes.
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes } from "node:crypto";
@@ -7,9 +8,11 @@ import { resolve, relative, isAbsolute } from "node:path";
 let stage = "preparação";
 let state;
 let file;
+/** Salva o resultado da conferência no local de evidências apropriado. */
 function save() {
   writeFileSync(file, JSON.stringify(state, null, 2), { mode: 0o600 });
 }
+/** Coordena as pré-condições locais e as etapas do cenário de homologação. */
 async function main() {
   assert.ok(process.env.IGA_HOMO_PRIVATE);
   const directory = realpathSync(process.env.IGA_HOMO_PRIVATE);
@@ -22,6 +25,7 @@ async function main() {
   assert.ok(api.pathname === "/" && !api.username && !api.password && !api.search && !api.hash);
   const key = config.SERVICE_ROLE_KEY ?? config.service_role_key;
   assert.ok(key);
+  /** Faz a requisição ao destino local conferido e trata falhas de resposta. */
   async function request(path, method = "GET", body) {
     const response = await fetch(new URL(path, api), {
       method,

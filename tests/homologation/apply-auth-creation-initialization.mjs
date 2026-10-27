@@ -1,3 +1,4 @@
+/** Área: Aplicador local da proteção de inicialização de identidade Auth. */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -21,6 +22,7 @@ assert.ok(
       (binding) => ["127.0.0.1", "::1"].includes(binding.HostIp) && binding.HostPort === "55422",
     ),
 );
+/** Executa SQL somente no container previamente conferido, interrompendo a transação em caso de falha. */
 function sql(input) {
   return execFileSync(
     "docker",
@@ -79,6 +81,7 @@ const callable = [
   "list_admin_user_creations",
   "get_admin_user_creation",
 ];
+/** Consulta a definição instalada da função para conferir compatibilidade sem sobrescrevê-la. */
 function definition(name) {
   const rows = JSON.parse(
     sql(

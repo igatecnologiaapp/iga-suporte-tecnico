@@ -1,3 +1,4 @@
+/** Área: Orquestração no servidor das etapas recuperáveis de criação e convite de usuários. */
 import { randomBytes, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../integrations/supabase/types";
@@ -23,6 +24,7 @@ const operationSchema = z.object({
   stage: z.enum(["reserved", "provisioned"]),
   deliveryState: z.enum(["not_requested", "sending", "accepted", "failed", "unknown", "activated"]),
 });
+/** Converte o estado da criação em retorno seguro para a interface administrativa. */
 function result(op: CreationOperation): CreationResult {
   return {
     operationId: op.operationId,
@@ -32,6 +34,7 @@ function result(op: CreationOperation): CreationResult {
     deliveryAttempted: false,
   };
 }
+/** Executa a operação no banco e propaga falhas para interromper a etapa atual. */
 async function rpc(client: CreationRpc, name: string, args?: Record<string, unknown>) {
   const response = await client.rpc(name, args);
   if (response.error) {
@@ -49,12 +52,14 @@ async function rpc(client: CreationRpc, name: string, args?: Record<string, unkn
   }
   return response.data;
 }
+/** Valida o registro retornado antes de utilizá-lo na retomada da criação. */
 function parseOperation(value: unknown, operationId?: string) {
   const op = operationSchema.parse(value);
   if (operationId && op.operationId !== operationId) throw new Error("Operação não confirmada.");
   adminUserCreationSchema.parse({ ...op.payload, operationId: op.operationId });
   return op;
 }
+/** Confere se a identidade Auth pertence à operação de criação em andamento. */
 async function ownedIdentity(admin: AdminAuth, op: CreationOperation) {
   const found = await admin.auth.admin.getUserById(op.userId);
   if (found.error) {
@@ -72,6 +77,7 @@ async function ownedIdentity(admin: AdminAuth, op: CreationOperation) {
   return user;
 }
 
+/** Entrega ou reenvia o convite e registra o resultado sem recriar a identidade. */
 export async function deliverCreationInvitation(
   client: CreationRpc,
   admin: AdminAuth,
@@ -134,6 +140,7 @@ export async function deliverCreationInvitation(
   }
 }
 
+/** Conclui as etapas pendentes de identidade e metadados de forma recuperável. */
 async function provision(
   client: CreationRpc,
   admin: AdminAuth,
@@ -171,6 +178,7 @@ async function provision(
     return result(op);
   }
 }
+/** Inicia ou recupera a operação idempotente de criação administrativa. */
 export async function createAdministrativeUser(
   client: CreationRpc,
   admin: AdminAuth,
@@ -189,6 +197,7 @@ export async function createAdministrativeUser(
   );
   return provision(client, admin, op, config);
 }
+/** Retoma uma criação existente a partir da etapa confirmada no banco. */
 export async function resumeAdministrativeUser(
   client: CreationRpc,
   admin: AdminAuth,
@@ -202,6 +211,7 @@ export async function resumeAdministrativeUser(
   );
   return provision(client, admin, op, config);
 }
+/** Lista operações de criação disponíveis para acompanhamento administrativo. */
 export async function listAdministrativeCreations(client: CreationRpc) {
   return z.array(operationSchema).parse(await rpc(client, "list_admin_user_creations"));
 }

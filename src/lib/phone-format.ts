@@ -1,3 +1,4 @@
+/** Área: Formatação de exibição, posição do cursor e limites nacionais de cada campo. */
 /** Presentation only: every digit, including an explicit country code, is preserved. */
 export function formatPhone(value: string | null | undefined, partial = false): string {
   if (!value?.trim()) return "";
@@ -38,6 +39,7 @@ export function phoneCaret(value: string, digitCount: number) {
 
 export type PhoneKind = "phone" | "whatsapp";
 export const phoneLimits = { phone: 10, whatsapp: 11 } as const;
+/** Aplica o limite nacional específico de Telefone ou WhatsApp, contando o DDD. */
 export function phoneFieldError(value: string, kind: PhoneKind): string | null {
   const label = kind === "phone" ? "Telefone" : "WhatsApp";
   if (value.replace(/\D/g, "").length > phoneLimits[kind])

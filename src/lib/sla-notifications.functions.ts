@@ -1,3 +1,4 @@
+/** Área: Geração de notificações operacionais a partir do estado atual dos prazos. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { computeSla, type SlaPolicy } from "@/lib/sla";
@@ -35,6 +36,7 @@ export const syncSlaNotifications = createServerFn({ method: "POST" })
       .select("user_id,ticket_id,event_type")
       .in("ticket_id", pending.map(p => p.ticket_id))
       .in("event_type", ["sla_warning", "sla_breached"])).data ?? [];
+    /** Identifica a combinação de chamado e evento para evitar notificações repetidas. */
     const key = (r: { user_id: string; ticket_id: string | null; event_type: string }) => `${r.user_id}|${r.ticket_id}|${r.event_type}`;
     const seen = new Set(existing.map(key as never));
     const inserts = pending.filter(p => !seen.has(key(p)));

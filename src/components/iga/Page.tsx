@@ -1,6 +1,8 @@
+/** Área: Estrutura visual das páginas e estados de carregamento, falha e lista vazia. */
 import type { ReactNode } from "react";
 import { AlertCircle, Loader2, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+/** Apresenta título, descrição e ações no contêiner compartilhado da página. */
 export function Page({
   title,
   description,
@@ -30,6 +32,7 @@ export function Page({
     </div>
   );
 }
+/** Exibe a orientação acessível para uma lista sem resultados. */
 export function Empty({ children }: { children: ReactNode }) {
   return (
     <div
@@ -41,6 +44,7 @@ export function Empty({ children }: { children: ReactNode }) {
     </div>
   );
 }
+/** Alterna entre espera e falha com ação de nova tentativa. */
 export function LoadState({
   loading = false,
   error,

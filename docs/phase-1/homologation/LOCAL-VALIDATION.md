@@ -200,3 +200,12 @@ Implementado Telefone com dez dígitos e WhatsApp com onze, contando DDD, com
 bloqueio de entrada excessiva e preservação de dados antigos. Instruções em
 [PHONE-FIELD-LIMITS.md](PHONE-FIELD-LIMITS.md). Sem migration; validação manual
 no Ubuntu pendente.
+
+## Preferência do contato, asteriscos e comentários — 27/10/2026
+
+Operador confirmou os limites de telefone e pediu a regra de número prioritário
+pela caixa Contato principal, asteriscos nos campos obrigatórios e comentários
+internos nos módulos e funções. Implementação e comandos em
+[PRINCIPAL-REQUIRED-COMMENTS.md](PRINCIPAL-REQUIRED-COMMENTS.md).
+Mapa de manutenção em [CODE-MAP.md](../CODE-MAP.md); orientação futura no AGENTS.md.
+Sem migration nova; conferência manual desta rodada no Ubuntu pendente.

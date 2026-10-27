@@ -1,3 +1,4 @@
+/** Área: Painel administrativo de integração e eventos técnicos paginados. */
 import { TablePager } from "@/components/iga/TablePager";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -48,6 +49,7 @@ export const Route = createFileRoute("/_authenticated/integrations")({
 
 type Status = Awaited<ReturnType<typeof getWhatsAppStatus>>;
 
+/** Apresenta a configuração da integração e seu histórico técnico paginado. */
 function IntegrationsPage() {
   const loadRequest = useRef(0);
   const [eventsError, setEventsError] = useState<string | null>(null);
@@ -55,6 +57,7 @@ function IntegrationsPage() {
   const pageSize = 5;
   const [info, setInfo] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Busca a página de eventos e opcionalmente solicita o teste explícito da conexão. */
   async function load(test = false) {
     const request = ++loadRequest.current;
     setEventsError(null);
@@ -81,6 +84,7 @@ function IntegrationsPage() {
       loadRequest.current++;
     };
   }, [page, pageSize]);
+  /** Solicita o reprocessamento autorizado e atualiza os indicadores do painel. */
   async function retry() {
     setBusy(true);
     try {
@@ -237,6 +241,7 @@ function IntegrationsPage() {
   );
 }
 
+/** Renderiza uma informação rotulada do painel de integração. */
 function Item({ label, value }: { label: string; value: string }) {
   return (
     <div>

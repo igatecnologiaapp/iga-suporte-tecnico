@@ -1,3 +1,4 @@
+# Suporte de homologação: conferência privada do login principal, sem alterar a senha no Auth.
 """Verify only local primary login and update its private fixture if needed.
 Never changes a password in Auth, prints credentials or follows HTTP redirects.
 """
@@ -14,10 +15,12 @@ import urllib.request
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
+    # Recusa redirecionamento para impedir que a verificação de credenciais deixe o destino local.
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise RuntimeError("Redirect recusado.")
 
 
+# Coordena a conferência do login local e a atualização exclusiva da fixture privada.
 def main():
     private_value = os.environ.get("IGA_HOMO_PRIVATE")
     if not private_value:
@@ -43,6 +46,7 @@ def main():
         raise RuntimeError("Fixture principal não confirmada.")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
 
+    # Confere senha e identidade apenas na API local e encerra somente a sessão desta verificação.
     def verify(password):
         request = urllib.request.Request(
             "http://127.0.0.1:55421/auth/v1/token?grant_type=password",

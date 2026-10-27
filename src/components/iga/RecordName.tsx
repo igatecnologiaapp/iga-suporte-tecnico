@@ -1,5 +1,7 @@
+/** Área: Identificação visual de empresas e pessoas nas tabelas. */
 import { Building2, UserRound } from "lucide-react";
 
+/** Exibe nome e informação complementar com o ícone correspondente ao cadastro. */
 export function RecordName({
   kind,
   name,

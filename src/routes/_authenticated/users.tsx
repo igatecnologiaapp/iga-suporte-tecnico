@@ -1,3 +1,4 @@
+/** Área: Tela administrativa de usuários, vínculos, permissões e operações de convite. */
 import { TablePager } from "@/components/iga/TablePager";
 import { AdminAudit, type AdminAuditRecord } from "@/components/iga/AdminAudit";
 import { ActionHint } from "@/components/iga/ActionHint";
@@ -23,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label, RequiredMark } from "@/components/ui/label";
 import { Empty, Page, LoadState } from "@/components/iga/Page";
 import { StatusBadge } from "@/components/iga/StatusBadge";
 import { MODULES } from "@/lib/modules";
@@ -75,6 +76,7 @@ type AdminUser = {
   modules: string[];
 };
 
+/** Coordena o cadastro administrativo, permissões, convites e auditoria de usuários. */
 function Users() {
   const { user, role, isPrimary } = Route.useRouteContext();
   const isAdmin = role === "admin";
@@ -97,12 +99,14 @@ function Users() {
   const [operations, setOperations] = useState<CreationOperation[]>([]);
   const [operationBusyId, setOperationBusyId] = useState<string | null>(null);
   const [resettingId, setResettingId] = useState<string | null>(null);
+  /** Verifica se o ator pode solicitar recuperação para a linha selecionada. */
   const canReset = (row: AdminUser) =>
     canRequestPasswordRecovery(
       { id: user.id, role, isPrimary },
       { id: row.id, role: row.role, isPrimary: row.is_primary },
     );
 
+  /** Atualiza a página de usuários, opções de vínculo e acompanhamento administrativo. */
   async function load() {
     const request = ++loadRequest.current;
     setUsersLoading(true);
@@ -147,6 +151,7 @@ function Users() {
       </Page>
     );
 
+  /** Prepara uma nova operação de criação e os valores iniciais do formulário. */
   function startCreate() {
     setCreationId(crypto.randomUUID());
     setEditing(null);
@@ -154,6 +159,7 @@ function Users() {
     setMods(["tickets"]);
     setOpen(true);
   }
+  /** Carrega o usuário selecionado e seus vínculos no editor. */
   function startEdit(row: AdminUser) {
     setEditing(row);
     setNewRole(row.role);
@@ -161,6 +167,7 @@ function Users() {
     setOpen(true);
   }
 
+  /** Envia criação ou alteração administrativa, preservando as regras de principal e módulos. */
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -209,10 +216,12 @@ function Users() {
     }
   }
 
+  /** Apresenta a orientação correspondente à etapa devolvida na criação. */
   function notifyCreation(result: CreationResult) {
     const feedback = creationFeedback(result);
     toast[feedback.kind](feedback.message);
   }
+  /** Retoma ou reenvia o convite da operação e atualiza seu acompanhamento. */
   async function continueCreation(operationId: string, resend: boolean) {
     if (operationBusyId || busy) return;
     if (
@@ -236,6 +245,7 @@ function Users() {
     }
   }
 
+  /** Solicita a mudança de situação respeitando as restrições do usuário-alvo. */
   async function toggleStatus(row: AdminUser) {
     try {
       await updateAdminUser({
@@ -247,6 +257,7 @@ function Users() {
       toast.error(errorMessage(error));
     }
   }
+  /** Solicita recuperação para o alvo permitido e informa o resultado ao administrador. */
   async function resetPassword(row: AdminUser) {
     if (resettingId || !canReset(row)) return;
     setResettingId(row.id);
@@ -295,7 +306,9 @@ function Users() {
           </DialogHeader>
           <form method="post" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="full_name">Nome</Label>
+              <Label required htmlFor="full_name">
+                Nome
+              </Label>
               <Input
                 id="full_name"
                 name="full_name"
@@ -304,7 +317,9 @@ function Users() {
               />
             </div>
             <div>
-              <Label htmlFor="email">E-mail</Label>
+              <Label required={!editing} htmlFor="email">
+                E-mail
+              </Label>
               <Input
                 id="email"
                 name="email"
@@ -355,7 +370,9 @@ function Users() {
               <UserTechnicianSelect editing={editing} technicians={techs} />
             )}
             <fieldset className="sm:col-span-2">
-              <legend className="text-sm font-medium">Módulos permitidos</legend>
+              <legend className="text-sm font-medium">
+                Módulos permitidos{!editing && <RequiredMark />}
+              </legend>
               {editing?.is_primary ? (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Administrador Principal: acesso integral a todos os módulos.

@@ -1,3 +1,4 @@
+/** Área: Cálculo dos prazos e classificação de situação do SLA. */
 export type SlaPolicy = { priority: string; acknowledgment_minutes: number; first_response_minutes: number; resolution_minutes: number };
 export type SlaState = "ok" | "warning" | "breached" | "done_ok" | "done_late" | "none";
 export type SlaInfo = { state: SlaState; label: string; acknowledgmentDue: string | null; firstResponseDue: string | null; resolutionDue: string | null; detail: string };
@@ -12,8 +13,10 @@ type TicketLike = {
   acknowledged_at?: string | null; first_response_at?: string | null; resolved_at?: string | null; closed_at?: string | null;
 };
 
+/** Soma o prazo em minutos à data base e devolve o horário calculado. */
 function plus(base: string, minutes: number) { return new Date(new Date(base).getTime() + minutes * 60_000).toISOString(); }
 
+/** Calcula prazos e identifica a etapa de maior criticidade conforme a política da prioridade. */
 export function computeSla(ticket: TicketLike, policies: SlaPolicy[], now = Date.now()): SlaInfo {
   const policy = policies.find(p => p.priority === ticket.priority);
   if (!policy) return { state: "none", label: slaLabels.none, acknowledgmentDue: null, firstResponseDue: null, resolutionDue: null, detail: "Prazos não cadastrados para esta prioridade." };
@@ -41,4 +44,5 @@ export function computeSla(ticket: TicketLike, policies: SlaPolicy[], now = Date
   return { state: worst.state, label: slaLabels[worst.state], acknowledgmentDue, firstResponseDue, resolutionDue, detail: `${worst.name}: prazo ${fmt(worst.due)}.` };
 }
 
+/** Formata o horário limite para a explicação resumida do SLA. */
 function fmt(value: string) { return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)); }

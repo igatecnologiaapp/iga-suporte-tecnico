@@ -1,3 +1,4 @@
+/** Área: Histórico administrativo, identificação dos responsáveis e destaque de alterações recentes. */
 import { useEffect, useState } from "react";
 import { formatDate } from "../../lib/iga";
 
@@ -31,6 +32,7 @@ const auditLabels: Record<string, string> = {
   modules_changed: "Módulos permitidos alterados",
 };
 
+/** Renderiza alterações administrativas e identifica registros recentes. */
 export function AdminAudit({ records }: { records: AdminAuditRecord[] }) {
   // Start after hydration so server/client clocks cannot change the initial markup.
   const [now, setNow] = useState<number | null>(null);

@@ -1,3 +1,4 @@
+/** Área: Contexto raiz, estrutura HTML e tratamento global de falhas e rotas ausentes. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -13,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
+/** Apresenta a navegação de retorno para caminhos inexistentes. */
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -35,6 +37,7 @@ function NotFoundComponent() {
   );
 }
 
+/** Apresenta a falha da rota e permite recuperar a navegação. */
 function ErrorComponent({ error, reset }: import("@tanstack/react-router").ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
@@ -100,6 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+/** Monta a estrutura HTML, os metadados e os scripts comuns da aplicação. */
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
@@ -114,6 +118,7 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Distribui o contexto de consultas e apresenta a rota ativa. */
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 

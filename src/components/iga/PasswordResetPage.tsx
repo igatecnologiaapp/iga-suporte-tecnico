@@ -1,3 +1,4 @@
+/** Área: Validação isolada do link de senha e transição para o novo login. */
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { NewPasswordForm } from "./NewPasswordForm";
@@ -8,8 +9,10 @@ import {
 } from "../../lib/password-recovery";
 import { createPasswordResetClient } from "../../integrations/supabase/password-reset-client";
 
+/** Cria a instância isolada de autenticação para consumir o link de senha. */
 const defaultCreateAuth = () => createPasswordResetClient().auth;
 
+/** Consome o link isoladamente, limpa a URL e controla sucesso ou recusa. */
 export function PasswordResetPage({
   onComplete,
   createAuth = defaultCreateAuth,

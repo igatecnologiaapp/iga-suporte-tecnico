@@ -1,3 +1,4 @@
+/** Área: Verificações de interface conectadas somente ao ambiente local de homologação. */
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -14,6 +15,7 @@ const browser = await chromium.launch({
 });
 const results = [];
 const external = [];
+/** Abre uma sessão de navegador com a identidade fictícia escolhida. */
 async function session(key) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   await context.route("**/*", (route) => {
@@ -31,6 +33,7 @@ async function session(key) {
   await page.waitForURL(/\/tickets/, { timeout: 20000 });
   return { context, page };
 }
+/** Executa o cenário e registra seu resultado de forma identificável. */
 async function check(id, fn) {
   try {
     await fn();
@@ -42,14 +45,17 @@ async function check(id, fn) {
 const { context, page } = await session("primary");
 let created;
 const domainLabel = "Domínio (opcional, texto livre)";
+/** Salva o resultado da conferência no local de evidências apropriado. */
 async function save() {
   await page.getByRole("button", { name: "Salvar alterações", exact: true }).click();
   await page.getByRole("dialog").waitFor({ state: "hidden" });
 }
+/** Abre o editor do cadastro fictício usado na verificação. */
 async function edit(name) {
   await page.goto("http://127.0.0.1:4180/companies");
   await page.getByRole("button", { name: `Editar ${name}`, exact: true }).click();
 }
+/** Consulta a empresa fictícia para conferir o resultado da operação. */
 async function company(id) {
   return requireOk(
     await admin.from("companies").select("*").eq("id", id).single(),

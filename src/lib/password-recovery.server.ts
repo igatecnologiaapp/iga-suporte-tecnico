@@ -1,3 +1,4 @@
+/** Área: Recuperação administrativa de senha com conferência do alvo e auditoria. */
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../integrations/supabase/types";
@@ -8,6 +9,7 @@ export type RecoveryDeliveryResult = {
   audit: "recorded" | "pending";
 };
 
+/** Confere ator e alvo, solicita recuperação e registra resultado administrativo. */
 export async function requestAdministrativePasswordRecovery(
   admin: SupabaseClient<Database>,
   actorId: string,
@@ -48,6 +50,7 @@ export async function requestAdministrativePasswordRecovery(
   const redirectTo = passwordRecoveryRedirect(config.siteUrl, config.supabaseUrl);
   const requestId = randomUUID();
 
+  /** Registra a tentativa de recuperação sem incluir senha ou link de ação. */
   async function audit(action: string, outcome?: string) {
     try {
       const result = await admin.from("admin_audit_logs").insert({

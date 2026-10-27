@@ -1,3 +1,4 @@
+/** Área: Pesquisa, empresa vinculada e ordenação dos contatos. */
 import { useState } from "react";
 import { ChevronDown, Filter, LayoutGrid, Search, X } from "lucide-react";
 import { Button } from "../ui/button";
@@ -11,6 +12,7 @@ export type ContactListFilters = {
   status: "all" | "active" | "inactive";
   sort: "name_asc" | "name_desc";
 };
+/** Combina a pesquisa dos contatos com empresa, situação e ordem alfabética. */
 export function ContactToolbar({
   filters,
   counts,

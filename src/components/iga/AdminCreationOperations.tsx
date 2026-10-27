@@ -1,3 +1,4 @@
+/** Área: Acompanhamento das etapas de criação de usuários e reenvio de convites. */
 import type { CreationOperation } from "../../lib/admin-user-creation";
 import { Button } from "../ui/button";
 import { ActionHint } from "./ActionHint";
@@ -10,6 +11,7 @@ const labels = {
   unknown: "Resultado do envio não confirmado",
   activated: "E-mail já confirmado",
 };
+/** Mostra o andamento das criações e oferece retomada ou reenvio quando permitido. */
 export function AdminCreationOperations({
   operations,
   busyId,

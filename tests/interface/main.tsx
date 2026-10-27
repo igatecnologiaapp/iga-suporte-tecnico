@@ -12,8 +12,8 @@ import { TicketsPage } from "../../src/routes/_authenticated/tickets.index";
 import { ResourcePage } from "../../src/components/iga/ResourcePage";
 import "../../src/styles.css";
 const root = createRootRoute({ component: Harness });
-const routes = ["/companies", "/contacts", "/tickets", "/auth"].map((path) =>
-  createRoute({ getParentRoute: () => root, path }),
+const routes = ["/companies", "/contacts", "/categories", "/technicians", "/tickets", "/auth"].map(
+  (path) => createRoute({ getParentRoute: () => root, path }),
 );
 const router = createRouter({ routeTree: root.addChildren(routes) });
 export function Harness() {
@@ -44,7 +44,15 @@ export function Harness() {
           />
         ) : (
           <ResourcePage
-            kind={location.pathname === "/contacts" ? "contacts" : "companies"}
+            kind={
+              path === "/contacts"
+                ? "contacts"
+                : path === "/categories"
+                  ? "categories"
+                  : path === "/technicians"
+                    ? "technicians"
+                    : "companies"
+            }
             userId="synthetic-user"
             canManage={!viewer}
             role={viewer ? "viewer" : admin ? "admin" : "supervisor"}
