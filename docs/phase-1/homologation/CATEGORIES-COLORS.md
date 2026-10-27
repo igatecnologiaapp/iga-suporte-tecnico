@@ -3,6 +3,7 @@
 A listagem segue Empresas / Clientes: cartões de totais, busca, filtros rápidos
 Todas / Ativas / Inativas e arquivadas, ordenação A–Z/Z–A e cinco registros por
 página consultados no banco. Limpar filtros preserva a situação rápida.
+A coluna Tipo identifica os registros como Categoria ou Subcategoria.
 
 O formulário oferece sete círculos abaixo do Nome: azul, amarelo, rosa, roxo,
 verde, laranja e vermelho. A seleção tem marca de confirmação e prévia com o
@@ -10,7 +11,8 @@ nome digitado. Categoria e subcategoria guardam cores independentes.
 
 As etiquetas da tabela e dos vínculos em Empresas usam o mesmo componente,
 com contraste próprio em cada tema. Cada família mostra o pai antes dos filhos;
-a família padrão vem primeiro e a subcategoria conserva o prefixo do pai.
+a família padrão vem primeiro. Cada etiqueta mostra somente seu próprio nome,
+sem repetir o nome do pai nas subcategorias.
 A ordenação visual não cria nem remove associações.
 
 A edição de subcategoria conserva o pai atual mesmo quando estiver inativo.

@@ -10,7 +10,7 @@ type Category = {
 type Link = { company_id: string; category_id: string; is_default: boolean };
 const collator = new Intl.Collator("pt-BR", { sensitivity: "base", numeric: true });
 
-/** Agrupa cada pai antes de seus filhos e preserva o prefixo do pai no nome da subcategoria. */
+/** Agrupa cada pai antes de seus filhos; cada etiqueta mostra somente seu próprio nome. */
 export function buildCompanyCategoryChips(
   links: readonly Link[],
   categories: readonly Category[],
@@ -34,7 +34,7 @@ export function buildCompanyCategoryChips(
       return {
         ...link,
         color: categoryColor(category?.color),
-        name: `${category?.parent_id ? `${parent?.name ?? "Categoria indisponível"} — ` : ""}${category?.name ?? "Categoria indisponível"}${category?.status === "inactive" ? " (inativa)" : ""}`,
+        name: `${category?.name ?? "Categoria indisponível"}${category?.status === "inactive" ? " (inativa)" : ""}`,
         familyId,
         familyName,
         child: Boolean(category?.parent_id),

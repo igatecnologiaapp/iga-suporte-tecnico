@@ -833,7 +833,7 @@ export function ResourcePage({
                       ) : kind === "categories" ? (
                         <>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {row.parent_id ? "Subcategoria" : "Principal"}
+                            {row.parent_id ? "Subcategoria" : "Categoria"}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
                             {row.parent_id ? (

@@ -25,6 +25,7 @@ test("categorias mantêm totais completos e páginas de cinco com ícones e hier
     "Ações",
   ]);
   await expect(page.locator("tbody tr")).toHaveCount(5);
+  await expect(page.locator("tbody tr").first().getByRole("cell").nth(1)).toHaveText("Categoria");
   await pager(page).getByRole("button", { name: "Próxima página", exact: true }).click();
   await expect(pager(page)).toContainText("6 a 10 de 12");
   await search(page, "Subcategoria Alfa");
@@ -165,7 +166,7 @@ test("paleta salva cores próprias e empresas apresentam cada pai antes de seus 
     .locator(".category-chip");
   await expect(chips).toHaveText([
     "Sistema sintético — Padrão",
-    "Sistema sintético — Subcategoria Alfa",
+    "Subcategoria Alfa",
     "Treinamento sintético",
   ]);
   await expect(chips.nth(0)).toHaveAttribute("data-category-color", "#eab308");

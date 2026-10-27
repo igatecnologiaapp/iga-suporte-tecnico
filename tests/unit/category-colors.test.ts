@@ -51,18 +51,18 @@ test("agrupa pais antes de filhos mesmo quando os vínculos chegam fora de ordem
     chips.map((chip) => chip.category_id),
     ["b", "b1", "a", "a1"],
   );
-  assert.equal(chips[3]!.name, "Alpha — Filho (inativa)");
+  assert.equal(chips[3]!.name, "Filho (inativa)");
   assert.equal(chips[3]!.color, "#8b5cf6");
   assert.equal(JSON.stringify({ links, categories }), before);
   assert.deepEqual(buildCompanyCategoryChips(links, categories, "other"), []);
 });
-test("filho sem vínculo do pai conserva prefixo sem inventar associação", () => {
+test("filho sem vínculo do pai mostra somente seu nome sem inventar associação", () => {
   const result = buildCompanyCategoryChips(
     [{ company_id: "c", category_id: "child", is_default: false }],
     [{ id: "child", name: "Filha", parent_id: "missing", status: "active" }],
     "c",
   );
   assert.equal(result.length, 1);
-  assert.equal(result[0]!.name, "Categoria indisponível — Filha");
+  assert.equal(result[0]!.name, "Filha");
   assert.equal(result[0]!.color, defaultCategoryColor);
 });
