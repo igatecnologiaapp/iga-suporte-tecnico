@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArchiveRestore, Archive, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import {
+  ArchiveRestore,
+  Archive,
+  Building2,
+  Pencil,
+  Phone,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +35,8 @@ import { isCompanyTaxIdConflict, companyTaxIdConflictMessage } from "@/lib/compa
 import { CompanyFields } from "./CompanyFields";
 import { CompanyOverview } from "./CompanyOverview";
 import { CompanyToolbar } from "./CompanyToolbar";
+import { ContactOverview } from "./ContactOverview";
+import { ContactToolbar, type ContactListFilters } from "./ContactToolbar";
 import type { CompanyListFilters } from "@/lib/company-list";
 import { usePagedRecords } from "./usePagedRecords";
 import { TablePager } from "./TablePager";
@@ -104,12 +115,20 @@ export function ResourcePage({
     sort: "name_asc",
     domain: "all",
   });
+  const [contactFilters, setContactFilters] = useState<ContactListFilters>({
+    search: "",
+    companyId: "",
+    status: "active",
+    sort: "name_asc",
+  });
   const canLinkCats = role === "admin" || role === "supervisor";
 
   const pageFilters =
     kind === "companies"
       ? { ...companyFilters }
-      : { search: q, status: showArchived ? "all" : "active", sort: "name_asc" };
+      : kind === "contacts"
+        ? { ...contactFilters }
+        : { search: q, status: showArchived ? "all" : "active", sort: "name_asc" };
   const paged = usePagedRecords(kind, pageFilters);
   const rows = paged.data.rows as any[];
   const filtered = rows;
@@ -132,11 +151,7 @@ export function ResourcePage({
       } else {
         const result =
           kind === "contacts"
-            ? await supabase
-                .from("companies")
-                .select("id,trade_name")
-                .eq("status", "active")
-                .order("trade_name")
+            ? await supabase.from("companies").select("id,trade_name,status").order("trade_name")
             : kind === "technicians"
               ? await supabase.from("profiles").select("id,full_name").order("full_name")
               : await supabase
@@ -388,7 +403,9 @@ export function ResourcePage({
         canManage ? (
           <Button
             id={`new-${kind}`}
-            className={kind === "companies" ? "resource-create-action" : undefined}
+            className={
+              kind === "companies" || kind === "contacts" ? "resource-create-action" : undefined
+            }
             disabled={loading || !!loadError}
             onClick={() => openEditor(null)}
           >
@@ -539,7 +556,9 @@ export function ResourcePage({
                 <SelectField
                   n="company_id"
                   l="Empresa / Cliente"
-                  rows={related}
+                  rows={related.filter(
+                    (company) => company.status === "active" || company.id === editing?.company_id,
+                  )}
                   value={editing?.company_id}
                 />
                 <Field n="name" l="Nome" value={editing?.name} />
@@ -610,6 +629,9 @@ export function ResourcePage({
       {kind === "companies" && !loadError && (
         <CompanyOverview summary={paged.data.summary} loading={loading} />
       )}
+      {kind === "contacts" && !loadError && (
+        <ContactOverview summary={paged.data.summary} loading={loading} />
+      )}
       {kind === "companies" ? (
         <CompanyToolbar
           filters={companyFilters}
@@ -618,6 +640,15 @@ export function ResourcePage({
           categories={allCats}
           unavailable={loading || !!loadError}
           onChange={setCompanyFilters}
+        />
+      ) : kind === "contacts" ? (
+        <ContactToolbar
+          filters={contactFilters}
+          counts={paged.data.counts}
+          visibleCount={paged.data.total}
+          companies={related}
+          unavailable={loading || !!loadError}
+          onChange={setContactFilters}
         />
       ) : (
         <div className="resource-toolbar flex flex-wrap items-center gap-3">
@@ -654,14 +685,14 @@ export function ResourcePage({
         ) : filtered.length === 0 ? (
           <Empty>
             Nenhum cadastro encontrado.{" "}
-            {kind === "companies" || q
+            {kind === "companies" || kind === "contacts" || q
               ? "Altere a pesquisa, os filtros ou a situação para tentar novamente."
               : "Os cadastros aparecerão aqui."}
           </Empty>
         ) : (
           <div
             inert={loading || undefined}
-            className={`resource-table overflow-hidden rounded-xl border bg-card ${kind === "companies" ? "company-table" : ""}`}
+            className={`resource-table overflow-hidden rounded-xl border bg-card ${kind === "companies" ? "company-table" : kind === "contacts" ? "contact-table" : ""}`}
           >
             <div
               className="overflow-x-auto"
@@ -675,8 +706,16 @@ export function ResourcePage({
                 </caption>
                 <thead className="bg-muted/60 text-left">
                   <tr>
-                    <th className="px-4 py-3">Nome</th>
-                    <th className="px-4 py-3">Detalhe</th>
+                    <th className="px-4 py-3">{kind === "contacts" ? "Contato" : "Nome"}</th>
+                    {kind === "contacts" ? (
+                      <>
+                        <th className="px-4 py-3">Empresa</th>
+                        <th className="px-4 py-3">Cargo / Função</th>
+                        <th className="px-4 py-3">Telefone</th>
+                      </>
+                    ) : (
+                      <th className="px-4 py-3">Detalhe</th>
+                    )}
                     <th className="px-4 py-3 text-center">Status</th>
                     {canManage && <th className="w-40 px-4 py-3 text-center">Ações</th>}
                   </tr>
@@ -689,23 +728,62 @@ export function ResourcePage({
                           <RecordName
                             kind={kind === "companies" ? "company" : "contact"}
                             name={row[c.name]}
+                            detail={kind === "contacts" ? row.email : undefined}
                           />
                         ) : (
                           row[c.name]
                         )}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {row.legal_name ||
-                          row.email ||
-                          (row.parent_id ? "Subcategoria" : "Categoria") ||
-                          "—"}
-                        {kind === "companies" && row.domain && <DomainValue value={row.domain} />}
-                        {kind === "companies" && (
-                          <div className="mt-1">
-                            <CatChips cats={companyCats(row.id)} />
-                          </div>
-                        )}
-                      </td>
+                      {kind === "contacts" ? (
+                        <>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            <span className="flex items-center gap-2">
+                              <Building2
+                                aria-hidden="true"
+                                className="size-4 shrink-0 text-primary"
+                              />
+                              <span>
+                                {row.companies?.trade_name ?? "Empresa indisponível"}
+                                {row.companies?.status === "inactive" && (
+                                  <small className="block">Inativa / arquivada</small>
+                                )}
+                              </span>
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {row.job_title?.trim() || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {row.phone || row.whatsapp ? (
+                              <span className="flex items-center gap-2 whitespace-nowrap">
+                                <Phone
+                                  aria-hidden="true"
+                                  className="size-4 shrink-0 text-primary"
+                                />
+                                <span>
+                                  {row.phone || row.whatsapp}
+                                  {!row.phone && <small className="block">WhatsApp</small>}
+                                </span>
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                        </>
+                      ) : (
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {row.legal_name ||
+                            row.email ||
+                            (row.parent_id ? "Subcategoria" : "Categoria") ||
+                            "—"}
+                          {kind === "companies" && row.domain && <DomainValue value={row.domain} />}
+                          {kind === "companies" && (
+                            <div className="mt-1">
+                              <CatChips cats={companyCats(row.id)} />
+                            </div>
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-center">
                         <StatusBadge
                           value={row.status}

@@ -20,21 +20,21 @@ before(async () => {
   );
   await sql.unsafe(readFileSync(resolve(import.meta.dirname, "bootstrap.sql"), "utf8"));
   for (const name of readdirSync(resolve(root, "drizzle/migrations"))
-    .filter((n) => /^00(?:0\d|1\d|2[0-3])_.*\.sql$/.test(n))
+    .filter((n) => /^00(?:0\d|1\d|2[0-4])_.*\.sql$/.test(n))
     .sort())
     await sql.begin((tx) =>
       tx.unsafe(readFileSync(resolve(root, "drizzle/migrations", name), "utf8")),
     );
-  for (let n = 1; n <= 4; n++)
+  for (let n = 1; n <= 5; n++)
     await sql`insert into auth.users(id,email,raw_user_meta_data) values(${id(n)},${`user${n}@iga-test.example`},'{}')`;
   await sql`insert into public.primary_admin(user_id) values(${id(1)})`;
-  await sql`insert into public.user_modules(user_id,module) values(${id(2)},'companies'),(${id(3)},'tickets'),(${id(4)},'companies')`;
+  await sql`insert into public.user_modules(user_id,module) values(${id(2)},'companies'),(${id(3)},'tickets'),(${id(4)},'companies'),(${id(5)},'contacts')`;
   await sql`update public.profiles set status='inactive' where id=${id(4)}`;
   await sql`insert into public.ticket_categories(id,name) values(${id(30)},'Sistema')`;
   await sql`insert into public.ticket_categories(id,name,parent_id) values(${id(31)},'Subcategoria',${id(30)})`;
   for (let n = 1; n <= 12; n++) {
     await sql`insert into public.companies(id,legal_name,trade_name,tax_id,domain,status,created_by,created_at) values(${id(100 + n)},${`Empresa ${n}`},${`Empresa ${n}`},${`tax-${n}`},${n % 2 ? "company.example" : null},${n > 9 ? "inactive" : "active"},${id(1)},${new Date(Date.UTC(2026, 0, n))})`;
-    await sql`insert into public.contacts(id,company_id,name,created_by) values(${id(200 + n)},${id(101)},${`Contato ${n}`},${id(1)})`;
+    await sql`insert into public.contacts(id,company_id,name,job_title,phone,status,created_by) values(${id(200 + n)},${n <= 7 ? id(101) : n <= 10 ? id(102) : id(110)},${`Contato ${n}`},${n === 1 ? "Proprietário" : null},${n === 1 ? "(11) 90000-0001" : null},${n === 12 ? "inactive" : "active"},${id(1)})`;
     await sql`insert into public.technicians(id,user_id,name,email,phone) values(${id(300 + n)},${n === 1 ? id(3) : null},${`Técnico ${n}`},${`tech${n}@iga-test.example`},'private-phone')`;
     await sql`insert into public.tickets(id,company_id,contact_id,subject,description,status,solution,assigned_technician_id,created_by,opened_at) values(${id(400 + n)},${id(101)},${id(201)},${`Chamado ${n}`},'Synthetic',${n <= 6 ? "new" : "resolved"},'Synthetic solution',${n % 2 ? id(301) : null},${id(1)},${new Date(Date.UTC(2026, 0, 20 - n))})`;
   }
@@ -140,4 +140,97 @@ test("invalid pagination or filter values cannot expand the result or inject SQL
     )[0].allowed,
     false,
   );
+});
+
+async function contacts(page = 1, filters = {}, actor = id(1), role = "authenticated", size = 5) {
+  return sql.begin(async (tx) => {
+    await tx.unsafe(`set local role ${role}`);
+    await tx`select set_config('request.jwt.claim.sub',${actor || ""},true)`;
+    return (
+      await tx`select public.list_paged_contacts(${page},${size},${tx.json(filters)}) value`
+    )[0].value;
+  });
+}
+test("contact company filters and natural reverse order retain scoped counters and global summary", async () => {
+  const a = await contacts(1, { companyId: id(101), sort: "name_desc" });
+  assert.equal(a.total, 7);
+  assert.equal(a.rows.length, 5);
+  assert.deepEqual(
+    a.rows.map((row) => row.name),
+    [7, 6, 5, 4, 3].map((n) => `Contato ${n}`),
+  );
+  assert.deepEqual(a.counts, { all: 7, active: 7, inactive: 0 });
+  assert.deepEqual(a.summary, { all: 12, active: 11, inactive: 1 });
+  assert.ok(
+    a.rows.every((row) => row.company_id === id(101) && row.companies.trade_name === "Empresa 1"),
+  );
+  const b = await contacts(99, { companyId: id(110), status: "inactive" });
+  assert.equal(b.page, 1);
+  assert.equal(b.total, 1);
+  assert.equal(b.rows[0].name, "Contato 12");
+  assert.equal(b.rows[0].companies.status, "inactive");
+  assert.deepEqual(b.counts, { all: 2, active: 1, inactive: 1 });
+  assert.equal((await contacts(1, { companyId: id(102) })).total, 3);
+});
+test("contact searches include phone email and job title without changing null fields", async () => {
+  for (const search of ["Proprietário", "90000-0001", "11900000001", "Contato 1"]) {
+    const response = await contacts(1, { search });
+    assert.ok(response.total > 0);
+  }
+  assert.equal((await contacts(1, { search: "Proprietário", companyId: id(102) })).total, 0);
+  assert.equal((await contacts(1, { search: "%' OR true --" })).total, 0);
+  const row = (await contacts(1, { search: "Contato 2" })).rows[0];
+  assert.equal(row.phone, null);
+  assert.equal(row.job_title, null);
+});
+test("contact read model respects module denial and company visibility", async () => {
+  const onlyContacts = await contacts(1, {}, id(5));
+  assert.equal(onlyContacts.total, 11);
+  await sql.begin(async (tx) => {
+    await tx.unsafe(
+      "CREATE POLICY contact_test_company_scope ON public.companies AS RESTRICTIVE FOR SELECT TO authenticated USING (created_by=auth.uid())",
+    );
+    await tx.unsafe("SET LOCAL ROLE authenticated");
+    await tx`select set_config('request.jwt.claim.sub',${id(5)},true)`;
+    const [response] = await tx`select public.list_paged_contacts(1,5,'{}') value`;
+    assert.ok(response.value.rows.every((row) => row.companies === null));
+    await tx.unsafe("RESET ROLE");
+    await tx.unsafe("DROP POLICY contact_test_company_scope ON public.companies");
+  });
+  for (const fn of [
+    () => contacts(1, {}, id(2)),
+    () => contacts(1, {}, id(4)),
+    () => contacts(1, {}, null),
+    () => contacts(1, {}, null, "anon"),
+  ])
+    await assert.rejects(fn(), (error) => error.code === "42501");
+});
+test("contact read model validates fixed page size filters and identity inputs", async () => {
+  for (const fn of [
+    () => contacts(0),
+    () => contacts(1, {}, id(1), "authenticated", 10),
+    () => contacts(1, { sort: "newest" }),
+    () => contacts(1, { status: "archived" }),
+    () => contacts(1, { search: "x".repeat(301) }),
+    () => contacts(1, { actorId: id(2) }),
+    () => contacts(1, { companyId: [] }),
+  ])
+    await assert.rejects(fn(), (error) => error.code === "22023");
+  await assert.rejects(contacts(1, { companyId: "not-a-uuid" }), (error) => error.code === "22P02");
+});
+test("contact migration preserves the published shared RPC and denies anonymous execution", async () => {
+  const oldBody = readFileSync(
+    resolve(root, "drizzle/migrations/0023_paginated_record_lists.sql"),
+    "utf8",
+  ).match(/AS \$\$([\s\S]*?)\$\$;/)[1];
+  const [prior] =
+    await sql`select prosrc from pg_proc where oid='public.list_paged_records(text,integer,integer,jsonb)'::regprocedure`;
+  assert.equal(prior.prosrc, oldBody);
+  const [fn] =
+    await sql`select prosecdef,provolatile,proconfig,has_function_privilege('anon',oid,'EXECUTE') anon,has_function_privilege('service_role',oid,'EXECUTE') service from pg_proc where oid='public.list_paged_contacts(integer,integer,jsonb)'::regprocedure`;
+  assert.equal(fn.prosecdef, false);
+  assert.equal(fn.provolatile, "s");
+  assert.equal(fn.anon, false);
+  assert.equal(fn.service, false);
+  assert.ok(fn.proconfig.includes("search_path=pg_catalog, public"));
 });

@@ -176,3 +176,12 @@ Operador confirmou o aviso de documento duplicado e o funcionamento de Sair
 com confirmação e com cancelamento no Ubuntu. Registro complementar em
 [COMPANIES-NAVIGATION-POLISH.md](COMPANIES-NAVIGATION-POLISH.md).
 A próxima etapa visual combinada permanece Contatos.
+
+## Contatos — 27/10/2026
+
+Implementada a etapa visual de Contatos no padrão de Empresas / Clientes, com
+campos existentes reorganizados, situação rápida e filtros Empresa/A–Z/Z–A no
+banco. Migration 0024 e instruções em
+[CONTACT-LIST-FILTERS.md](CONTACT-LIST-FILTERS.md).
+A opção foi rotulada Empresa conforme esclarecimento do operador; não foi
+introduzido filtro adicional de tipo. Aplicação/conferência no Ubuntu pendente.

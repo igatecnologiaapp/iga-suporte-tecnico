@@ -564,6 +564,15 @@
 .company-table table {
   min-width: 48rem;
 }
+.contact-table table {
+  min-width: 60rem;
+}
+.contact-table th:first-child {
+  width: 28%;
+}
+.contact-table td:first-child {
+  min-width: 15rem;
+}
 .company-table th:first-child {
   width: 24%;
 }

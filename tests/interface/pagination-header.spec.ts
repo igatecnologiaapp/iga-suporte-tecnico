@@ -58,7 +58,7 @@ test("contacts have a person icon, server pages and viewer-safe controls", async
   const pager = page.getByRole("navigation", { name: "Paginação de Contatos" });
   await expect(pager).toContainText("1 a 5 de 11");
   await expect(
-    page.getByRole("cell", { name: "Contato 01", exact: true }).locator('[aria-hidden="true"] svg'),
+    page.getByRole("cell", { name: /^Contato 01/ }).locator('[aria-hidden="true"] svg'),
   ).toHaveCount(1);
   await pager.getByRole("button", { name: "Próxima página", exact: true }).click();
   await expect(pager).toContainText("6 a 10 de 11");

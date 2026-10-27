@@ -90,9 +90,11 @@ export const database = {
   ],
   contacts: Array.from({ length: 12 }, (_, index) => ({
     id: `contact-${index + 1}`,
-    company_id: "company-a",
+    company_id: index < 7 ? "company-a" : index < 10 ? "company-b" : "company-c",
+    job_title: index === 0 ? "Proprietário" : null,
+    whatsapp: index === 1 ? "(11) 90000-0002" : null,
     name: `Contato ${String(index + 1).padStart(2, "0")}`,
-    phone: "",
+    phone: index === 0 ? "(11) 90000-0001" : "",
     email: `contact${index + 1}@iga-test.example`,
     status: index === 11 ? "inactive" : "active",
     is_primary: index === 0,
@@ -259,14 +261,15 @@ function query(table: string) {
 export const supabase = {
   from: query,
   rpc: async (name: string, args: Record<string, unknown> = {}) => {
-    if (name !== "list_paged_records") return { data: [], error: null };
-    window.testPageReads.push(args);
+    if (!["list_paged_records", "list_paged_contacts"].includes(name))
+      return { data: [], error: null };
+    const entity = name === "list_paged_contacts" ? "contacts" : String(args["_entity"]);
+    window.testPageReads.push({ ...args, _entity: entity, _rpc: name });
     if (params.has("loading")) await new Promise((resolve) => setTimeout(resolve, 1200));
     if (failOnce && !params.has("category-error")) {
       failOnce = false;
       return { data: null, error: new Error("Synthetic page failure") };
     }
-    const entity = String(args["_entity"]);
     const filters = args["_filters"] as Record<string, string>;
     const size = Number(args["_page_size"] ?? 5);
     const requested = Number(args["_page"] ?? 1);
@@ -302,6 +305,43 @@ export const supabase = {
         ),
       }));
       counts = view.counts;
+    } else if (entity === "contacts") {
+      const base = database.contacts.filter(
+        (row) =>
+          (!filters["companyId"] || row.company_id === filters["companyId"]) &&
+          [
+            row.name,
+            row.email,
+            row.phone,
+            row.whatsapp,
+            (row.phone ?? "").replace(/\D/g, ""),
+            (row.whatsapp ?? "").replace(/\D/g, ""),
+            row.job_title,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes((filters["search"] ?? "").trim().toLowerCase()),
+      );
+      counts = {
+        all: base.length,
+        active: base.filter((row) => row.status === "active").length,
+        inactive: base.filter((row) => row.status === "inactive").length,
+      };
+      rows = base
+        .filter((row) => filters["status"] === "all" || row.status === filters["status"])
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name, "pt-BR", { numeric: true }) *
+            (filters["sort"] === "name_desc" ? -1 : 1),
+        )
+        .map((row) => ({
+          ...row,
+          companies: (() => {
+            const company = database.companies.find((company) => company.id === row.company_id);
+            return company ? { trade_name: company.trade_name, status: company.status } : null;
+          })(),
+        }));
     } else if (entity === "tickets") {
       const base = database.tickets.filter(
         (row) =>
