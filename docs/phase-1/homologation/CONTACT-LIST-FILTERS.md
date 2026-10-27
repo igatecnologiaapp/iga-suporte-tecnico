@@ -101,3 +101,9 @@ dos campos normalizados. Capturas sintéticas em `../screenshots/contacts-*`.
 O operador aprovou o resultado visual de Contatos e pediu em seguida máscara de
 telefone/WhatsApp na digitação e exibição. Esse complemento está documentado em
 [PHONE-FORMATTING.md](PHONE-FORMATTING.md), sem nova migration.
+
+## Filtro por empresa confirmado — 27/10/2026
+
+O operador confirmou manualmente o funcionamento do filtro por empresa nos
+contatos. Este retorno não mencionou navegação entre páginas nem conferência dos
+contadores; esses pontos continuam com a cobertura automatizada registrada.

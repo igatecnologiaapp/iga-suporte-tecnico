@@ -83,3 +83,11 @@ salvar e reabrir para confirmar. Conferir também cancelamento sem salvar.
 
 Capturas sintéticas da seção de endereço nos dois temas:
 `../screenshots/company-address-cep-{light,dark}.png`.
+
+## Conferência manual confirmada pelo operador — 27/10/2026
+
+O operador confirmou consulta de CEP com sucesso no navegador, preenchimento do
+endereço, possibilidade de editar os dados depois de salvar e persistência de
+Sem número como S/N. A consulta real e esses pontos de persistência ficam
+confirmados. Falhas do provedor, cancelamento e respostas concorrentes mantêm a
+cobertura automatizada já registrada; não foram relatados neste retorno manual.

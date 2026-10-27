@@ -216,3 +216,19 @@ Implementados preenchimento automático por CEP, Complemento (Opcional) e opçã
 Sem número usando S/N no campo existente. Detalhes e comandos em
 [COMPANY-ADDRESS-CEP.md](COMPANY-ADDRESS-CEP.md). Sem migration; consulta real e
 conferência manual no navegador do operador pendentes.
+
+## Retorno manual de Empresas e Contatos — 27/10/2026
+
+Operador confirmou:
+
+- Consulta real de CEP e preenchimento do endereço com sucesso no navegador.
+- Edição dos dados depois de salvar e persistência de Sem número como S/N.
+- Preferência do fixo, ou WhatsApp quando preenchido e marcado como principal.
+- Funcionamento do filtro por empresa em Contatos.
+- Asteriscos nos campos obrigatórios em ambos os temas.
+
+As pendências manuais desses itens ficam encerradas. O retorno não mencionou
+anterior/próxima página nem contadores, que permanecem cobertos pelos testes
+isolados anteriores. Não houve alteração funcional nem execução adicional de
+testes neste registro. Próxima etapa visual proposta: Categorias de Chamados,
+seguida de Técnicos; sem início de implementação neste registro.

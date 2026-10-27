@@ -85,3 +85,10 @@ os cenários novos de preferência do contato e indicação de obrigatoriedade.
 Capturas sintéticas dos dois temas em `../screenshots/contact-required-*.png`
 e `../screenshots/contact-preferred-*.png` mostram os marcadores e o canal
 WhatsApp escolhido pela preferência. Os formulários foram conferidos visualmente.
+
+## Conferência manual confirmada pelo operador — 27/10/2026
+
+O operador confirmou a preferência exibida na tabela: telefone fixo normalmente
+e WhatsApp quando preenchido e marcado como principal. Confirmou também os
+asteriscos nos campos obrigatórios nos temas claro e escuro. Esses pontos ficam
+validados manualmente, além da cobertura automatizada acima.
