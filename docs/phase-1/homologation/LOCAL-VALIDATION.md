@@ -240,3 +240,9 @@ Implementação e roteiro de atualização local em
 aplicada no Supabase local antes da interface que consulta a nova coluna.
 O ensaio automatizado usa dados sintéticos e PostgreSQL descartável; a
 confirmação visual do operador no Ubuntu permanece pendente.
+
+O operador encontrou uma interrupção no aplicador 0025 após a instalação da
+coluna: havia grant SQL padrão de UPDATE para `anon`. A conferência foi
+corrigida para verificar a proteção por RLS e políticas aplicáveis sem mudar
+permissões. Os testes descartáveis cobrem esse cenário; a repetição no Ubuntu
+com o script corrigido ainda depende da execução do operador.

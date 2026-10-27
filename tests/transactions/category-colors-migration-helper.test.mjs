@@ -111,6 +111,7 @@ function run(options = {}) {
                           read: true,
                           write: true,
                           anonWrite: !!options.anon,
+                          anonRlsProtected: !options.anonPolicy,
                         },
                       ]
                     : [],
@@ -150,7 +151,7 @@ for (const options of [
   { noRls: true },
   { noPagination: true },
   { present: true, drift: true },
-  { present: true, anon: true },
+  { present: true, anonPolicy: true },
   { present: true, badType: true },
 ])
   test(`category colors helper refuses unsafe conditions ${JSON.stringify(options)}`, () => {
@@ -159,3 +160,17 @@ for (const options of [
     assert.equal(r.applied, 0);
     assert.equal(r.evidence, 0);
   });
+
+for (const present of [false, true])
+  test(`Supabase default anon grant remains blocked by RLS, installed=${present}`, () => {
+    const r = run({ apply: true, anon: true, present });
+    assert.equal(r.error, null);
+    assert.equal(r.applied, present ? 0 : 1);
+    assert.equal(r.evidence, 1);
+  });
+test("anonymous SQL grant with an applicable policy remains rejected", () => {
+  const r = run({ apply: true, present: true, anon: true, anonPolicy: true });
+  assert.ok(r.error);
+  assert.equal(r.applied, 0);
+  assert.equal(r.evidence, 0);
+});

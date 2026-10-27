@@ -300,3 +300,33 @@ test("category color updates retain module and role restrictions", async () => {
     assert.equal(updated.length, n === 6 ? 1 : 0);
   }
 });
+
+/** Reproduz os grants padrão do Supabase e verifica a consulta real do aplicador e a RLS. */
+test("category helper accepts Supabase anon grants only when policies block anonymous access", async () => {
+  const helper = readFileSync(
+    resolve(root, "tests/homologation/apply-category-colors.mjs"),
+    "utf8",
+  );
+  const query = helper.match(/`(SELECT coalesce\(json_agg[\s\S]*?FROM pg_attribute[\s\S]*?;)`/)[1];
+  await sql.begin(async (tx) => {
+    await tx.unsafe("GRANT SELECT, UPDATE ON public.ticket_categories TO anon");
+    let [result] = await tx.unsafe(query);
+    assert.equal(result.coalesce[0].anonWrite, true);
+    assert.equal(result.coalesce[0].anonRlsProtected, true);
+    await tx.unsafe("SET LOCAL ROLE anon");
+    await tx`select set_config('request.jwt.claim.sub','',true)`;
+    assert.equal((await tx`select * from public.ticket_categories`).length, 0);
+    assert.equal(
+      (await tx`update public.ticket_categories set color='#ef4444' returning id`).length,
+      0,
+    );
+    await tx.unsafe("RESET ROLE");
+    await tx.unsafe(
+      "CREATE POLICY category_test_public_read ON public.ticket_categories FOR SELECT TO public USING (true)",
+    );
+    [result] = await tx.unsafe(query);
+    assert.equal(result.coalesce[0].anonRlsProtected, false);
+    await tx.unsafe("DROP POLICY category_test_public_read ON public.ticket_categories");
+    await tx.unsafe("REVOKE SELECT, UPDATE ON public.ticket_categories FROM anon");
+  });
+});

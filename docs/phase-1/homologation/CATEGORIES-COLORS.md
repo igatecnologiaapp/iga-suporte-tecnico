@@ -49,11 +49,25 @@ Interrompa o app com Ctrl+C e execute no Ubuntu:
 - Regressão completa: 110 cenários de interface aprovados.
 - 58 testes unitários aprovados verificam paleta, contraste dos textos, agrupamento,
   ausência de pai e preservação dos dados de entrada.
-- PostgreSQL descartável com migrations 0000–0025: treze cenários de contratos
+- PostgreSQL descartável com migrations 0000–0025: quatorze cenários de contratos
   e segurança, incluindo paleta, vínculos e restrições reais de papel/módulo.
-- Dez testes do aplicador: simulação, instalação, repetição e recusa de destino,
+- Treze testes do aplicador: simulação, instalação, repetição e recusa de destino,
   permissões ou definição incompatíveis.
 - TypeScript, lint dos componentes novos e build isolado, sem ambiente de produção.
 
 Verificação manual ainda pendente no Ubuntu do operador: criar e editar cores,
 recarregar a página e conferir as etiquetas e sua ordem em Empresas / Clientes.
+
+## Compatibilidade com permissões padrão do Supabase
+
+O Supabase local pode conceder SELECT/UPDATE a `anon` por privilégios padrão.
+Isso não libera registros quando a RLS está ativa e não há política permissiva
+aplicável a esse papel. O aplicador confere RLS, ausência de bypass e políticas
+aplicáveis diretamente, por PUBLIC ou por herança de papéis; registra o grant
+SQL separadamente. Nenhum GRANT ou política é alterado pela correção.
+
+A versão inicial interrompia a conferência depois de instalar a coluna nesse
+ambiente. Basta atualizar o script e repetir o mesmo comando: a definição
+compatível já instalada é reconhecida e a migration não é reaplicada.
+Os testes incluem grants reais a anon com leitura/atualização bloqueadas e
+recusa de uma política pública de leitura, usando a consulta real do aplicador.

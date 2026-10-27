@@ -123,3 +123,8 @@ de paginação e as políticas publicadas permanecem preservadas. O aplicador
 [apply-category-colors](../../tests/homologation/apply-category-colors.mjs)
 confere destino local, esquema e permissões antes de copiar a nova interface;
 uma coluna existente incompatível exige revisão e não é sobrescrita.
+
+Na checagem de Categorias, um grant SQL padrão para `anon` é registrado
+separadamente da autorização efetiva. O aplicador exige RLS ativa, papel sem
+bypass e nenhuma política permissiva de leitura/atualização aplicável a anon,
+PUBLIC ou papéis herdados. Não altera grants ou políticas existentes.

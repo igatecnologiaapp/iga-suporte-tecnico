@@ -63,7 +63,7 @@ assert.ok(
 function definition() {
   return JSON.parse(
     sql(
-      `SELECT coalesce(json_agg(json_build_object('type',format_type(a.atttypid,a.atttypmod),'required',a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid),'constraint',(SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid=a.attrelid AND conname='ticket_categories_color_palette' AND convalidated),'read',has_column_privilege('authenticated',a.attrelid,a.attname,'SELECT'),'write',has_column_privilege('authenticated',a.attrelid,a.attname,'UPDATE'),'anonWrite',has_column_privilege('anon',a.attrelid,a.attname,'UPDATE'))),'[]'::json) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.ticket_categories'::regclass AND a.attname='color' AND NOT a.attisdropped;`,
+      `SELECT coalesce(json_agg(json_build_object('type',format_type(a.atttypid,a.atttypmod),'required',a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid),'constraint',(SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid=a.attrelid AND conname='ticket_categories_color_palette' AND convalidated),'read',has_column_privilege('authenticated',a.attrelid,a.attname,'SELECT'),'write',has_column_privilege('authenticated',a.attrelid,a.attname,'UPDATE'),'anonWrite',has_column_privilege('anon',a.attrelid,a.attname,'UPDATE'),'anonRlsProtected',NOT (SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname='anon') AND NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid=a.attrelid AND p.polpermissive AND p.polcmd IN ('*','r','w') AND EXISTS (SELECT 1 FROM unnest(p.polroles) role_oid WHERE CASE WHEN role_oid=0 THEN true ELSE pg_has_role('anon',role_oid,'MEMBER') END)))),'[]'::json) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.ticket_categories'::regclass AND a.attname='color' AND NOT a.attisdropped;`,
     ),
   );
 }
@@ -78,7 +78,9 @@ function check(column) {
   assert.equal(column.constraint?.replace(/\s/g, ""), expected.replace(/\s/g, ""));
   assert.equal(column.read, true);
   assert.equal(column.write, true);
-  assert.equal(column.anonWrite, false);
+  // O Supabase pode conceder privilégios SQL padrão a anon; sem política permissiva,
+  // a RLS bloqueia leitura/atualização. Confira a proteção efetiva, inclusive herança.
+  assert.equal(column.anonRlsProtected, true, "RLS deve bloquear leitura e atualização anônimas.");
 }
 const existing = definition();
 assert.ok(existing.length <= 1);
