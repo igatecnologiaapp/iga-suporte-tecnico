@@ -25,6 +25,8 @@ A migration 0025 acrescenta apenas `ticket_categories.color`, obrigatória,
 com azul como padrão e CHECK das sete escolhas. Não altera nomes, situação,
 parentesco, vínculos, políticas nem funções publicadas de paginação. Instale-a
 antes de copiar a interface: as consultas novas pedem a coluna `color`.
+A atualização atual também instala a consulta da migration 0026, descrita em
+[CATEGORY-TYPE-FILTERS.md](./CATEGORY-TYPE-FILTERS.md).
 
 O aplicador abaixo verifica API loopback, container, portas, pré-requisitos,
 definição instalada e permissões. Pode ser repetido quando a coluna já estiver
@@ -38,6 +40,7 @@ Interrompa o app com Ctrl+C e execute no Ubuntu:
   cd ~/projetos/iga-service-homologacao
   git pull --ff-only origin codex/iga-service-fase-1
   IGA_HOMO_PRIVATE="$HOME/iga-homologacao/private" node tests/homologation/apply-category-colors.mjs --apply
+  IGA_HOMO_PRIVATE="$HOME/iga-homologacao/private" node tests/homologation/apply-category-filters.mjs --apply
   cp -a src/. "$HOME/iga-homologacao/app/src/"
   node "$HOME/iga-homologacao/private/start-app.mjs"
 )

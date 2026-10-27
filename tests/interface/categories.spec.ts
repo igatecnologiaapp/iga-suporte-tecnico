@@ -15,7 +15,7 @@ test("categorias mantêm totais completos e páginas de cinco com ícones e hier
   page,
 }) => {
   await page.goto("/categories?category-list");
-  await expect(pager(page)).toContainText("1 a 5 de 12");
+  await expect(pager(page)).toContainText("1 a 5 de 14");
   await expect(page.getByRole("definition")).toHaveText(["14", "12", "2"]);
   await expect(page.getByRole("columnheader")).toHaveText([
     "Nome",
@@ -27,7 +27,7 @@ test("categorias mantêm totais completos e páginas de cinco com ícones e hier
   await expect(page.locator("tbody tr")).toHaveCount(5);
   await expect(page.locator("tbody tr").first().getByRole("cell").nth(1)).toHaveText("Categoria");
   await pager(page).getByRole("button", { name: "Próxima página", exact: true }).click();
-  await expect(pager(page)).toContainText("6 a 10 de 12");
+  await expect(pager(page)).toContainText("6 a 10 de 14");
   await search(page, "Subcategoria Alfa");
   await expect(page.locator("tbody tr")).toContainText(
     "Subcategoria AlfaSubcategoriaSistema sintético",
@@ -46,16 +46,16 @@ test("ordenação e situação usam consultas e limpar preserva a situação rá
   page,
 }) => {
   await page.goto("/categories?category-list");
-  await expect(pager(page)).toContainText("1 a 5 de 12");
+  await expect(pager(page)).toContainText("1 a 5 de 14");
   await page.getByRole("button", { name: "Filtros", exact: true }).click();
   const panel = page.getByRole("dialog", { name: "Filtros de categorias", exact: true });
   await panel.getByLabel("Ordenar por", { exact: true }).selectOption("name_desc");
-  await expect(page.locator("tbody tr").first()).toContainText("Treinamento sintético");
+  await expect(page.locator("tbody tr").first()).toContainText("Z Principal arquivada");
   await panel.getByRole("button", { name: "Concluir", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Pesquisar categorias por nome", exact: true })
     .fill("Categoria 0");
-  await expect(pager(page)).toContainText("1 a 5 de 7");
+  await expect(pager(page)).toContainText("1 a 5 de 8");
   await expect(page.getByRole("button", { name: "Todas 8", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Inativas / Arquivadas 1", exact: true }).click();
   await expect(page.locator("tbody tr")).toContainText("Categoria 08");
@@ -104,7 +104,7 @@ for (const width of [360, 1440])
     }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/categories?category-list&viewer");
-      await expect(pager(page)).toContainText("1 a 5 de 12");
+      await expect(pager(page)).toContainText("1 a 5 de 14");
       if (dark) await page.getByRole("button", { name: "Ativar modo escuro", exact: true }).click();
       if (width === 360)
         await page.getByRole("button", { name: "Abrir menu", exact: true }).click();

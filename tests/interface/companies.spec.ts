@@ -19,8 +19,14 @@ test.afterEach(async ({ page }) => {
   expect(requests.get(page)).toEqual([]);
   expect(errors.get(page)).toEqual([]);
 });
+/** Abre o recorte ativo dos cenários existentes; a entrada em Todas tem cobertura própria. */
+async function visitActive(page: Page, url: string) {
+  await page.goto(url);
+  if (!url.includes("error") && !url.includes("loading"))
+    await page.getByRole("button", { name: /^Ativas / }).click();
+}
 async function openCompany(page: Page, name = "Alfa Sintética") {
-  await page.goto("/companies");
+  await visitActive(page, "/companies");
   await page.getByRole("button", { name: `Editar ${name}`, exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
 }
@@ -28,7 +34,7 @@ const domainLabel = "Domínio (opcional, texto livre)";
 test("searches by domain and preserves normalized display links for archived records", async ({
   page,
 }) => {
-  await page.goto("/companies");
+  await visitActive(page, "/companies");
   const search = page.getByRole("textbox", {
     name: "Pesquisar empresas por nome, documento ou domínio",
   });
@@ -92,7 +98,7 @@ test("keeps free-text storage without applying link normalization during saving"
   await expect(page.getByRole("link", { name: "Sem site / interno" })).toHaveCount(0);
 });
 test("preserves raw URL when only another field is edited", async ({ page }) => {
-  await page.goto("/companies");
+  await visitActive(page, "/companies");
   await page.getByRole("button", { name: /^Todas / }).click();
   await page.getByRole("button", { name: "Editar Arquivo Sintético" }).click();
   await page.getByLabel("Nome Fantasia", { exact: true }).fill("Arquivo Atualizado");
@@ -102,8 +108,10 @@ test("preserves raw URL when only another field is edited", async ({ page }) => 
     "HTTPS://WWW.ARQUIVO.EXAMPLE/path",
   );
 });
-test("duplicate domain outside the filtered page remains an informational warning", async ({ page }) => {
-  await page.goto("/companies");
+test("duplicate domain outside the filtered page remains an informational warning", async ({
+  page,
+}) => {
+  await visitActive(page, "/companies");
   await page
     .getByRole("textbox", { name: "Pesquisar empresas por nome, documento ou domínio" })
     .fill("Beta");
@@ -145,7 +153,7 @@ test("explicit clearing and creation without domain remain allowed", async ({ pa
   await expect(newRow).not.toContainText("Domínio:");
 });
 test("filters by linked subcategory and preserves one default main category", async ({ page }) => {
-  await page.goto("/companies");
+  await visitActive(page, "/companies");
   await page.getByRole("combobox", { name: "Filtrar por categoria" }).selectOption("sub-a");
   await expect(page.getByRole("button", { name: "Editar Beta Sintética" })).toHaveCount(0);
   await page.getByRole("button", { name: "Editar Alfa Sintética", exact: true }).click();
@@ -171,7 +179,7 @@ test("unselecting a parent clears its child links and previous default as before
   expect(links[0]!.is_default).toBe(false);
 });
 test("viewer cannot edit or see unavailable modules", async ({ page }) => {
-  await page.goto("/companies?viewer");
+  await visitActive(page, "/companies?viewer");
   await expect(page.getByRole("link", { name: "alfa.example", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Novo cadastro" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Editar Alfa Sintética" })).toHaveCount(0);
@@ -179,14 +187,14 @@ test("viewer cannot edit or see unavailable modules", async ({ page }) => {
 });
 for (const query of ["error", "error&category-error"])
   test(`failure blocks editing and retry recovers (${query})`, async ({ page }) => {
-    await page.goto(`/companies?${query}`);
+    await visitActive(page, `/companies?${query}`);
     await expect(page.getByRole("alert")).toContainText("Não foi possível carregar");
     await expect(page.getByRole("button", { name: "Novo cadastro" })).toBeDisabled();
     await page.getByRole("button", { name: "Tentar novamente" }).click();
     await expect(page.getByRole("link", { name: "alfa.example", exact: true })).toBeVisible();
   });
 test("loading is distinguishable from empty results", async ({ page }) => {
-  await page.goto("/companies?loading&empty");
+  await visitActive(page, "/companies?loading&empty");
   await expect(page.getByRole("status")).toContainText("Carregando cadastros");
   await expect(page.getByRole("status")).toContainText("Nenhum cadastro encontrado", {
     timeout: 10000,
@@ -197,7 +205,7 @@ for (const width of [360, 768, 1440])
     test(`responsive list and form ${width}px ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 1000 });
       await page.addInitScript((value) => localStorage.setItem("iga-theme", value), theme);
-      await page.goto("/companies");
+      await visitActive(page, "/companies");
       await expect(page.getByRole("link", { name: "alfa.example", exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
@@ -253,7 +261,7 @@ for (const width of [360, 768, 1440])
       });
     });
 test("theme persists and compact navigation has an accessible current item", async ({ page }) => {
-  await page.goto("/companies");
+  await visitActive(page, "/companies");
   await page.getByRole("button", { name: "Ativar modo escuro" }).click();
   await page.reload();
   await expect(page.locator("html")).toHaveClass("dark");
@@ -275,7 +283,7 @@ test("dialog keyboard focus stays inside and returns to edit trigger", async ({ 
   ).toBeFocused();
 });
 test("new dialog returns focus without writing on cancel", async ({ page }) => {
-  await page.goto("/companies");
+  await visitActive(page, "/companies");
   const trigger = page.getByRole("button", { name: "Novo cadastro" });
   await trigger.click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -288,7 +296,7 @@ for (const editing of [false, true])
   test(`duplicate CNPJ/CPF keeps ${editing ? "edited" : "new"} form and category data intact`, async ({
     page,
   }) => {
-    await page.goto("/companies");
+    await visitActive(page, "/companies");
     const original = await page.evaluate(() => JSON.stringify(window.testDatabase));
     if (editing)
       await page.getByRole("button", { name: "Editar Beta Sintética", exact: true }).click();
@@ -323,7 +331,7 @@ for (const conflict of ["duplicate-tax-id", "other-unique"])
   test(`server conflict ${conflict} is specific only for the document constraint`, async ({
     page,
   }) => {
-    await page.goto(`/companies?${conflict}`);
+    await visitActive(page, `/companies?${conflict}`);
     await page.getByRole("button", { name: "Editar Alfa Sintética", exact: true }).click();
     await page.getByRole("button", { name: "Salvar alterações", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -347,7 +355,7 @@ for (const width of [360, 1440])
     }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.addInitScript((value) => localStorage.setItem("iga-theme", value), theme);
-      await page.goto("/companies?admin");
+      await visitActive(page, "/companies?admin");
       const button = page.getByRole("button", { name: "Excluir Alfa Sintética", exact: true });
       const originalColor = await button.evaluate((element) => getComputedStyle(element).color);
       await button.hover();
@@ -377,7 +385,7 @@ for (const width of [360, 1440])
     }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.addInitScript((value) => localStorage.setItem("iga-theme", value), theme);
-      await page.goto("/companies");
+      await visitActive(page, "/companies");
       if (width === 360)
         await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
       const trigger = page.getByRole("button", { name: "Sair da conta", exact: true });
@@ -402,7 +410,7 @@ for (const width of [360, 1440])
     });
 
 test("logout waits for explicit confirmation and blocks duplicate calls", async ({ page }) => {
-  await page.goto("/companies?logout-delay");
+  await visitActive(page, "/companies?logout-delay");
   await page.getByRole("button", { name: "Sair da conta", exact: true }).click();
   expect(await page.evaluate(() => window.testSignOutCalls ?? 0)).toBe(0);
   await page.getByRole("alertdialog").getByRole("button", { name: "Sair", exact: true }).click();
@@ -412,7 +420,7 @@ test("logout waits for explicit confirmation and blocks duplicate calls", async 
 });
 
 test("logout failure stays on the page with an explanation and allows retry", async ({ page }) => {
-  await page.goto("/companies?logout-error");
+  await visitActive(page, "/companies?logout-error");
   await page.getByRole("button", { name: "Sair da conta", exact: true }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Sair", exact: true }).click();
   await expect(page.getByText("Não foi possível sair da conta. Tente novamente.")).toBeVisible();
@@ -426,7 +434,7 @@ test("logout failure stays on the page with an explanation and allows retry", as
 test("status counts and listing share search/category scope without changing records", async ({
   page,
 }) => {
-  await page.goto("/companies");
+  await visitActive(page, "/companies");
   const group = page.getByRole("group", { name: "Filtrar empresas por situação" });
   await expect(group.getByRole("button", { name: "Ativas 3", exact: true })).toHaveAttribute(
     "aria-pressed",
@@ -468,7 +476,7 @@ test("status counts and listing share search/category scope without changing rec
 test("advanced domain filters combine with status and restore natural name ordering", async ({
   page,
 }) => {
-  await page.goto("/companies");
+  await visitActive(page, "/companies");
   await page.getByRole("button", { name: /^Todas / }).click();
   await page.getByRole("button", { name: /^Mais filtros/ }).click();
   const panel = page.getByRole("dialog", { name: "Mais filtros de empresas" });
@@ -503,7 +511,7 @@ test("advanced domain filters combine with status and restore natural name order
 });
 
 test("creation-date sorting and viewer filters never grant editing access", async ({ page }) => {
-  await page.goto("/companies?viewer");
+  await visitActive(page, "/companies?viewer");
   await page.getByRole("button", { name: /^Todas / }).click();
   await page.getByRole("button", { name: /^Mais filtros/ }).click();
   await page.getByLabel("Ordenar por").selectOption("newest");

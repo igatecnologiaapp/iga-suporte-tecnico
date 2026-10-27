@@ -1047,6 +1047,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      list_paged_categories: {
+        Args: { _page?: number; _page_size?: number; _filters?: Json }
+        Returns: Json
+      }
       list_paged_contacts: {
         Args: { _page?: number; _page_size?: number; _filters?: Json }
         Returns: Json

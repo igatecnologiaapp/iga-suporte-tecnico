@@ -81,7 +81,7 @@ export function TicketsPage({
   const [q, setQ] = useState("");
   const [company, setCompany] = useState("");
   const [category, setCategory] = useState("");
-  const [queue, setQueue] = useState(technicianId ? "mine" : "all");
+  const [queue, setQueue] = useState("all");
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [companyFilter, setCompanyFilter] = useState("");

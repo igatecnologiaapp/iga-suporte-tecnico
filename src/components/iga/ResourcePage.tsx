@@ -103,7 +103,7 @@ export function ResourcePage({
   const canDelete = role === "admin";
   const [related, setRelated] = useState<any[]>([]);
   const [q, setQ] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
+  const [showArchived, setShowArchived] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [categoryName, setCategoryName] = useState("");
@@ -127,21 +127,29 @@ export function ResourcePage({
   const [companyFilters, setCompanyFilters] = useState<CompanyListFilters>({
     search: "",
     categoryId: "",
-    status: "active",
+    status: "all",
     sort: "name_asc",
     domain: "all",
   });
   const [contactFilters, setContactFilters] = useState<ContactListFilters>({
     search: "",
     companyId: "",
-    status: "active",
+    status: "all",
     sort: "name_asc",
   });
   const [categoryFilters, setCategoryFilters] = useState<CategoryListFilters>({
     search: "",
-    status: "active",
+    status: "all",
     sort: "name_asc",
+    type: "all",
   });
+  // Ao entrar em outro cadastro, começa por todos; a escolha rápida vale enquanto a tela estiver aberta.
+  useEffect(() => {
+    setCompanyFilters((value) => ({ ...value, status: "all" }));
+    setContactFilters((value) => ({ ...value, status: "all" }));
+    setCategoryFilters((value) => ({ ...value, status: "all" }));
+    setShowArchived(true);
+  }, [kind]);
   const canLinkCats = role === "admin" || role === "supervisor";
 
   const pageFilters =

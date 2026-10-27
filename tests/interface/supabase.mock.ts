@@ -307,9 +307,14 @@ function query(table: string) {
 export const supabase = {
   from: query,
   rpc: async (name: string, args: Record<string, unknown> = {}) => {
-    if (!["list_paged_records", "list_paged_contacts"].includes(name))
+    if (!["list_paged_records", "list_paged_contacts", "list_paged_categories"].includes(name))
       return { data: [], error: null };
-    const entity = name === "list_paged_contacts" ? "contacts" : String(args["_entity"]);
+    const entity =
+      name === "list_paged_contacts"
+        ? "contacts"
+        : name === "list_paged_categories"
+          ? "categories"
+          : String(args["_entity"]);
     window.testPageReads.push({ ...args, _entity: entity, _rpc: name });
     if (params.has("loading")) await new Promise((resolve) => setTimeout(resolve, 1200));
     if (failOnce && !params.has("category-error")) {
@@ -407,10 +412,15 @@ export const supabase = {
         .sort((a, b) => Date.parse(b.opened_at) - Date.parse(a.opened_at));
       counts = { all: base.length, active: 0, inactive: 0 };
     } else {
-      const base = source.filter((row) =>
-        JSON.stringify(row)
-          .toLowerCase()
-          .includes((filters["search"] ?? "").toLowerCase()),
+      const base = source.filter(
+        (row) =>
+          (entity !== "categories" ||
+            !filters["type"] ||
+            filters["type"] === "all" ||
+            (filters["type"] === "category" ? !row["parent_id"] : !!row["parent_id"])) &&
+          JSON.stringify(row)
+            .toLowerCase()
+            .includes((filters["search"] ?? "").toLowerCase()),
       );
       counts = {
         all: base.length,

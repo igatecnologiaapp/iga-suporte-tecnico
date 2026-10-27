@@ -246,3 +246,10 @@ coluna: havia grant SQL padrão de UPDATE para `anon`. A conferência foi
 corrigida para verificar a proteção por RLS e políticas aplicáveis sem mudar
 permissões. Os testes descartáveis cobrem esse cenário; a repetição no Ubuntu
 com o script corrigido ainda depende da execução do operador.
+
+## Todos na entrada, fundos das etiquetas, tipo e títulos
+
+A rodada seguinte e seu roteiro estão em
+[CATEGORY-TYPE-FILTERS.md](./CATEGORY-TYPE-FILTERS.md). O filtro de tipo é aplicado
+no banco por nova função da migration 0026, antes da paginação. A confirmação
+manual no Ubuntu depende da atualização e dos testes pelo operador.

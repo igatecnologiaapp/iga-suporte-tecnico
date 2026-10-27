@@ -1,5 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
+/** Mantém explícito o recorte ativo nestes cenários de formulário, busca e ordenação. */
+async function visitActive(page: Page, url: string) {
+  await page.goto(url);
+  if (!url.includes("error") && !url.includes("loading"))
+    await page.getByRole("button", { name: /^Ativos / }).click();
+}
 const pager = (page: Page) => page.getByRole("navigation", { name: "Paginação de Contatos" });
 async function filters(page: Page) {
   await page.getByRole("button", { name: /^Filtros/ }).click();
@@ -11,7 +17,7 @@ async function filters(page: Page) {
 test("contacts display linked company, email, job title and phone without inventing missing values", async ({
   page,
 }) => {
-  await page.goto("/contacts?admin");
+  await visitActive(page, "/contacts?admin");
   await expect(pager(page)).toContainText("1 a 5 de 11");
   const summary = page.getByRole("definition");
   await expect(summary).toHaveText(["12", "11", "1"]);
@@ -48,7 +54,7 @@ test("contacts display linked company, email, job title and phone without invent
 test("company and status filters share full counters, include archived companies and preserve selected status on clear", async ({
   page,
 }) => {
-  await page.goto("/contacts");
+  await visitActive(page, "/contacts");
   await expect(pager(page)).toContainText("1 a 5 de 11");
   await pager(page).getByRole("button", { name: "Próxima página", exact: true }).click();
   await expect(pager(page)).toContainText("6 a 10 de 11");
@@ -73,7 +79,7 @@ test("company and status filters share full counters, include archived companies
 });
 
 test("contact sorting and phone/email searches run before pagination", async ({ page }) => {
-  await page.goto("/contacts");
+  await visitActive(page, "/contacts");
   await expect(pager(page)).toContainText("1 a 5 de 11");
   const panel = await filters(page);
   await panel.getByLabel("Ordenar por", { exact: true }).selectOption("name_desc");
@@ -105,7 +111,7 @@ test("contact sorting and phone/email searches run before pagination", async ({ 
 });
 
 test("editing a contact preserves inactive company and optional fields", async ({ page }) => {
-  await page.goto("/contacts");
+  await visitActive(page, "/contacts");
   await expect(pager(page)).toContainText("1 a 5 de 11");
   const panel = await filters(page);
   await panel.getByLabel("Empresa", { exact: true }).selectOption("company-c");
@@ -126,7 +132,7 @@ for (const width of [360, 1440])
   for (const dark of [false, true])
     test(`contacts layout and filters fit ${width}px dark=${dark}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto("/contacts?viewer");
+      await visitActive(page, "/contacts?viewer");
       await expect(pager(page)).toContainText("1 a 5 de 11");
       if (dark) await page.getByRole("button", { name: "Ativar modo escuro", exact: true }).click();
       expect(

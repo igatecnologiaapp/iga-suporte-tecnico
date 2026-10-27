@@ -56,7 +56,9 @@ export function usePagedRecords(
         const response =
           entity === "contacts"
             ? await supabase.rpc("list_paged_contacts", parameters)
-            : await supabase.rpc("list_paged_records", { ...parameters, _entity: entity });
+            : entity === "categories"
+              ? await supabase.rpc("list_paged_categories", parameters)
+              : await supabase.rpc("list_paged_records", { ...parameters, _entity: entity });
         if (response.error) throw response.error;
         const result = pagedRecordsSchema.parse(response.data);
         if (result.pageSize !== pageSize) throw new Error("Tamanho de página inválido.");

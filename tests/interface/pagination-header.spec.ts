@@ -1,7 +1,14 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+/** Mantém explícito o recorte ativo nos testes históricos de paginação e falhas. */
+async function visitActive(page: Page, url: string) {
+  await page.goto(url);
+  if (url.startsWith("/companies")) await page.getByRole("button", { name: /^Ativas / }).click();
+  if (url.startsWith("/contacts")) await page.getByRole("button", { name: /^Ativos / }).click();
+}
 
 test("company pages request five rows and preserve full totals", async ({ page }) => {
-  await page.goto("/companies?pagination");
+  await visitActive(page, "/companies?pagination");
   const pager = page.getByRole("navigation", { name: "Paginação de Empresas / Clientes" });
   await expect(pager).toContainText("Mostrando 1 a 5 de 12 registros");
   await expect(page.locator("tbody tr")).toHaveCount(5);
@@ -34,7 +41,7 @@ test("company pages request five rows and preserve full totals", async ({ page }
 test("search and status reset the remote page while clear keeps the selected status", async ({
   page,
 }) => {
-  await page.goto("/companies?pagination");
+  await visitActive(page, "/companies?pagination");
   const pager = page.getByRole("navigation", { name: "Paginação de Empresas / Clientes" });
   await expect(pager).toContainText("1 a 5 de 12");
   await pager.getByRole("button", { name: "Próxima página", exact: true }).click();
@@ -54,7 +61,7 @@ test("search and status reset the remote page while clear keeps the selected sta
 });
 
 test("contacts have a person icon, server pages and viewer-safe controls", async ({ page }) => {
-  await page.goto("/contacts?viewer");
+  await visitActive(page, "/contacts?viewer");
   const pager = page.getByRole("navigation", { name: "Paginação de Contatos" });
   await expect(pager).toContainText("1 a 5 de 11");
   await expect(
@@ -71,7 +78,8 @@ test("contacts have a person icon, server pages and viewer-safe controls", async
 });
 
 test("ticket pages preserve queue totals and the own-technician queue", async ({ page }) => {
-  await page.goto("/tickets?technician");
+  await visitActive(page, "/tickets?technician");
+  await page.getByRole("tab", { name: "Meus chamados 6", exact: true }).click();
   const pager = page.getByRole("navigation", { name: "Paginação de Chamados" });
   await expect(pager).toContainText("1 a 5 de 6");
   await expect(page.getByRole("tab", { name: "Todos 12", exact: true })).toBeVisible();
@@ -89,7 +97,7 @@ test("ticket pages preserve queue totals and the own-technician queue", async ({
 });
 
 test("old page response cannot replace a newer search", async ({ page }) => {
-  await page.goto("/companies?pagination&page-race");
+  await visitActive(page, "/companies?pagination&page-race");
   const pager = page.getByRole("navigation", { name: "Paginação de Empresas / Clientes" });
   await expect(pager).toContainText("1 a 5 de 12");
   await pager.getByRole("button", { name: "Próxima página", exact: true }).click();
@@ -107,7 +115,7 @@ test("old page response cannot replace a newer search", async ({ page }) => {
 });
 
 test("page failure offers retry instead of showing stale records", async ({ page }) => {
-  await page.goto("/companies?pagination&page-failure");
+  await visitActive(page, "/companies?pagination&page-failure");
   const pager = page.getByRole("navigation", { name: "Paginação de Empresas / Clientes" });
   await expect(pager).toContainText("1 a 5 de 12");
   await pager.getByRole("button", { name: "Próxima página", exact: true }).click();
@@ -126,7 +134,7 @@ for (const width of [360, 1440])
     await page.goto("/companies?pagination");
     await expect(
       page.getByRole("navigation", { name: "Paginação de Empresas / Clientes" }),
-    ).toContainText("1 a 5 de 12");
+    ).toContainText("1 a 5 de 13");
     const header = page.getByRole("banner");
     await page.evaluate(() => window.scrollTo(0, 280));
     await expect(header).toHaveAttribute("data-hidden", "true");

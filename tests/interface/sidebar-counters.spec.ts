@@ -9,6 +9,7 @@ for (const dark of [false, true])
     const active = page.getByRole("button", { name: "Ativas 12", exact: true });
     const all = page.getByRole("button", { name: "Todas 13", exact: true });
     await expect(active).toBeEnabled();
+    await active.click();
     const colors = async (button: typeof active) =>
       button.locator(".company-filter-count").evaluate((el) => {
         const style = getComputedStyle(el);
@@ -62,12 +63,10 @@ test("shared inbox badge sums beyond one batch, polls new arrivals and clears af
     exact: true,
   });
   await expect(two.locator(".inbox-unread-badge")).toHaveText("2");
-  const color = await two
-    .locator(".inbox-unread-badge")
-    .evaluate((el) => ({
-      background: getComputedStyle(el).backgroundColor,
-      text: getComputedStyle(el).color,
-    }));
+  const color = await two.locator(".inbox-unread-badge").evaluate((el) => ({
+    background: getComputedStyle(el).backgroundColor,
+    text: getComputedStyle(el).color,
+  }));
   expect(color).toEqual({ background: "rgb(229, 46, 70)", text: "rgb(255, 255, 255)" });
   await page.getByRole("button", { name: "Recolher menu", exact: true }).click();
   await expect(two).toHaveClass(/nav-item-compact/);
@@ -117,7 +116,7 @@ test("without inbox module the shell makes no unread queries", async ({ page }) 
   await page.goto("/companies?viewer");
   await expect(
     page.getByRole("navigation", { name: "Paginação de Empresas / Clientes" }),
-  ).toContainText("1 a 3 de 3");
+  ).toContainText("1 a 4 de 4");
   expect(await page.evaluate(() => window.testInboxReads)).toEqual([]);
   await expect(page.getByRole("link", { name: /^Caixa de Entrada/ })).toHaveCount(0);
 });

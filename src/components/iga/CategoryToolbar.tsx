@@ -10,8 +10,9 @@ export type CategoryListFilters = {
   search: string;
   status: "all" | "active" | "inactive";
   sort: "name_asc" | "name_desc";
+  type: "all" | "category" | "subcategory";
 };
-/** Combina nome, situação e ordem alfabética sem alterar os vínculos das categorias. */
+/** Combina nome, tipo, situação e ordem alfabética sem alterar os vínculos das categorias. */
 export function CategoryToolbar({
   filters,
   counts,
@@ -26,7 +27,7 @@ export function CategoryToolbar({
   onChange: (value: CategoryListFilters) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const advancedCount = Number(filters.sort !== "name_asc");
+  const advancedCount = Number(filters.sort !== "name_asc") + Number(filters.type !== "all");
   const hasFilters = Boolean(filters.search.trim() || advancedCount);
   return (
     <div className="company-list-controls space-y-3">
@@ -63,6 +64,21 @@ export function CategoryToolbar({
           >
             <h2 className="text-sm font-semibold">Refinar categorias</h2>
             <div className="space-y-1.5">
+              <Label htmlFor="category-type">Exibir</Label>
+              <select
+                id="category-type"
+                className="form-control"
+                value={filters.type}
+                onChange={(event) =>
+                  onChange({ ...filters, type: event.target.value as CategoryListFilters["type"] })
+                }
+              >
+                <option value="all">Categorias e subcategorias</option>
+                <option value="category">Somente categorias</option>
+                <option value="subcategory">Somente subcategorias</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="category-sort">Ordenar por</Label>
               <select
                 id="category-sort"
@@ -88,7 +104,9 @@ export function CategoryToolbar({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onChange({ search: "", status: filters.status, sort: "name_asc" })}
+            onClick={() =>
+              onChange({ search: "", status: filters.status, sort: "name_asc", type: "all" })
+            }
           >
             <X />
             Limpar filtros

@@ -298,7 +298,7 @@ export function AppShell({
                 {collapsed ? <ChevronRight /> : <ChevronLeft />}
               </Button>
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">
+                <p className="truncate text-sm font-bold">
                   {currentModule?.label ?? "IGA Service"}
                 </p>
                 <p className="hidden text-xs text-muted-foreground sm:block">

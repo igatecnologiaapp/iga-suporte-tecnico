@@ -20,7 +20,7 @@ before(async () => {
   );
   await sql.unsafe(readFileSync(resolve(import.meta.dirname, "bootstrap.sql"), "utf8"));
   for (const name of readdirSync(resolve(root, "drizzle/migrations"))
-    .filter((n) => /^00(?:0\d|1\d|2[0-5])_.*\.sql$/.test(n))
+    .filter((n) => /^00(?:0\d|1\d|2[0-6])_.*\.sql$/.test(n))
     .sort()) {
     // Um registro anterior à coluna comprova o padrão sem perder nome ou situação.
     if (name.startsWith("0025_"))
@@ -329,4 +329,72 @@ test("category helper accepts Supabase anon grants only when policies block anon
     await tx.unsafe("DROP POLICY category_test_public_read ON public.ticket_categories");
     await tx.unsafe("REVOKE SELECT, UPDATE ON public.ticket_categories FROM anon");
   });
+});
+
+/** Consulta o novo filtro antes da paginação usando a identidade e as políticas reais. */
+async function categories(filters = {}, page = 1, actor = id(1), role = "authenticated", size = 5) {
+  return sql.begin(async (tx) => {
+    await tx.unsafe(`SET LOCAL ROLE ${role}`);
+    await tx`select set_config('request.jwt.claim.sub',${actor || ""},true)`;
+    return (
+      await tx`select public.list_paged_categories(${page},${size},${tx.json(filters)}) value`
+    )[0].value;
+  });
+}
+test("category type search status and counts are applied before five-row pages", async () => {
+  for (let n = 0; n < 8; n++)
+    await sql`insert into public.ticket_categories(id,name,parent_id,status) values(${id(800 + n)},${`Filtro ${n}`},${n % 2 ? id(30) : null},${n >= 6 ? "inactive" : "active"})`;
+  const all = await categories();
+  assert.equal(all.total, 10);
+  assert.equal(all.rows.length, 5);
+  assert.equal((await categories({}, 2)).rows.length, 5);
+  const roots = await categories({ type: "category", search: "Filtro" });
+  assert.equal(roots.total, 4);
+  assert.ok(roots.rows.every((row) => row.parent_id === null));
+  assert.deepEqual(roots.counts, { all: 4, active: 3, inactive: 1 });
+  assert.deepEqual(roots.summary, { all: 10, active: 8, inactive: 2 });
+  const children = await categories({ type: "subcategory", status: "inactive" });
+  assert.equal(children.total, 1);
+  assert.ok(children.rows.every((row) => row.parent_id === id(30) && row.status === "inactive"));
+  assert.deepEqual(children.counts, { all: 5, active: 4, inactive: 1 });
+  assert.equal((await categories({ type: "subcategory" }, 99)).page, 1);
+  const reverse = await categories({ type: "subcategory", sort: "name_desc", search: "Filtro" });
+  assert.deepEqual(
+    reverse.rows.map((row) => row.name),
+    ["Filtro 7", "Filtro 5", "Filtro 3", "Filtro 1"],
+  );
+  assert.equal((await categories({ search: "%' OR true --" })).total, 0);
+});
+test("category read model validates filters and retains identity module and RPC grants", async () => {
+  for (const fn of [
+    () => categories({}, 1, id(2)),
+    () => categories({}, 1, id(8)),
+    () => categories({}, 1, null),
+    () => categories({}, 1, null, "anon"),
+  ])
+    await assert.rejects(fn(), (error) => error.code === "42501");
+  assert.ok((await categories({}, 1, id(7))).total > 0);
+  for (const fn of [
+    () => categories({ type: "invalid" }),
+    () => categories({ type: [] }),
+    () => categories({ parentId: id(30) }),
+    () => categories({ status: "archived" }),
+    () => categories({ search: "x".repeat(301) }),
+    () => categories({}, 0),
+    () => categories({}, 1, id(1), "authenticated", 10),
+  ])
+    await assert.rejects(fn(), (error) => error.code === "22023");
+  const body = readFileSync(
+    resolve(root, "drizzle/migrations/0026_category_list_filters.sql"),
+    "utf8",
+  ).match(/AS \$\$([\s\S]*?)\$\$;/)[1];
+  const [fn] =
+    await sql`select prosrc,prosecdef,provolatile,proconfig,has_function_privilege('anon',oid,'EXECUTE') anon,has_function_privilege('authenticated',oid,'EXECUTE') authenticated,has_function_privilege('service_role',oid,'EXECUTE') service from pg_proc where oid='public.list_paged_categories(integer,integer,jsonb)'::regprocedure`;
+  assert.equal(fn.prosrc, body);
+  assert.equal(fn.prosecdef, false);
+  assert.equal(fn.provolatile, "s");
+  assert.equal(fn.anon, false);
+  assert.equal(fn.authenticated, true);
+  assert.equal(fn.service, false);
+  assert.ok(fn.proconfig.includes("search_path=pg_catalog, public"));
 });

@@ -17,7 +17,7 @@ junto da implementação. A orientação para continuar esse padrão está no
 | Endereço por CEP | [CompanyAddressFields](../../src/components/iga/CompanyAddressFields.tsx), [postal-code](../../src/lib/postal-code.ts) | Consulta pública de CEP, proteção das edições manuais e opção Sem número |
 | Listagem de empresas | [CompanyToolbar](../../src/components/iga/CompanyToolbar.tsx), [CompanyOverview](../../src/components/iga/CompanyOverview.tsx) | Filtros, situação e totais |
 | Listagem de contatos | [ContactToolbar](../../src/components/iga/ContactToolbar.tsx), [ContactOverview](../../src/components/iga/ContactOverview.tsx) | Empresa vinculada, nome A–Z/Z–A e totais |
-| Listagem de categorias | [CategoryToolbar](../../src/components/iga/CategoryToolbar.tsx), [CategoryOverview](../../src/components/iga/CategoryOverview.tsx) | Pesquisa, situação, A–Z/Z–A e totais globais, com páginas de cinco no banco |
+| Listagem de categorias | [CategoryToolbar](../../src/components/iga/CategoryToolbar.tsx), [CategoryOverview](../../src/components/iga/CategoryOverview.tsx) | Pesquisa, tipo Categoria/Subcategoria, situação, A–Z/Z–A e totais globais, com páginas de cinco no banco |
 | Paleta de categorias | [CategoryColorField](../../src/components/iga/CategoryColorField.tsx), [CategoryChip](../../src/components/iga/CategoryChip.tsx), [category-colors](../../src/lib/category-colors.ts) | Sete escolhas abaixo do nome, prévia e contraste próprio para cada tema |
 | Categorias nas empresas | [company-category-chips](../../src/lib/company-category-chips.ts), `companyCats` em ResourcePage | Agrupa cada pai antes de seus filhos, mostra apenas o nome próprio de cada etiqueta e identifica o padrão sem mudar vínculos |
 | Número prioritário | [preferredContactPhone](../../src/lib/contact-phone.ts), `ContactPhone` em ResourcePage | Principal marcado prefere WhatsApp; demais preferem Telefone; alternativa quando vazio |
@@ -43,6 +43,9 @@ As funções de leitura são `list_paged_records` na
 [migration 0023](../../drizzle/migrations/0023_paginated_record_lists.sql) e
 `list_paged_contacts` na
 [migration 0024](../../drizzle/migrations/0024_contact_list_filters.sql).
+`list_paged_categories` na [migration 0026](../../drizzle/migrations/0026_category_list_filters.sql)
+acrescenta tipo Categoria/Subcategoria antes da página. O aplicador local é
+[apply-category-filters](../../tests/homologation/apply-category-filters.mjs).
 Filtros são aplicados no banco antes da página; contadores consideram o conjunto
 autorizado correspondente. As funções são SECURITY INVOKER e mantêm RLS.
 Catálogos pequenos de opções são distintos dos registros completos da tabela.
@@ -128,3 +131,9 @@ Na checagem de Categorias, um grant SQL padrão para `anon` é registrado
 separadamente da autorização efetiva. O aplicador exige RLS ativa, papel sem
 bypass e nenhuma política permissiva de leitura/atualização aplicável a anon,
 PUBLIC ou papéis herdados. Não altera grants ou políticas existentes.
+
+As listagens começam em Todas/Todos, inclusive a fila de chamados do técnico.
+ResourcePage restaura a situação inicial ao entrar em outro cadastro, mantendo
+os filtros específicos independentes. Page e o título do cabeçalho em AppShell
+usam negrito para destacar a página aberta. A paleta compartilhada possui fundos
+mais fortes por tema; as escolhas persistidas e os vínculos não mudam.
