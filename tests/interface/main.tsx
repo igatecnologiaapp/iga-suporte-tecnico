@@ -29,9 +29,11 @@ export function Harness() {
         modules={
           new URLSearchParams(location.search).has("inbox-badge")
             ? ["inbox", "companies", "contacts"]
-            : path === "/tickets"
-              ? ["tickets", "companies", "contacts"]
-              : ["companies", "contacts"]
+            : path === "/categories"
+              ? ["categories", "companies", "contacts"]
+              : path === "/tickets"
+                ? ["tickets", "companies", "contacts"]
+                : ["companies", "contacts"]
         }
       >
         {path === "/tickets" ? (

@@ -63,10 +63,28 @@ export const database = {
     },
   ],
   ticket_categories: [
-    { id: "cat-a", name: "Sistema sintético", status: "active", parent_id: null },
-    { id: "cat-b", name: "Treinamento sintético", status: "active", parent_id: null },
-    { id: "sub-a", name: "Subcategoria Alfa", status: "active", parent_id: "cat-a" },
-    { id: "sub-b", name: "Subcategoria Beta", status: "active", parent_id: "cat-a" },
+    { id: "cat-a", name: "Sistema sintético", color: "#0ea5e9", status: "active", parent_id: null },
+    {
+      id: "cat-b",
+      name: "Treinamento sintético",
+      color: "#0ea5e9",
+      status: "active",
+      parent_id: null,
+    },
+    {
+      id: "sub-a",
+      name: "Subcategoria Alfa",
+      color: "#0ea5e9",
+      status: "active",
+      parent_id: "cat-a",
+    },
+    {
+      id: "sub-b",
+      name: "Subcategoria Beta",
+      color: "#0ea5e9",
+      status: "active",
+      parent_id: "cat-a",
+    },
   ],
   company_ticket_categories: [
     {
@@ -133,6 +151,30 @@ if (params.has("pagination")) {
       domain: index % 2 ? "extra.example" : null,
       status: "active",
     });
+}
+if (params.has("category-list")) {
+  for (let index = 1; index <= 8; index++)
+    database.ticket_categories.push({
+      id: `cat-extra-${index}`,
+      color: "#0ea5e9",
+      name: `Categoria ${String(index).padStart(2, "0")}`,
+      parent_id: null,
+      status: index === 8 ? "inactive" : "active",
+    });
+  database.ticket_categories.push({
+    id: "cat-archived",
+    color: "#ef4444",
+    name: "Z Principal arquivada",
+    parent_id: null,
+    status: "inactive",
+  });
+  database.ticket_categories.push({
+    id: "sub-archived-parent",
+    color: "#8b5cf6",
+    name: "Filha de arquivada",
+    parent_id: "cat-archived",
+    status: "active",
+  });
 }
 if (params.has("unformatted-phones")) {
   database.contacts[0]!.phone = "11900000001";
@@ -376,9 +418,13 @@ export const supabase = {
         inactive: base.filter((row) => row["status"] === "inactive").length,
       };
       rows = base
-        .filter((row) => filters["status"] === "all" || row["status"] === "active")
-        .sort((a, b) =>
-          String(a["name"]).localeCompare(String(b["name"]), "pt-BR", { numeric: true }),
+        .filter(
+          (row) => filters["status"] === "all" || row["status"] === (filters["status"] ?? "active"),
+        )
+        .sort(
+          (a, b) =>
+            String(a["name"]).localeCompare(String(b["name"]), "pt-BR", { numeric: true }) *
+            (filters["sort"] === "name_desc" ? -1 : 1),
         );
     }
     const total = rows.length;

@@ -17,6 +17,9 @@ junto da implementação. A orientação para continuar esse padrão está no
 | Endereço por CEP | [CompanyAddressFields](../../src/components/iga/CompanyAddressFields.tsx), [postal-code](../../src/lib/postal-code.ts) | Consulta pública de CEP, proteção das edições manuais e opção Sem número |
 | Listagem de empresas | [CompanyToolbar](../../src/components/iga/CompanyToolbar.tsx), [CompanyOverview](../../src/components/iga/CompanyOverview.tsx) | Filtros, situação e totais |
 | Listagem de contatos | [ContactToolbar](../../src/components/iga/ContactToolbar.tsx), [ContactOverview](../../src/components/iga/ContactOverview.tsx) | Empresa vinculada, nome A–Z/Z–A e totais |
+| Listagem de categorias | [CategoryToolbar](../../src/components/iga/CategoryToolbar.tsx), [CategoryOverview](../../src/components/iga/CategoryOverview.tsx) | Pesquisa, situação, A–Z/Z–A e totais globais, com páginas de cinco no banco |
+| Paleta de categorias | [CategoryColorField](../../src/components/iga/CategoryColorField.tsx), [CategoryChip](../../src/components/iga/CategoryChip.tsx), [category-colors](../../src/lib/category-colors.ts) | Sete escolhas abaixo do nome, prévia e contraste próprio para cada tema |
+| Categorias nas empresas | [company-category-chips](../../src/lib/company-category-chips.ts), `companyCats` em ResourcePage | Agrupa cada pai antes de seus filhos, conserva o prefixo e identifica o padrão sem mudar vínculos |
 | Número prioritário | [preferredContactPhone](../../src/lib/contact-phone.ts), `ContactPhone` em ResourcePage | Principal marcado prefere WhatsApp; demais preferem Telefone; alternativa quando vazio |
 | Telefones | [PhoneInput](../../src/components/iga/PhoneInput.tsx), [phone-format](../../src/lib/phone-format.ts) | Máscaras, limites de 10/11 dígitos, cursor e preservação dos registros antigos |
 | Documento e domínio | [company-save-feedback](../../src/lib/company-save-feedback.ts), [company-domain](../../src/lib/company-domain.ts) | Conflito específico de CNPJ/CPF e domínio opcional |
@@ -113,3 +116,10 @@ banco devem usar uma nova migration quando forem necessárias.
 não são lugar para regras de negócio. As descrições acima apontam os componentes
 e serviços próprios que os utilizam; não é necessário comentar cada propriedade
 de um tipo gerado nem cada callback de uma biblioteca.
+
+A [migration 0025](../../drizzle/migrations/0025_category_colors.sql) acrescenta
+`ticket_categories.color` com padrão azul e restrição às sete cores. As funções
+de paginação e as políticas publicadas permanecem preservadas. O aplicador
+[apply-category-colors](../../tests/homologation/apply-category-colors.mjs)
+confere destino local, esquema e permissões antes de copiar a nova interface;
+uma coluna existente incompatível exige revisão e não é sobrescrita.

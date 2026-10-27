@@ -38,6 +38,12 @@ import { CompanyOverview } from "./CompanyOverview";
 import { CompanyToolbar } from "./CompanyToolbar";
 import { ContactOverview } from "./ContactOverview";
 import { ContactToolbar, type ContactListFilters } from "./ContactToolbar";
+import { CategoryOverview } from "./CategoryOverview";
+import { CategoryToolbar, type CategoryListFilters } from "./CategoryToolbar";
+import { CategoryColorField } from "./CategoryColorField";
+import { CategoryChip } from "./CategoryChip";
+import { categoryColor, defaultCategoryColor, type CategoryColor } from "@/lib/category-colors";
+import { buildCompanyCategoryChips } from "@/lib/company-category-chips";
 import type { CompanyListFilters } from "@/lib/company-list";
 import { usePagedRecords } from "./usePagedRecords";
 import { TablePager } from "./TablePager";
@@ -100,6 +106,9 @@ export function ResourcePage({
   const [showArchived, setShowArchived] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [categoryName, setCategoryName] = useState("");
+  const [selectedCategoryColor, setSelectedCategoryColor] =
+    useState<CategoryColor>(defaultCategoryColor);
   const [saving, setSaving] = useState(false);
   // Aguarda a consulta de CEP para não salvar o endereço antes do preenchimento automático.
   const [addressLookupPending, setAddressLookupPending] = useState(false);
@@ -128,6 +137,11 @@ export function ResourcePage({
     status: "active",
     sort: "name_asc",
   });
+  const [categoryFilters, setCategoryFilters] = useState<CategoryListFilters>({
+    search: "",
+    status: "active",
+    sort: "name_asc",
+  });
   const canLinkCats = role === "admin" || role === "supervisor";
 
   const pageFilters =
@@ -135,7 +149,9 @@ export function ResourcePage({
       ? { ...companyFilters }
       : kind === "contacts"
         ? { ...contactFilters }
-        : { search: q, status: showArchived ? "all" : "active", sort: "name_asc" };
+        : kind === "categories"
+          ? { ...categoryFilters }
+          : { search: q, status: showArchived ? "all" : "active", sort: "name_asc" };
   const paged = usePagedRecords(kind, pageFilters);
   const rows = paged.data.rows as any[];
   const filtered = rows;
@@ -152,7 +168,7 @@ export function ResourcePage({
       if (kind === "companies") {
         const result = await supabase
           .from("ticket_categories")
-          .select("id,name,parent_id,status")
+          .select("id,name,parent_id,status,color")
           .order("name");
         if (result.error) throw result.error;
         if (request === optionsRequest.current) setAllCats(result.data ?? []);
@@ -164,9 +180,8 @@ export function ResourcePage({
               ? await supabase.from("profiles").select("id,full_name").order("full_name")
               : await supabase
                   .from("ticket_categories")
-                  .select("id,name")
+                  .select("id,name,status,color")
                   .is("parent_id", null)
-                  .eq("status", "active")
                   .order("name");
         if (result.error) throw result.error;
         if (request === optionsRequest.current) setRelated(result.data ?? []);
@@ -191,23 +206,15 @@ export function ResourcePage({
   }, [kind]);
   /** Resolve os nomes e a categoria padrão vinculados à empresa da página atual. */
   function companyCats(id: string) {
-    return links
-      .filter((l) => l.company_id === id)
-      .map((l) => {
-        const cat = allCats.find((c) => c.id === l.category_id);
-        const parent = cat?.parent_id ? allCats.find((c) => c.id === cat.parent_id) : null;
-        const label =
-          (parent ? `${parent.name} — ${cat?.name ?? "—"}` : (cat?.name ?? "—")) +
-          (cat?.status === "inactive" ? " (inativa)" : "");
-        return { ...l, name: label };
-      })
-      .sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.name.localeCompare(b.name));
+    return buildCompanyCategoryChips(links, allCats, id);
   }
   /** Prepara o formulário e seus vínculos para incluir ou editar o cadastro. */
   function openEditor(row: any) {
     setTaxIdError(null);
     editorTrigger.current = row ? `edit-${kind}-${row.id}` : `new-${kind}`;
     setEditing(row);
+    setCategoryName(row?.name ?? "");
+    setSelectedCategoryColor(categoryColor(row?.color));
     const own = row ? links.filter((l) => l.company_id === row.id) : [];
     setSelCats(own.map((l) => l.category_id));
     setDefCat(own.find((l) => l.is_default)?.category_id ?? "");
@@ -307,6 +314,7 @@ export function ResourcePage({
     if (kind === "categories")
       payload = {
         name: fd.get("name"),
+        color: selectedCategoryColor,
         parent_id: fd.get("parent_id") || null,
         status: fd.get("status"),
       };
@@ -421,7 +429,9 @@ export function ResourcePage({
           <Button
             id={`new-${kind}`}
             className={
-              kind === "companies" || kind === "contacts" ? "resource-create-action" : undefined
+              kind === "companies" || kind === "contacts" || kind === "categories"
+                ? "resource-create-action"
+                : undefined
             }
             disabled={loading || !!loadError}
             onClick={() => openEditor(null)}
@@ -610,11 +620,31 @@ export function ResourcePage({
             )}
             {kind === "categories" && (
               <>
-                <Field n="name" l="Nome" value={editing?.name} />
+                <div className="space-y-2">
+                  <Label required htmlFor="name">
+                    Nome
+                  </Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    required
+                    value={categoryName}
+                    onChange={(event) => setCategoryName(event.target.value)}
+                  />
+                  <CategoryColorField
+                    name={categoryName}
+                    color={selectedCategoryColor}
+                    onChange={setSelectedCategoryColor}
+                  />
+                </div>
                 <SelectField
                   n="parent_id"
                   l="Categoria superior (opcional)"
-                  rows={related.filter((row) => row.id !== editing?.id)}
+                  rows={related.filter(
+                    (row) =>
+                      row.id !== editing?.id &&
+                      (row.status === "active" || row.id === editing?.parent_id),
+                  )}
                   optional
                   value={editing?.parent_id}
                 />
@@ -650,6 +680,9 @@ export function ResourcePage({
       {kind === "contacts" && !loadError && (
         <ContactOverview summary={paged.data.summary} loading={loading} />
       )}
+      {kind === "categories" && !loadError && (
+        <CategoryOverview summary={paged.data.summary} loading={loading} />
+      )}
       {kind === "companies" ? (
         <CompanyToolbar
           filters={companyFilters}
@@ -667,6 +700,14 @@ export function ResourcePage({
           companies={related}
           unavailable={loading || !!loadError}
           onChange={setContactFilters}
+        />
+      ) : kind === "categories" ? (
+        <CategoryToolbar
+          filters={categoryFilters}
+          counts={paged.data.counts}
+          visibleCount={paged.data.total}
+          unavailable={loading || !!loadError}
+          onChange={setCategoryFilters}
         />
       ) : (
         <div className="resource-toolbar flex flex-wrap items-center gap-3">
@@ -703,14 +744,14 @@ export function ResourcePage({
         ) : filtered.length === 0 ? (
           <Empty>
             Nenhum cadastro encontrado.{" "}
-            {kind === "companies" || kind === "contacts" || q
+            {kind === "companies" || kind === "contacts" || kind === "categories" || q
               ? "Altere a pesquisa, os filtros ou a situação para tentar novamente."
               : "Os cadastros aparecerão aqui."}
           </Empty>
         ) : (
           <div
             inert={loading || undefined}
-            className={`resource-table overflow-hidden rounded-xl border bg-card ${kind === "companies" ? "company-table" : kind === "contacts" ? "contact-table" : ""}`}
+            className={`resource-table overflow-hidden rounded-xl border bg-card ${kind === "companies" ? "company-table" : kind === "contacts" ? "contact-table" : kind === "categories" ? "category-table" : ""}`}
           >
             <div
               className="overflow-x-auto"
@@ -731,6 +772,11 @@ export function ResourcePage({
                         <th className="px-4 py-3">Cargo / Função</th>
                         <th className="px-4 py-3">Telefone</th>
                       </>
+                    ) : kind === "categories" ? (
+                      <>
+                        <th className="px-4 py-3">Tipo</th>
+                        <th className="px-4 py-3">Categoria superior</th>
+                      </>
                     ) : (
                       <th className="px-4 py-3">Detalhe</th>
                     )}
@@ -742,11 +788,20 @@ export function ResourcePage({
                   {filtered.map((row) => (
                     <tr key={row.id} className="border-t">
                       <td className="px-4 py-3 font-medium">
-                        {kind === "companies" || kind === "contacts" ? (
+                        {kind === "companies" || kind === "contacts" || kind === "categories" ? (
                           <RecordName
-                            kind={kind === "companies" ? "company" : "contact"}
+                            kind={
+                              kind === "companies"
+                                ? "company"
+                                : kind === "contacts"
+                                  ? "contact"
+                                  : row.parent_id
+                                    ? "subcategory"
+                                    : "category"
+                            }
                             name={row[c.name]}
                             detail={kind === "contacts" ? row.email : undefined}
+                            categoryColor={kind === "categories" ? row.color : undefined}
                           />
                         ) : (
                           row[c.name]
@@ -773,6 +828,26 @@ export function ResourcePage({
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
                             <ContactPhone contact={row} />
+                          </td>
+                        </>
+                      ) : kind === "categories" ? (
+                        <>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {row.parent_id ? "Subcategoria" : "Principal"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {row.parent_id ? (
+                              <span>
+                                {related.find((parent) => parent.id === row.parent_id)?.name ??
+                                  "Categoria indisponível"}
+                                {related.find((parent) => parent.id === row.parent_id)?.status ===
+                                  "inactive" && (
+                                  <small className="block">Inativa / arquivada</small>
+                                )}
+                              </span>
+                            ) : (
+                              "—"
+                            )}
                           </td>
                         </>
                       ) : (
@@ -1037,7 +1112,7 @@ function SelectField({
 function CatChips({
   cats,
 }: {
-  cats: { category_id: string; name: string; is_default: boolean }[];
+  cats: { category_id: string; name: string; is_default: boolean; color: string }[];
 }) {
   if (!cats.length)
     return (
@@ -1046,16 +1121,7 @@ function CatChips({
   return (
     <div className="flex flex-wrap gap-1">
       {cats.map((c) => (
-        <span
-          key={c.category_id}
-          className={
-            "rounded-full border px-2 py-0.5 text-xs " +
-            (c.is_default ? "border-primary bg-primary/10 text-primary" : "")
-          }
-        >
-          {c.name}
-          {c.is_default ? " — Padrão" : ""}
-        </span>
+        <CategoryChip key={c.category_id} name={c.name} color={c.color} isDefault={c.is_default} />
       ))}
     </div>
   );

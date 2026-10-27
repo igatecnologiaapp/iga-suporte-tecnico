@@ -20,11 +20,23 @@ before(async () => {
   );
   await sql.unsafe(readFileSync(resolve(import.meta.dirname, "bootstrap.sql"), "utf8"));
   for (const name of readdirSync(resolve(root, "drizzle/migrations"))
-    .filter((n) => /^00(?:0\d|1\d|2[0-4])_.*\.sql$/.test(n))
-    .sort())
+    .filter((n) => /^00(?:0\d|1\d|2[0-5])_.*\.sql$/.test(n))
+    .sort()) {
+    // Um registro anterior à coluna comprova o padrão sem perder nome ou situação.
+    if (name.startsWith("0025_"))
+      await sql`insert into public.ticket_categories(id,name,status) values(${id(999)},'Categoria anterior à paleta','inactive')`;
     await sql.begin((tx) =>
       tx.unsafe(readFileSync(resolve(root, "drizzle/migrations", name), "utf8")),
     );
+  }
+  const [legacy] =
+    await sql`select name,status,color from public.ticket_categories where id=${id(999)}`;
+  assert.deepEqual(legacy, {
+    name: "Categoria anterior à paleta",
+    status: "inactive",
+    color: "#0ea5e9",
+  });
+  await sql`delete from public.ticket_categories where id=${id(999)}`;
   for (let n = 1; n <= 5; n++)
     await sql`insert into auth.users(id,email,raw_user_meta_data) values(${id(n)},${`user${n}@iga-test.example`},'{}')`;
   await sql`insert into public.primary_admin(user_id) values(${id(1)})`;
@@ -233,4 +245,58 @@ test("contact migration preserves the published shared RPC and denies anonymous 
   assert.equal(fn.anon, false);
   assert.equal(fn.service, false);
   assert.ok(fn.proconfig.includes("search_path=pg_catalog, public"));
+});
+
+/** Confere persistência da paleta sem alterar a hierarquia e os contratos de consulta. */
+test("category colors reject values outside the palette and preserve links and paging", async () => {
+  const before =
+    await sql`select * from public.company_ticket_categories order by company_id,category_id`;
+  const categories = await call("categories");
+  assert.ok(categories.rows.every((row) => row.color === "#0ea5e9"));
+  for (const color of [
+    "#0ea5e9",
+    "#eab308",
+    "#ec4899",
+    "#8b5cf6",
+    "#10b981",
+    "#f97316",
+    "#ef4444",
+  ]) {
+    await sql`update public.ticket_categories set color=${color} where id=${id(30)}`;
+    assert.equal((await call("categories")).rows.find((row) => row.id === id(30)).color, color);
+  }
+  for (const color of ["#ffffff", "red", "url(test)"])
+    await assert.rejects(
+      sql`update public.ticket_categories set color=${color} where id=${id(30)}`,
+      (error) => error.code === "23514",
+    );
+  await assert.rejects(
+    sql`update public.ticket_categories set color=null where id=${id(30)}`,
+    (error) => error.code === "23502",
+  );
+  assert.deepEqual(
+    await sql`select * from public.company_ticket_categories order by company_id,category_id`,
+    before,
+  );
+  const [constraint] =
+    await sql`select pg_get_constraintdef(oid) definition from pg_constraint where conname='ticket_categories_color_palette'`;
+  assert.equal(
+    constraint.definition,
+    "CHECK ((color = ANY (ARRAY['#0ea5e9'::text, '#eab308'::text, '#ec4899'::text, '#8b5cf6'::text, '#10b981'::text, '#f97316'::text, '#ef4444'::text])))",
+  );
+});
+/** Exercita atualização real com papel e módulo exigidos pelas políticas existentes. */
+test("category color updates retain module and role restrictions", async () => {
+  for (const n of [6, 7, 8])
+    await sql`insert into auth.users(id,email,raw_user_meta_data) values(${id(n)},${`user${n}@iga-test.example`},'{}')`;
+  await sql`update public.user_roles set role='supervisor' where user_id in (${id(6)},${id(8)})`;
+  await sql`insert into public.user_modules(user_id,module) values(${id(6)},'categories'),(${id(7)},'categories')`;
+  for (const n of [6, 7, 8]) {
+    const updated = await sql.begin(async (tx) => {
+      await tx.unsafe("SET LOCAL ROLE authenticated");
+      await tx`select set_config('request.jwt.claim.sub',${id(n)},true)`;
+      return tx`update public.ticket_categories set color='#10b981' where id=${id(30)} returning id`;
+    });
+    assert.equal(updated.length, n === 6 ? 1 : 0);
+  }
 });

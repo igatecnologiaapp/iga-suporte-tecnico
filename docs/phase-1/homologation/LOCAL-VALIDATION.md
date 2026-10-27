@@ -232,3 +232,11 @@ anterior/próxima página nem contadores, que permanecem cobertos pelos testes
 isolados anteriores. Não houve alteração funcional nem execução adicional de
 testes neste registro. Próxima etapa visual proposta: Categorias de Chamados,
 seguida de Técnicos; sem início de implementação neste registro.
+
+## Categorias: organização e paleta predefinida
+
+Implementação e roteiro de atualização local em
+[CATEGORIES-COLORS.md](./CATEGORIES-COLORS.md). A migration 0025 precisa ser
+aplicada no Supabase local antes da interface que consulta a nova coluna.
+O ensaio automatizado usa dados sintéticos e PostgreSQL descartável; a
+confirmação visual do operador no Ubuntu permanece pendente.

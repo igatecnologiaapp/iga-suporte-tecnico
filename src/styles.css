@@ -574,6 +574,58 @@
 .company-table table {
   min-width: 48rem;
 }
+/* Hierarquia de categorias: mantém nome, tipo e vínculo legíveis na rolagem interna. */
+.category-table table {
+  min-width: 52rem;
+}
+.category-table th:first-child {
+  width: 30%;
+}
+/* A etiqueta usa a mesma paleta em Categorias e Empresas, com contraste por tema. */
+.category-chip {
+  display: inline-block;
+  max-width: 100%;
+  border: 1px solid var(--category-color);
+  border-radius: 999px;
+  background: var(--category-light);
+  color: var(--category-text);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.dark .category-chip {
+  background: var(--category-dark);
+  color: var(--category-dark-text);
+}
+.category-chip[data-default="true"] {
+  font-weight: 650;
+}
+.category-color-option {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.category-color-option:hover {
+  background: var(--accent);
+}
+.category-color-swatch {
+  display: grid;
+  width: 1.125rem;
+  height: 1.125rem;
+  place-items: center;
+  border: 2px solid;
+  border-radius: 50%;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  color: inherit;
+}
+.category-color-option[aria-pressed="true"] .category-color-swatch {
+  outline-color: var(--foreground);
+}
 .contact-table table {
   min-width: 60rem;
 }

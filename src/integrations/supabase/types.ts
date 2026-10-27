@@ -686,6 +686,7 @@ export type Database = {
       }
       ticket_categories: {
         Row: {
+          color: string
           created_at: string
           id: string
           name: string
@@ -694,6 +695,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          color?: string
           created_at?: string
           id?: string
           name: string
@@ -702,6 +704,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          color?: string
           created_at?: string
           id?: string
           name?: string
