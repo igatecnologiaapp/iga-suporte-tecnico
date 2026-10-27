@@ -185,3 +185,10 @@ banco. Migration 0024 e instruções em
 [CONTACT-LIST-FILTERS.md](CONTACT-LIST-FILTERS.md).
 A opção foi rotulada Empresa conforme esclarecimento do operador; não foi
 introduzido filtro adicional de tipo. Aplicação/conferência no Ubuntu pendente.
+
+## Contatos aprovado e formatação de telefone — 27/10/2026
+
+Operador aprovou o resultado da tela de Contatos. Foi implementado o pedido
+seguinte de formatação progressiva de telefone/WhatsApp e apresentação na tabela,
+com comandos em [PHONE-FORMATTING.md](PHONE-FORMATTING.md). Não exige migration;
+conferência manual desta formatação no Ubuntu pendente.

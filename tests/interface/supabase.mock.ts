@@ -134,6 +134,10 @@ if (params.has("pagination")) {
       status: "active",
     });
 }
+if (params.has("unformatted-phones")) {
+  database.contacts[0]!.phone = "11900000001";
+  database.contacts[1]!.whatsapp = "11900000002";
+}
 if (params.has("empty")) database.companies = [];
 export const writes: { table: string; operation: string; payload: unknown }[] = [];
 let failOnce = params.has("error");

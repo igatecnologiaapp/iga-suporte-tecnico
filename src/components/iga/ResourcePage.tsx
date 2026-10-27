@@ -44,6 +44,8 @@ import { Empty, Page, LoadState } from "./Page";
 import { StatusBadge } from "./StatusBadge";
 import { ActionHint } from "./ActionHint";
 import { RecordName } from "./RecordName";
+import { PhoneInput } from "./PhoneInput";
+import { formatPhone } from "@/lib/phone-format";
 
 type Kind = RecordEntity;
 const config = {
@@ -761,7 +763,7 @@ export function ResourcePage({
                                   className="size-4 shrink-0 text-primary"
                                 />
                                 <span>
-                                  {row.phone || row.whatsapp}
+                                  {formatPhone(row.phone || row.whatsapp)}
                                   {!row.phone && <small className="block">WhatsApp</small>}
                                 </span>
                               </span>
@@ -951,13 +953,22 @@ function Field({
   return (
     <div>
       <Label htmlFor={n}>{l}</Label>
-      <Input
-        id={n}
-        name={n}
-        type={type}
-        required={req}
-        defaultValue={value == null ? "" : String(value)}
-      />
+      {n === "phone" || n === "whatsapp" ? (
+        <PhoneInput
+          id={n}
+          name={n}
+          required={req}
+          defaultValue={value == null ? "" : String(value)}
+        />
+      ) : (
+        <Input
+          id={n}
+          name={n}
+          type={type}
+          required={req}
+          defaultValue={value == null ? "" : String(value)}
+        />
+      )}
     </div>
   );
 }

@@ -95,3 +95,9 @@ Conferência manual do operador permanece pendente.
 A suíte completa de interface passou com 83 cenários. A pesquisa de telefone
 sem pontuação também foi conferida em cenário focado após completar os testes
 dos campos normalizados. Capturas sintéticas em `../screenshots/contacts-*`.
+
+## Retorno do operador
+
+O operador aprovou o resultado visual de Contatos e pediu em seguida máscara de
+telefone/WhatsApp na digitação e exibição. Esse complemento está documentado em
+[PHONE-FORMATTING.md](PHONE-FORMATTING.md), sem nova migration.
