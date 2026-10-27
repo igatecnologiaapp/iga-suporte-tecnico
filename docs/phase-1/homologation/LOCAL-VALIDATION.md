@@ -192,3 +192,11 @@ Operador aprovou o resultado da tela de Contatos. Foi implementado o pedido
 seguinte de formatação progressiva de telefone/WhatsApp e apresentação na tabela,
 com comandos em [PHONE-FORMATTING.md](PHONE-FORMATTING.md). Não exige migration;
 conferência manual desta formatação no Ubuntu pendente.
+
+## Limites de Telefone e WhatsApp — 27/10/2026
+
+Após observar entrada excessiva nas máscaras, o operador pediu limites distintos.
+Implementado Telefone com dez dígitos e WhatsApp com onze, contando DDD, com
+bloqueio de entrada excessiva e preservação de dados antigos. Instruções em
+[PHONE-FIELD-LIMITS.md](PHONE-FIELD-LIMITS.md). Sem migration; validação manual
+no Ubuntu pendente.

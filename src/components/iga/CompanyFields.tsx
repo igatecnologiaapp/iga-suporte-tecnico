@@ -56,6 +56,7 @@ export function CompanyFields({
                 <Label htmlFor={name}>{label}</Label>
                 {name === "phone" || name === "whatsapp" ? (
                   <PhoneInput
+                    kind={name}
                     id={name}
                     name={name}
                     required={required}

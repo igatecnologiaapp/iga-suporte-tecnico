@@ -35,3 +35,23 @@ export function phoneCaret(value: string, digitCount: number) {
     if (/\d/.test(value[index]!) && ++count === digitCount) return index + 1;
   return value.length;
 }
+
+export type PhoneKind = "phone" | "whatsapp";
+export const phoneLimits = { phone: 10, whatsapp: 11 } as const;
+export function phoneFieldError(value: string, kind: PhoneKind): string | null {
+  const label = kind === "phone" ? "Telefone" : "WhatsApp";
+  if (value.replace(/\D/g, "").length > phoneLimits[kind])
+    return `${label} aceita no máximo ${phoneLimits[kind]} dígitos, incluindo o DDD.`;
+  if (value.trim().startsWith("+")) return "Informe apenas o DDD e o número, sem código do país.";
+  return null;
+}
+/** Fixed national field masks. Oversized existing values are never shortened. */
+export function formatPhoneField(value: string, kind: PhoneKind) {
+  if (!/^\+?[\d\s().-]*$/.test(value.trim())) return value;
+  if (phoneFieldError(value, kind)) return formatPhone(value);
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  const subscriber = digits.slice(2);
+  const group = kind === "phone" ? 4 : 5;
+  return `(${digits.slice(0, 2)}${digits.length >= 2 ? ")" : ""}${subscriber ? ` ${subscriber.slice(0, group)}` : ""}${subscriber.length > group ? `-${subscriber.slice(group)}` : ""}`;
+}

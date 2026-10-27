@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatPhone, phoneCaret } from "../../src/lib/phone-format.ts";
+import {
+  formatPhone,
+  phoneCaret,
+  formatPhoneField,
+  phoneFieldError,
+} from "../../src/lib/phone-format.ts";
 
 test("phones format Brazilian landlines and mobiles, preserving country code and digits", () => {
   for (const [raw, expected] of [
@@ -46,4 +51,16 @@ test("caret follows the edited digit rather than punctuation", () => {
   assert.equal(phoneCaret("(11) 91234-5678", 7), 10);
   assert.equal(phoneCaret("+55 (11) 91234-5678", 0), 1);
   assert.equal(phoneCaret("", 0), 0);
+});
+test("national input masks have separate telephone and WhatsApp groups and limits", () => {
+  assert.equal(formatPhoneField("1199999999", "phone"), "(11) 9999-9999");
+  assert.equal(formatPhoneField("11999999999", "whatsapp"), "(11) 99999-9999");
+  assert.equal(formatPhoneField("1199999999", "whatsapp"), "(11) 99999-999");
+  assert.equal(phoneFieldError("(11) 9999-9999", "phone"), null);
+  assert.ok(phoneFieldError("(11) 99999-9999", "phone"));
+  assert.equal(phoneFieldError("(11) 99999-9999", "whatsapp"), null);
+  assert.ok(phoneFieldError("119999999999", "whatsapp"));
+  assert.ok(phoneFieldError("+55 11 99999-9999", "whatsapp"));
+  assert.equal(formatPhoneField("11999999999", "phone").replace(/\D/g, ""), "11999999999");
+  assert.equal(formatPhoneField("33334444 ramal 12", "phone"), "33334444 ramal 12");
 });

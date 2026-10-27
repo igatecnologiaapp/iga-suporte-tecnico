@@ -955,6 +955,7 @@ function Field({
       <Label htmlFor={n}>{l}</Label>
       {n === "phone" || n === "whatsapp" ? (
         <PhoneInput
+          kind={n === "whatsapp" ? "whatsapp" : "phone"}
           id={n}
           name={n}
           required={req}

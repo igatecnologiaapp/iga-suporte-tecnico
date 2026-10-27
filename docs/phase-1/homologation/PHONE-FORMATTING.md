@@ -1,5 +1,10 @@
 # Formatação de telefones — 27/10/2026
 
+> Regra de edição atualizada a pedido do operador: Telefone limitado a dez
+> dígitos e WhatsApp a onze, contando DDD. Detalhes e comandos atuais em
+> [PHONE-FIELD-LIMITS.md](PHONE-FIELD-LIMITS.md). O texto abaixo registra a
+> primeira implementação da formatação.
+
 Após aprovar o resultado visual de Contatos, o operador solicitou formatação
 automática de telefone/WhatsApp na digitação e na visualização.
 
